@@ -1,4 +1,8 @@
 {%- from '_macros.jinja' import cmd with context -%}
+{%- set bootstrap = package_manager in ['uv', 'pixi'] -%}
+{%- if package_manager == 'uv' -%}{%- set bin_dir = '$HOME/.local/bin' -%}
+{%- elif package_manager == 'pixi' -%}{%- set bin_dir = '$HOME/.pixi/bin' -%}
+{%- endif -%}
 {
   "permissions": {
     "allow": [
@@ -30,6 +34,18 @@
     ]
   }{% if include_claude_hooks %},
   "hooks": {
+    {% if bootstrap -%}
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/ensure-toolchain.sh\""
+          }
+        ]
+      }
+    ],
+    {% endif -%}
     "PostToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",
@@ -47,7 +63,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"$CLAUDE_TOOL_INPUT\" | grep -qE 'rm -rf|push --force|reset --hard|DROP TABLE' && exit 2 || exit 0"
+            "command": "echo \"$CLAUDE_TOOL_INPUT\" | sh \"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/block-destructive.sh\""
           }
         ]
       }
@@ -57,7 +73,11 @@
         "hooks": [
           {
             "type": "command",
+            {% if bootstrap -%}
+            "command": {{ ("INPUT=$(cat); [ \"$(printf '%s' \"$INPUT\" | jq -r '.stop_hook_active // false')\" = 'true' ] && exit 0; sh \"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/ensure-toolchain.sh\" >&2 || true; export PATH=\"" ~ bin_dir ~ ":$PATH\"; command -v " ~ package_manager ~ " >/dev/null 2>&1 || { echo 'verify skipped: " ~ package_manager ~ " unavailable (see docs/tool-bootstrap.md)' >&2; exit 0; }; " ~ cmd('verify') ~ " || exit 2") | tojson }}
+            {% else -%}
             "command": {{ ("INPUT=$(cat); [ \"$(printf '%s' \"$INPUT\" | jq -r '.stop_hook_active // false')\" = 'true' ] && exit 0; " ~ cmd('verify') ~ " || exit 2") | tojson }}
+            {% endif -%}
           }
         ]
       }

@@ -40,12 +40,17 @@ your-repo/
 │  ├─ style.md                        # greenfield: incl. commit-message convention
 │  ├─ testing.md
 │  ├─ tool-bootstrap.md               # per-package-manager install instructions
+│  ├─ harness-usage.md                # unified Claude Code + OpenCode driving guide
 │  └─ adr/0001-record-architecture-decisions.md   # if include_example_adr
 ├─ specs/                            # per-feature; YYYY-MM-example/ if opted in
 ├─ scripts/                          # shell entry points (if generate_scripts)
 │  ├─ verify.sh                      # default implementation of verify_command (canonical lint+test gate)
 │  └─ fmt-file.sh                    # per-file formatter slot for the PostToolUse hook
 ├─ .agents/                          # vendor-neutral shared assets
+│  ├─ README.md                      # supported-agents matrix + single-source-of-truth rule
+│  ├─ hooks/
+│  │  ├─ block-destructive.sh        # canonical deny-list (Claude PreToolUse pipes to it)
+│  │  └─ ensure-toolchain.sh         # idempotent build-tool bootstrap; if package_manager in {uv, pixi}
 │  ├─ skills/verify/SKILL.md         # if include_example_skill
 │  ├─ subagents/
 │  │  ├─ product-owner.md            # paired with /spec

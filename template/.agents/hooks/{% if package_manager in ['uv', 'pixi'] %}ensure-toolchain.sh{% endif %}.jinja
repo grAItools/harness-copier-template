@@ -1,0 +1,44 @@
+{%- if package_manager == 'uv' -%}
+{%- set install_url = 'https://astral.sh/uv/install.sh' -%}
+{%- set install_cmd = 'curl -LsSf https://astral.sh/uv/install.sh | sh' -%}
+{%- set bin_dir = '$HOME/.local/bin' -%}
+{%- elif package_manager == 'pixi' -%}
+{%- set install_url = 'https://pixi.sh/install.sh' -%}
+{%- set install_cmd = 'curl -fsSL https://pixi.sh/install.sh | sh' -%}
+{%- set bin_dir = '$HOME/.pixi/bin' -%}
+{%- endif -%}
+#!/usr/bin/env sh
+# ensure-toolchain.sh — make `{{ package_manager }}` available (idempotent).
+# Single source of truth for bootstrapping the build tool; a no-op if
+# `{{ package_manager }}` is already on PATH.
+#
+# Consumers:
+#   - Claude Code: the SessionStart and Stop hooks in .claude/settings.json.
+#   - Claude Code on the web: point the environment setup script here.
+#   - Any other agent / CI / devcontainer may call it too.
+#
+# The canonical install command lives ONLY here; docs/tool-bootstrap.md explains
+# it. The installer appends {{ bin_dir }} to the shell profile, so the binary is
+# on PATH for *new* shells (e.g. an agent's subsequent tool calls). A caller that
+# needs it within its own already-running shell should also run:
+#   export PATH="{{ bin_dir }}:$PATH"
+#
+# See .agents/README.md for the single-source-of-truth rationale.
+
+command -v {{ package_manager }} >/dev/null 2>&1 && exit 0
+
+# A prior install may sit in {{ bin_dir }} without being on this shell's PATH yet.
+if [ -x "{{ bin_dir }}/{{ package_manager }}" ]; then
+	echo "ensure-toolchain: {{ package_manager }} is installed at {{ bin_dir }}; add it to PATH (export PATH=\"{{ bin_dir }}:\$PATH\")." >&2
+	exit 0
+fi
+
+echo "ensure-toolchain: {{ package_manager }} not found — installing from {{ install_url }} ..." >&2
+if {{ install_cmd }} >&2 && [ -x "{{ bin_dir }}/{{ package_manager }}" ]; then
+	echo "ensure-toolchain: installed $("{{ bin_dir }}/{{ package_manager }}" --version). On PATH for new shells via your profile." >&2
+	exit 0
+fi
+
+echo "ensure-toolchain: ERROR — could not install {{ package_manager }} automatically (offline or restricted network?)." >&2
+echo "ensure-toolchain: install it manually, then retry. See docs/tool-bootstrap.md." >&2
+exit 1

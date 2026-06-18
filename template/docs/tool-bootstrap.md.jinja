@@ -26,6 +26,18 @@ _Fill in: any additional system-level tools the project needs
 {% if package_manager == 'uv' -%}
 [`uv`](https://docs.astral.sh/uv/) — fast Python package & project manager.
 
+The canonical, automated bootstrap is
+[`.agents/hooks/ensure-toolchain.sh`](../.agents/hooks/ensure-toolchain.sh): it
+installs `uv` if it is missing, and is exactly what the Claude Code
+`SessionStart` hook (and a Claude Code on the web setup script) run. From the
+repo root:
+
+```sh
+sh .agents/hooks/ensure-toolchain.sh
+```
+
+What that does under the hood (and how to install by hand):
+
 ```sh
 # Standalone installer (macOS / Linux):
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -40,6 +52,18 @@ After install: `uv sync` materialises the project environment from
 `pyproject.toml` and creates/updates `uv.lock` (or uses it when present).
 {%- elif package_manager == 'pixi' -%}
 [`pixi`](https://pixi.sh) — conda-ecosystem project manager.
+
+The canonical, automated bootstrap is
+[`.agents/hooks/ensure-toolchain.sh`](../.agents/hooks/ensure-toolchain.sh): it
+installs `pixi` if it is missing, and is exactly what the Claude Code
+`SessionStart` hook (and a Claude Code on the web setup script) run. From the
+repo root:
+
+```sh
+sh .agents/hooks/ensure-toolchain.sh
+```
+
+What that does under the hood (and how to install by hand):
 
 ```sh
 # macOS / Linux:

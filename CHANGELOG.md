@@ -10,7 +10,48 @@ name, default, or output path bumps the major version).
 
 ### Added
 
+- **Canonical agent-hook scripts under `.agents/hooks/`.** New
+  `block-destructive.sh` (always generated) is the single source of truth
+  for the destructive-command deny-list; the Claude Code `PreToolUse(Bash)`
+  hook now pipes the command through it instead of carrying an inline
+  `grep`. New `ensure-toolchain.sh` (generated only when
+  `package_manager` is `uv` or `pixi`, which have a one-line installer)
+  idempotently bootstraps the build tool; it is wired into the Claude Code
+  `SessionStart` hook and the `Stop` hook self-heals through it before
+  running the gate. Backports preserf PR #114, generalized from its
+  pixi-specific `ensure-pixi.sh`. Both scripts ship mode `0755`.
+- **New file `.agents/README.md`** — supported-agents matrix (Claude Code,
+  OpenCode, Copilot, OpenAI Codex, Google Gemini CLI, and natively-`AGENTS.md`
+  agents), the recipe for adding an agent, and the single-source-of-truth
+  rule (folds in the principle from preserf's ADR 0007 without shipping a
+  numbered ADR — numbering belongs to each consumer repo). Codex needs no
+  file (reads root `AGENTS.md`); Gemini wiring is documented as a one-file
+  stub rather than a new question.
+- **New file `docs/harness-usage.md`** — a unified Claude Code + OpenCode
+  harness guide (four-phase loop, the five subagents, the three trigger
+  mechanisms, per-phase prompting, and a tool-comparison table), rendered
+  through the `cmd()` macro and gated on `include_claude_hooks`,
+  `generate_scripts`, `include_example_skill`, and the commit-convention
+  answers. Added to `_skip_if_exists`. Backports preserf PR #113.
+- **OpenCode auto-format.** `.opencode/opencode.jsonc` gains a native
+  `formatter` block (when `generate_scripts=true`) that routes edits
+  through the same `scripts/fmt-file.sh` entry point Claude Code's
+  PostToolUse hook uses, with the conflicting built-in formatter disabled
+  per `primary_language`. Backports preserf PR #113.
+
 ### Changed
+
+- `AGENTS.md` gains "Driving the harness" and "Supported agents" entries in
+  the "Where things live" list, and (for `uv`/`pixi` with
+  `include_claude_hooks`) a "Do" note that the toolchain is auto-bootstrapped
+  at session start.
+- `.opencode/opencode.jsonc` permission allow-list adds the read-only
+  helpers already present in `.claude/settings.json`
+  (`ls`/`cat`/`head`/`tail`/`find`), fixing the drift between the two
+  surfaces, and its deny-list comment now points at the canonical
+  `.agents/hooks/block-destructive.sh`.
+- `docs/tool-bootstrap.md` (uv/pixi arms) now names
+  `.agents/hooks/ensure-toolchain.sh` as the canonical automated bootstrap.
 
 ### Removed
 
