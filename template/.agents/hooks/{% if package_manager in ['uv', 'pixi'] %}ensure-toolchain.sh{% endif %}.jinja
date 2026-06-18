@@ -1,12 +1,12 @@
+{%- from '_macros.jinja' import toolchain_bin_dir with context -%}
 {%- if package_manager == 'uv' -%}
 {%- set install_url = 'https://astral.sh/uv/install.sh' -%}
 {%- set install_cmd = 'curl -LsSf https://astral.sh/uv/install.sh | sh' -%}
-{%- set bin_dir = '$HOME/.local/bin' -%}
 {%- elif package_manager == 'pixi' -%}
 {%- set install_url = 'https://pixi.sh/install.sh' -%}
 {%- set install_cmd = 'curl -fsSL https://pixi.sh/install.sh | sh' -%}
-{%- set bin_dir = '$HOME/.pixi/bin' -%}
 {%- endif -%}
+{%- set bin_dir = toolchain_bin_dir() -%}
 #!/usr/bin/env sh
 # ensure-toolchain.sh — make `{{ package_manager }}` available (idempotent).
 # Single source of truth for bootstrapping the build tool; a no-op if

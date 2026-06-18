@@ -8,11 +8,17 @@
   'csharp': ['.cs'],
   'cpp': ['.c', '.cc', '.cpp', '.cxx', '.h', '.hpp']
 } -%}
+{#- OpenCode's built-in formatter to disable per language so the custom
+    per-file formatter below isn't run twice. Languages whose OpenCode
+    built-in we can name go here; those OpenCode ships no built-in for
+    (java, csharp) are intentionally absent — there is nothing to disable. -#}
 {%- set fmt_disable = {
   'python': 'ruff',
   'typescript': 'prettier',
   'javascript': 'prettier',
-  'go': 'gofmt'
+  'go': 'gofmt',
+  'rust': 'rustfmt',
+  'cpp': 'clang-format'
 } -%}
 // OpenCode configuration. See https://opencode.ai/docs/config/
 {
@@ -31,11 +37,13 @@
   // read-only planning sessions.
   "default_agent": "build",
 
-  // Permission policy. The deny-list mirrors the canonical destructive-command
-  // matcher at .agents/hooks/block-destructive.sh (OpenCode cannot call a
-  // script, so these globs are kept in sync with it by hand). The allow-list
+  // Permission policy. The deny-list is an approximate, weaker mirror of the
+  // canonical matcher at .agents/hooks/block-destructive.sh: OpenCode globs are
+  // prefix-matched (not substring), so `cd x && rm -rf y` slips past — see the
+  // caveat in docs/harness-usage.md. Kept in sync by hand. The allow-list
   // matches .claude/settings.json: the build tool, read-only git, plus
-  // read-only inspection helpers.
+  // read-only inspection helpers (note: `find` is intentionally not allowed —
+  // `find -delete`/`-exec rm` would bypass the deny-list).
   "permission": {
     "bash": {
       {% if task_runner == 'make' -%}
@@ -57,10 +65,10 @@
       "cat *": "allow",
       "head *": "allow",
       "tail *": "allow",
-      "find *": "allow",
       "git push --force*": "deny",
       "git reset --hard origin*": "deny",
-      "rm -rf*": "deny"
+      "rm -rf*": "deny",
+      "*DROP TABLE*": "deny"
     }
   }{% if generate_scripts %},
 

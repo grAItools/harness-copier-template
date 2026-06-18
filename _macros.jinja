@@ -66,3 +66,15 @@ just {{ target }}
 {%- else -%}underlying task definition
 {%- endif -%}
 {%- endmacro -%}
+{#-
+  toolchain_bin_dir() — the directory the package manager's installer drops its
+  binary into. Single source of truth for the install location, imported by both
+  .agents/hooks/ensure-toolchain.sh.jinja and the .claude/settings.json Stop
+  hook's `export PATH=...` so the two never drift. Empty for managers without a
+  one-line installer (cmake/other), which don't generate the bootstrap script.
+-#}
+{%- macro toolchain_bin_dir() -%}
+{%- if package_manager == 'uv' -%}$HOME/.local/bin
+{%- elif package_manager == 'pixi' -%}$HOME/.pixi/bin
+{%- endif -%}
+{%- endmacro -%}

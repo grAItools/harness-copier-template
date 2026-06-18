@@ -46,14 +46,25 @@ name, default, or output path bumps the major version).
   `include_claude_hooks`) a "Do" note that the toolchain is auto-bootstrapped
   at session start.
 - `.opencode/opencode.jsonc` permission allow-list adds the read-only
-  helpers already present in `.claude/settings.json`
-  (`ls`/`cat`/`head`/`tail`/`find`), fixing the drift between the two
-  surfaces, and its deny-list comment now points at the canonical
-  `.agents/hooks/block-destructive.sh`.
+  helpers `ls`/`cat`/`head`/`tail` to match `.claude/settings.json`, and its
+  deny-list comment now points at the canonical
+  `.agents/hooks/block-destructive.sh` (described as the approximate,
+  prefix-only mirror it is). `find` is deliberately **not** allow-listed on
+  either surface — `find -delete` / `-exec rm` would bypass the deny-list —
+  so `Bash(find:*)` was also dropped from `.claude/settings.json`.
 - `docs/tool-bootstrap.md` (uv/pixi arms) now names
   `.agents/hooks/ensure-toolchain.sh` as the canonical automated bootstrap.
 
 ### Removed
+
+### Upgrade notes
+
+- `docs/tool-bootstrap.md` is in `_skip_if_exists`, so a brownfield repo
+  running `copier update` keeps its existing copy and will **not** pick up
+  the new `.agents/hooks/ensure-toolchain.sh` reference automatically. If you
+  want it, merge the template's `docs/tool-bootstrap.md` by hand (the new
+  bootstrap script and Claude `SessionStart`/`Stop` wiring still work without
+  it).
 
 ## [0.3.0] – 2026-05-28
 
