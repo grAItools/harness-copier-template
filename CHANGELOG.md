@@ -10,62 +10,42 @@ major version).
 
 ### Added
 
-- **Canonical agent-hook scripts under `.agents/hooks/`.** New
-  `block-destructive.sh` (always generated) is the single source of truth
-  for the destructive-command deny-list; the Claude Code `PreToolUse(Bash)`
-  hook now pipes the command through it instead of carrying an inline
-  `grep`. New `ensure-toolchain.sh` (generated only when
-  `package_manager` is `uv` or `pixi`, which have a one-line installer)
-  idempotently bootstraps the build tool; it is wired into the Claude Code
-  `SessionStart` hook and the `Stop` hook self-heals through it before
-  running the gate. Backports preserf PR #114, generalized from its
-  pixi-specific `ensure-pixi.sh`. Both scripts ship mode `0755`. See
+- `.agents/hooks/block-destructive.sh` (always generated, mode `0755`) — the
+  canonical destructive-command deny-list; the Claude Code `PreToolUse(Bash)`
+  hook calls it fail-closed instead of carrying an inline `grep`. See
   [ADR 0004](docs/decisions/0004-canonical-agent-hooks-and-toolchain-bootstrap.md).
-- **New file `.agents/README.md`** — supported-agents matrix (Claude Code,
-  OpenCode, Copilot, OpenAI Codex, Google Gemini CLI, and natively-`AGENTS.md`
-  agents), the recipe for adding an agent, and the single-source-of-truth
-  rule (folds in the principle from preserf's ADR 0007 without shipping a
-  numbered ADR — numbering belongs to each consumer repo). Codex needs no
-  file (reads root `AGENTS.md`); Gemini wiring is documented as a one-file
-  stub rather than a new question.
-- **New file `docs/harness-usage.md`** — a unified Claude Code + OpenCode
-  harness guide (four-phase loop, the five subagents, the three trigger
-  mechanisms, per-phase prompting, and a tool-comparison table), rendered
-  through the `cmd()` macro and gated on `include_claude_hooks`,
-  `generate_scripts`, `include_example_skill`, and the commit-convention
-  answers. Added to `_skip_if_exists`. Backports preserf PR #113.
-- **OpenCode auto-format.** `.opencode/opencode.jsonc` gains a native
-  `formatter` block (when `generate_scripts=true`) that routes edits
-  through the same `scripts/fmt-file.sh` entry point Claude Code's
-  PostToolUse hook uses, with the conflicting built-in formatter disabled
-  per `primary_language`. Backports preserf PR #113.
+- `.agents/hooks/ensure-toolchain.sh` (generated only for `uv`/`pixi`, mode
+  `0755`) — idempotent build-tool bootstrap, wired into the Claude Code
+  `SessionStart` hook with the `Stop` hook self-healing through it.
+- `.agents/README.md` — supported-agents matrix (Claude Code, OpenCode,
+  Copilot, Codex, Gemini CLI, natively-`AGENTS.md` agents), the add-an-agent
+  recipe, and the single-source-of-truth rule.
+- `docs/harness-usage.md` — unified Claude Code + OpenCode driving guide; added
+  to `_skip_if_exists`.
+- OpenCode native `formatter` (when `generate_scripts=true`) — routes edits
+  through `scripts/fmt-file.sh`, disabling the conflicting built-in per
+  `primary_language`, for parity with the Claude Code `PostToolUse` hook.
+- `docs/style.md` gains a `## Changelog` section (and an `AGENTS.md` Conventions
+  pointer) on writing concise Keep-a-Changelog entries in generated projects.
 
 ### Changed
 
-- `AGENTS.md` gains "Driving the harness" and "Supported agents" entries in
-  the "Where things live" list, and (for `uv`/`pixi` with
-  `include_claude_hooks`) a "Do" note that the toolchain is auto-bootstrapped
-  at session start.
-- `.opencode/opencode.jsonc` permission allow-list adds the read-only
-  helpers `ls`/`cat`/`head`/`tail` to match `.claude/settings.json`, and its
-  deny-list comment now points at the canonical
-  `.agents/hooks/block-destructive.sh` (described as the approximate,
-  prefix-only mirror it is). `find` is deliberately **not** allow-listed on
-  either surface — `find -delete` / `-exec rm` would bypass the deny-list —
-  so `Bash(find:*)` was also dropped from `.claude/settings.json`.
-- `docs/tool-bootstrap.md` (uv/pixi arms) now names
+- `AGENTS.md` gains "Driving the harness" and "Supported agents" links, plus a
+  `uv`/`pixi` auto-bootstrap "Do" note.
+- `.opencode/opencode.jsonc` allow-list adds `ls`/`cat`/`head`/`tail` to match
+  `.claude`; `find` is dropped from **both** surfaces (its `-delete`/`-exec rm`
+  forms bypass the deny-list); the deny-list comment now points at
+  `block-destructive.sh`.
+- `docs/tool-bootstrap.md` (uv/pixi arms) names
   `.agents/hooks/ensure-toolchain.sh` as the canonical automated bootstrap.
 
 ### Removed
 
 ### Upgrade notes
 
-- `docs/tool-bootstrap.md` is in `_skip_if_exists`, so a brownfield repo
-  running `copier update` keeps its existing copy and will **not** pick up
-  the new `.agents/hooks/ensure-toolchain.sh` reference automatically. If you
-  want it, merge the template's `docs/tool-bootstrap.md` by hand (the new
-  bootstrap script and Claude `SessionStart`/`Stop` wiring still work without
-  it).
+- `docs/tool-bootstrap.md` is in `_skip_if_exists`, so a brownfield `copier
+  update` keeps its existing copy and won't pick up the `ensure-toolchain.sh`
+  reference — merge it by hand (the bootstrap and hook wiring work without it).
 
 ## [0.3.0] – 2026-05-28
 

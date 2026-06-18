@@ -6,27 +6,25 @@ Accepted (2026-06-18).
 
 ## Context
 
-The consumer project `grAItools/preserf` (generated from this template)
-hardened its harness in two PRs that we want every generated repo to inherit:
+The harness wires Claude Code and OpenCode to a shared set of `.agents/`
+definitions. Four gaps in that wiring motivated this change:
 
-- **preserf #113** — a unified Claude Code + OpenCode usage guide, and wiring
-  OpenCode's native `formatter` so editor-time formatting matches the verify
-  gate (Claude Code already auto-formats via its `PostToolUse` hook).
-- **preserf #114** — factor the destructive-command deny-list and the build-tool
-  bootstrap into canonical `.agents/hooks/*.sh` scripts, establish `AGENTS.md`
-  as the single source of truth for agent instructions, fix OpenCode permission
-  drift, and document the supported-agents matrix.
+- The destructive-command deny-list was an inline `grep` inside
+  `.claude/settings.json` — not reusable as a single definition that other
+  surfaces (or CI, or another agent) can share.
+- There was no automated build-tool bootstrap: a fresh session, sandbox, or
+  Claude Code on the web that lacked the package manager simply failed at the
+  verify gate.
+- OpenCode had no auto-format, while Claude Code formatted on edit via its
+  `PostToolUse` hook — an avoidable asymmetry.
+- The two permission surfaces had drifted (`.claude` allowed read-only
+  `ls`/`cat`/`head`/`tail`; `.opencode` did not), and there was no written
+  record of which agents the harness supports or how to add one.
 
-The constraint: preserf is **pixi-specific**, but this template is language- and
-package-manager-agnostic. Every change must flow through the existing `cmd()`
-macro (`_macros.jinja`), the `package_manager` / `task_runner` /
-`generate_scripts` answers, and the `include_claude_hooks` gate — never
-hard-coded to pixi.
-
-Before this change the Claude Code deny-list was an inline `grep` in
-`.claude/settings.json`, there was no automated toolchain bootstrap, OpenCode had
-no auto-format, and the two surfaces had drifted (`.claude` allowed
-`ls/cat/head/tail/find`; `.opencode` did not).
+Any fix must stay package-manager-agnostic: this template targets `uv`, `pixi`,
+`cmake`, and `other`, so behaviour has to flow through the existing `cmd()` macro
+(`_macros.jinja`), the `package_manager` / `task_runner` / `generate_scripts`
+answers, and the `include_claude_hooks` gate — never hard-coded to one manager.
 
 ## Decision
 
@@ -77,8 +75,8 @@ Three scoping decisions were confirmed with the template owner:
 2. **Codex/Gemini are documentation-only** — recorded in `.agents/README.md`, no
    new Copier question and no `.gemini/` config file shipped.
 3. **The single-source-of-truth principle is documented in `.agents/README.md`,
-   not as a numbered ADR in the template** — ADR numbering belongs to each
-   consumer repo (preserf records it as its own ADR 0007).
+   not as a numbered ADR shipped inside `template/`** — ADR numbering belongs to
+   each generated repo, so the template states the principle as prose instead.
 
 ## Consequences
 
@@ -113,12 +111,12 @@ Three scoping decisions were confirmed with the template owner:
 - **Add a Copier `gemini` toggle / ship `.gemini/settings.json`.** Rejected as
   scope creep; Codex reads `AGENTS.md` natively and Gemini needs only a one-file
   stub the matrix documents; decision 2.
-- **Ship a numbered ADR (mirroring preserf's 0007) inside `template/`.**
-  Rejected: ADR numbers are per-consumer; the principle lives in
-  `.agents/README.md` instead; decision 3.
+- **Ship a numbered single-source-of-truth ADR inside `template/`.** Rejected:
+  ADR numbers are per-generated-repo; the principle lives in `.agents/README.md`
+  instead; decision 3.
 - **Keep the inline `grep` deny-list in `.claude/settings.json`.** Rejected: it
-  could not be shared as a single source of truth across surfaces, which is the
-  point of preserf #114.
+  could not be shared as a single source of truth across surfaces — the whole
+  point of factoring it into a script.
 
 ## References
 
@@ -127,4 +125,3 @@ Three scoping decisions were confirmed with the template owner:
 - [`template/.agents/README.md`](../../template/.agents/README.md)
 - [`template/docs/harness-usage.md.jinja`](../../template/docs/harness-usage.md.jinja)
 - [`_macros.jinja`](../../_macros.jinja) — `toolchain_bin_dir()`
-- preserf PRs #113 and #114; preserf ADR 0007 (single source of truth).
