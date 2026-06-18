@@ -65,6 +65,13 @@ expected `.gitignore` block and symlinks.
   add an ADR in `docs/decisions/`.
 - Render with multiple answer combinations after changing anything that's
   gated by a question.
+- Log every user-facing change in [`CHANGELOG.md`](CHANGELOG.md) under
+  `[Unreleased]`: pick the right group (`Added`/`Changed`/`Removed`), write one
+  concise bullet (lead with the question/file/behaviour that changed), mark
+  breaking changes `### Removed (breaking)` and add `### Upgrade notes` when a
+  `copier update` needs manual action, and link the ADR if there is one. Keep
+  [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) + SemVer; on release,
+  rename `[Unreleased]` to the version + date and add the compare link.
 
 ## Don't
 
