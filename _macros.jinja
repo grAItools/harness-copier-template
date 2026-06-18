@@ -66,3 +66,33 @@ just {{ target }}
 {%- else -%}underlying task definition
 {%- endif -%}
 {%- endmacro -%}
+{#-
+  toolchain_bin_dir() — the directory the package manager's installer drops its
+  binary into. Single source of truth for the install location, imported by both
+  .agents/hooks/ensure-toolchain.sh.jinja and the .claude/settings.json Stop
+  hook's `export PATH=...` so the two never drift. Empty for managers without a
+  one-line installer (cmake/other), which don't generate the bootstrap script.
+-#}
+{%- macro toolchain_bin_dir() -%}
+{%- if package_manager == 'uv' -%}$HOME/.local/bin
+{%- elif package_manager == 'pixi' -%}$HOME/.pixi/bin
+{%- endif -%}
+{%- endmacro -%}
+{#-
+  toolchain_install_url() / toolchain_install_cmd() — the canonical installer
+  URL and one-line install command for the package manager. Single source of
+  truth, imported by both .agents/hooks/ensure-toolchain.sh.jinja (which runs it)
+  and docs/tool-bootstrap.md.jinja (which shows the manual fallback), so the two
+  can't drift. Empty for managers without a one-line installer (cmake/other),
+  which don't generate the bootstrap script.
+-#}
+{%- macro toolchain_install_url() -%}
+{%- if package_manager == 'uv' -%}https://astral.sh/uv/install.sh
+{%- elif package_manager == 'pixi' -%}https://pixi.sh/install.sh
+{%- endif -%}
+{%- endmacro -%}
+{%- macro toolchain_install_cmd() -%}
+{%- if package_manager == 'uv' -%}curl -LsSf https://astral.sh/uv/install.sh | sh
+{%- elif package_manager == 'pixi' -%}curl -fsSL https://pixi.sh/install.sh | sh
+{%- endif -%}
+{%- endmacro -%}

@@ -26,13 +26,21 @@ this file.
 ## Where things live (capabilities, not paths)
 
 - Architecture overview: [`docs/architecture.md`](docs/architecture.md)
+- Driving the harness (Claude Code & OpenCode): [`docs/harness-usage.md`](docs/harness-usage.md)
 - Style guide: [`docs/style.md`](docs/style.md)
 - Testing strategy: [`docs/testing.md`](docs/testing.md)
 - ADRs (decisions of record): [`docs/adr/`](docs/adr/)
 - Per-feature specs: [`specs/<YYYY-MM>-<slug>/`](specs/)
+- Supported agents & how to add one: [`.agents/README.md`](.agents/README.md)
 
 ## Do
 
+{% if package_manager in ['uv', 'pixi'] and include_claude_hooks -%}
+- `{{ package_manager }}` is bootstrapped automatically at session start by
+  [`.agents/hooks/ensure-toolchain.sh`](.agents/hooks/ensure-toolchain.sh); if you
+  land in a bare shell without it, run that script (details in
+  [`docs/tool-bootstrap.md`](docs/tool-bootstrap.md)).
+{% endif -%}
 - Run `{{ cmd('verify') }}` before claiming a task is done.
 - For a net-new feature, follow the four-phase loop:
   `/spec` (Product Owner) → `/plan` (Architect) → `/build` (Developer)
@@ -71,6 +79,9 @@ this file.
 - Commit messages: imperative mood, first line ≤72 chars, no trailing
   period. See [`docs/style.md`](docs/style.md#commit-messages) for details.
 {%- endif %}
+- Changelog: if the project keeps a `CHANGELOG.md`, log user-facing changes
+  under `[Unreleased]` as one concise bullet each, leading with the
+  file/behaviour. See [`docs/style.md`](docs/style.md#changelog).
 - Branch names: `<initials>/<slug>` for personal branches; bare slug for
   shared feature branches.
 

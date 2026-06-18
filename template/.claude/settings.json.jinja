@@ -1,4 +1,6 @@
-{%- from '_macros.jinja' import cmd with context -%}
+{%- from '_macros.jinja' import cmd, toolchain_bin_dir with context -%}
+{%- set bootstrap = package_manager in ['uv', 'pixi'] -%}
+{%- set bin_dir = toolchain_bin_dir() -%}
 {
   "permissions": {
     "allow": [
@@ -20,16 +22,27 @@
       "Bash(ls:*)",
       "Bash(cat:*)",
       "Bash(head:*)",
-      "Bash(tail:*)",
-      "Bash(find:*)"
+      "Bash(tail:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",
-      "Bash(git reset --hard origin:*)",
+      "Bash(git reset --hard:*)",
       "Bash(rm -rf:*)"
     ]
   }{% if include_claude_hooks %},
   "hooks": {
+    {% if bootstrap -%}
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/ensure-toolchain.sh\" || true"
+          }
+        ]
+      }
+    ],
+    {% endif -%}
     "PostToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",
@@ -47,7 +60,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"$CLAUDE_TOOL_INPUT\" | grep -qE 'rm -rf|push --force|reset --hard|DROP TABLE' && exit 2 || exit 0"
+            "command": "S=\"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/block-destructive.sh\"; [ -r \"$S\" ] || exit 2; echo \"$CLAUDE_TOOL_INPUT\" | sh \"$S\""
           }
         ]
       }
@@ -57,7 +70,11 @@
         "hooks": [
           {
             "type": "command",
+            {% if bootstrap -%}
+            "command": {{ ("INPUT=$(cat); [ \"$(printf '%s' \"$INPUT\" | jq -r '.stop_hook_active // false')\" = 'true' ] && exit 0; export PATH=\"" ~ bin_dir ~ ":$PATH\"; command -v " ~ package_manager ~ " >/dev/null 2>&1 || { echo 'verify skipped: " ~ package_manager ~ " unavailable (run .agents/hooks/ensure-toolchain.sh; see docs/tool-bootstrap.md)' >&2; exit 0; }; " ~ cmd('verify') ~ " || exit 2") | tojson }}
+            {% else -%}
             "command": {{ ("INPUT=$(cat); [ \"$(printf '%s' \"$INPUT\" | jq -r '.stop_hook_active // false')\" = 'true' ] && exit 0; " ~ cmd('verify') ~ " || exit 2") | tojson }}
+            {% endif -%}
           }
         ]
       }

@@ -10,9 +10,51 @@ major version).
 
 ### Added
 
+- `.agents/hooks/block-destructive.sh` (always generated, mode `0755`) — the
+  canonical destructive-command deny-list; the Claude Code `PreToolUse(Bash)`
+  hook calls it fail-closed instead of carrying an inline `grep`. See
+  [ADR 0004](docs/decisions/0004-canonical-agent-hooks-and-toolchain-bootstrap.md).
+- `.agents/hooks/ensure-toolchain.sh` (generated only for `uv`/`pixi`, mode
+  `0755`) — idempotent build-tool bootstrap, wired into the Claude Code
+  `SessionStart` hook (install if missing); the `Stop` hook exports it onto PATH
+  for the verify gate.
+- `.agents/README.md` — supported-agents matrix (Claude Code, OpenCode,
+  Copilot, Codex, Gemini CLI, natively-`AGENTS.md` agents), the add-an-agent
+  recipe, and the single-source-of-truth rule.
+- `docs/harness-usage.md` — unified Claude Code + OpenCode driving guide; added
+  to `_skip_if_exists`.
+- OpenCode native `formatter` (when `generate_scripts=true`) — routes edits
+  through `scripts/fmt-file.sh`, disabling the conflicting built-in per
+  `primary_language`, for parity with the Claude Code `PostToolUse` hook.
+- `docs/style.md` gains a `## Changelog` section (and an `AGENTS.md` Conventions
+  pointer) on writing concise Keep-a-Changelog entries in generated projects.
+
 ### Changed
 
+- `AGENTS.md` gains "Driving the harness" and "Supported agents" links, plus a
+  `uv`/`pixi` auto-bootstrap "Do" note.
+- `.opencode/opencode.jsonc` allow-list adds `ls`/`cat`/`head`/`tail` to match
+  `.claude`; its deny globs use `*…*` substring form (`*rm -rf*`, `*push --force*`,
+  `*reset --hard*`, `*DROP TABLE*`) for real parity with `block-destructive.sh`.
+  `.claude/settings.json`'s deny broadens `git reset --hard origin:*` to
+  `git reset --hard:*` (Claude permission syntax is prefix-anchored, so it can't
+  fully match the substring globs — `block-destructive.sh` is the canonical guard
+  when hooks are on).
+- `find` is dropped from every bash allow-list — the `.claude`/`.opencode`
+  surfaces and the `explorer`/`reviewer` subagent scopes — because its
+  `-delete`/`-exec rm` forms are not read-only and bypass the deny-list.
+- `docs/tool-bootstrap.md` (uv/pixi arms) names
+  `.agents/hooks/ensure-toolchain.sh` as the canonical automated bootstrap;
+  the installer URL/command and bin dir live in `_macros.jinja` macros so the
+  script, the Stop-hook PATH export, and the doc can't drift.
+
 ### Removed
+
+### Upgrade notes
+
+- `docs/tool-bootstrap.md` is in `_skip_if_exists`, so a brownfield `copier
+  update` keeps its existing copy and won't pick up the `ensure-toolchain.sh`
+  reference — merge it by hand (the bootstrap and hook wiring work without it).
 
 ## [0.3.0] – 2026-05-28
 

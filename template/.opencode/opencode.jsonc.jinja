@@ -1,3 +1,25 @@
+{%- set fmt_ext = {
+  'python': ['.py', '.pyi'],
+  'typescript': ['.ts', '.tsx'],
+  'javascript': ['.js', '.jsx', '.mjs', '.cjs'],
+  'rust': ['.rs'],
+  'go': ['.go'],
+  'java': ['.java'],
+  'csharp': ['.cs'],
+  'cpp': ['.c', '.cc', '.cpp', '.cxx', '.h', '.hpp']
+} -%}
+{#- OpenCode's built-in formatter to disable per language so the custom
+    per-file formatter below isn't run twice. Languages whose OpenCode
+    built-in we can name go here; those OpenCode ships no built-in for
+    (java, csharp) are intentionally absent — there is nothing to disable. -#}
+{%- set fmt_disable = {
+  'python': 'ruff',
+  'typescript': 'prettier',
+  'javascript': 'prettier',
+  'go': 'gofmt',
+  'rust': 'rustfmt',
+  'cpp': 'clang-format'
+} -%}
 // OpenCode configuration. See https://opencode.ai/docs/config/
 {
   "$schema": "https://opencode.ai/config.json",
@@ -15,7 +37,16 @@
   // read-only planning sessions.
   "default_agent": "build",
 
-  // Permission policy — mirrors .claude/settings.json deny list.
+  // Permission policy. The deny-list mirrors the canonical matcher at
+  // .agents/hooks/block-destructive.sh by hand (OpenCode can't call a script).
+  // OpenCode compiles each glob to an anchored regex (`*` -> `.*`), so a leading
+  // and trailing `*` is required to match a substring — hence the `*…*` forms
+  // below, which catch the pattern anywhere (e.g. `cd x && rm -rf y`), matching
+  // the script. The trade-off (shared with the script) is that a benign command
+  // merely *mentioning* a pattern is also caught. The allow-list matches
+  // .claude/settings.json: the build tool, read-only git, plus read-only
+  // inspection helpers (note: `find` is intentionally not allowed —
+  // `find -delete`/`-exec rm` would bypass the deny-list).
   "permission": {
     "bash": {
       {% if task_runner == 'make' -%}
@@ -33,9 +64,40 @@
       "git log*": "allow",
       "git show*": "allow",
       "rg *": "allow",
-      "git push --force*": "deny",
-      "git reset --hard origin*": "deny",
-      "rm -rf*": "deny"
+      "ls *": "allow",
+      "cat *": "allow",
+      "head *": "allow",
+      "tail *": "allow",
+      "*rm -rf*": "deny",
+      "*push --force*": "deny",
+      "*reset --hard*": "deny",
+      "*DROP TABLE*": "deny"
     }
-  }
+  }{% if generate_scripts %},
+
+  // Auto-format edited files — OpenCode's native `formatter`, which runs after
+  // every write/edit (the analogue of Claude Code's PostToolUse format hook).
+  // We route formatting through the same per-file entry point Claude Code uses
+  // (`scripts/fmt-file.sh`) so editor-time formatting is byte-for-byte what the
+  // verify gate enforces. "$FILE" is replaced with the edited file's path;
+  // matching is by `extensions`. See docs/harness-usage.md.
+  "formatter": {
+    {% if primary_language in fmt_disable -%}
+    // Disable the built-in formatter for this language so we don't double-format.
+    "{{ fmt_disable[primary_language] }}": { "disabled": true },
+    {% endif -%}
+    {% if primary_language in fmt_ext -%}
+    "{{ project_slug }}-fmt": {
+      "command": ["sh", "scripts/fmt-file.sh", "$FILE"],
+      "extensions": {{ fmt_ext[primary_language] | tojson }}
+    }
+    {%- else -%}
+    // TODO: set the file extensions for {{ primary_language }} so OpenCode routes
+    // edits through scripts/fmt-file.sh, e.g.:
+    // "{{ project_slug }}-fmt": {
+    //   "command": ["sh", "scripts/fmt-file.sh", "$FILE"],
+    //   "extensions": [".ext"]
+    // }
+    {%- endif %}
+  }{% endif %}
 }

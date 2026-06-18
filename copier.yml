@@ -35,6 +35,7 @@ _skip_if_exists:
   - "docs/style.md"
   - "docs/testing.md"
   - "docs/tool-bootstrap.md"
+  - "docs/harness-usage.md"
 
 # Optional post-generation tasks. The brown-field merger hook (see hooks/) runs
 # unconditionally and appends gitignore entries idempotently when an existing
@@ -52,7 +53,6 @@ _exclude:
   - "__pycache__"
   - ".git"
   - ".DS_Store"
-  - "hooks"
   - "README.template.md"
   # Note: _macros.jinja lives at the repo root (outside _subdirectory),
   # so it's never rendered to output regardless of _exclude. It is
