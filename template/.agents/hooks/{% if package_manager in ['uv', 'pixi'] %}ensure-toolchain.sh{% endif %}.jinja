@@ -1,12 +1,7 @@
-{%- from '_macros.jinja' import toolchain_bin_dir with context -%}
-{%- if package_manager == 'uv' -%}
-{%- set install_url = 'https://astral.sh/uv/install.sh' -%}
-{%- set install_cmd = 'curl -LsSf https://astral.sh/uv/install.sh | sh' -%}
-{%- elif package_manager == 'pixi' -%}
-{%- set install_url = 'https://pixi.sh/install.sh' -%}
-{%- set install_cmd = 'curl -fsSL https://pixi.sh/install.sh | sh' -%}
-{%- endif -%}
+{%- from '_macros.jinja' import toolchain_bin_dir, toolchain_install_url, toolchain_install_cmd with context -%}
 {%- set bin_dir = toolchain_bin_dir() -%}
+{%- set install_url = toolchain_install_url() -%}
+{%- set install_cmd = toolchain_install_cmd() -%}
 #!/usr/bin/env sh
 # ensure-toolchain.sh — make `{{ package_manager }}` available (idempotent).
 # Single source of truth for bootstrapping the build tool; a no-op if
@@ -17,10 +12,12 @@
 #   - Claude Code on the web: point the environment setup script here.
 #   - Any other agent / CI / devcontainer may call it too.
 #
-# The canonical install command lives ONLY here; docs/tool-bootstrap.md explains
-# it. The installer appends {{ bin_dir }} to the shell profile, so the binary is
-# on PATH for *new* shells (e.g. an agent's subsequent tool calls). A caller that
-# needs it within its own already-running shell should also run:
+# The install command and URL come from the toolchain_install_* macros in
+# _macros.jinja (the single source; docs/tool-bootstrap.md renders the same
+# macro for its manual fallback). The installer appends {{ bin_dir }} to the
+# shell profile, so the binary is on PATH for *new* shells (e.g. an agent's
+# subsequent tool calls), not the current one. A caller that needs it within its
+# own already-running shell should also run:
 #   export PATH="{{ bin_dir }}:$PATH"
 #
 # See .agents/README.md for the single-source-of-truth rationale.

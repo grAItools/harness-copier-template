@@ -1,5 +1,5 @@
 # Tool bootstrap
-{%- from '_macros.jinja' import cmd with context %}
+{%- from '_macros.jinja' import cmd, toolchain_install_cmd with context %}
 
 > How to install and activate the project's core tools so the commands
 > in [`AGENTS.md`](../AGENTS.md) actually work. This file is for
@@ -40,7 +40,7 @@ What that does under the hood (and how to install by hand):
 
 ```sh
 # Standalone installer (macOS / Linux):
-curl -LsSf https://astral.sh/uv/install.sh | sh
+{{ toolchain_install_cmd() }}
 
 # Or via pipx / brew / your OS package manager — see
 # https://docs.astral.sh/uv/getting-started/installation/
@@ -67,7 +67,7 @@ What that does under the hood (and how to install by hand):
 
 ```sh
 # macOS / Linux:
-curl -fsSL https://pixi.sh/install.sh | sh
+{{ toolchain_install_cmd() }}
 exec $SHELL                # reload shell so $PATH picks up ~/.pixi/bin
 
 # Windows (PowerShell):

@@ -33,11 +33,15 @@ major version).
 - `AGENTS.md` gains "Driving the harness" and "Supported agents" links, plus a
   `uv`/`pixi` auto-bootstrap "Do" note.
 - `.opencode/opencode.jsonc` allow-list adds `ls`/`cat`/`head`/`tail` to match
-  `.claude`; `find` is dropped from **both** surfaces (its `-delete`/`-exec rm`
-  forms bypass the deny-list); the deny-list comment now points at
-  `block-destructive.sh`.
+  `.claude`; its deny globs use `*…*` substring form (`*rm -rf*`, `*push --force*`,
+  `*reset --hard*`, `*DROP TABLE*`) for real parity with `block-destructive.sh`.
+- `find` is dropped from every bash allow-list — the `.claude`/`.opencode`
+  surfaces and the `explorer`/`reviewer` subagent scopes — because its
+  `-delete`/`-exec rm` forms are not read-only and bypass the deny-list.
 - `docs/tool-bootstrap.md` (uv/pixi arms) names
-  `.agents/hooks/ensure-toolchain.sh` as the canonical automated bootstrap.
+  `.agents/hooks/ensure-toolchain.sh` as the canonical automated bootstrap;
+  the installer URL/command and bin dir live in `_macros.jinja` macros so the
+  script, the Stop-hook PATH export, and the doc can't drift.
 
 ### Removed
 

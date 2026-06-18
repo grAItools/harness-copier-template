@@ -96,7 +96,10 @@ Claude Code only). You cannot prompt around the hooks:
 
 {% if package_manager in ['uv', 'pixi'] -%}
 - **SessionStart** runs [`.agents/hooks/ensure-toolchain.sh`](../.agents/hooks/ensure-toolchain.sh)
-  so `{{ package_manager }}` is on PATH before the agent starts reasoning.
+  to **install** `{{ package_manager }}` if it is missing. The installer adds it
+  to your shell profile (so it is on PATH for *new* shells); a hook can't change
+  the agent's already-running shells, so the `Stop` hook also exports it onto
+  PATH for the verify gate.
 {% endif -%}
 {% if generate_scripts -%}
 - **PostToolUse (`Write|Edit|MultiEdit`)** runs `scripts/fmt-file.sh` on the
@@ -108,11 +111,11 @@ Claude Code only). You cannot prompt around the hooks:
   non-zero blocks the stop. This is why "done" means "the gate is green".
 
 Permissions allowlist the build tool, read-only git (`status/diff/log/show`),
-and `rg/ls/cat/head/tail/find`; destructive operations are denied.
+and `rg/ls/cat/head/tail`; destructive operations are denied.
 {%- else -%}
 Permissions are configured in `.claude/settings.json` (not symlinked; Claude Code
 only). They allowlist the build tool, read-only git (`status/diff/log/show`), and
-`rg/ls/cat/head/tail/find`; destructive operations are denied. Claude Code hooks
+`rg/ls/cat/head/tail`; destructive operations are denied. Claude Code hooks
 were not generated for this project, so formatting and the verify gate are run
 manually (`{{ cmd('fmt') }}` / `{{ cmd('verify') }}`).
 {%- endif %}
@@ -150,10 +153,11 @@ OpenCode reads `.opencode/opencode.jsonc`, which sets:
 - **No session-end verification gate** on either tool here (Claude Code hooks
   were not generated) — run `/verify` during the session and rely on CI.
 {%- endif %}
-- **Destructive-bash blocking** is matched as command **prefix globs** (e.g.
-  `rm -rf*`), weaker than a substring matcher — `cd x && rm -rf y` slips past. A
-  `.opencode/plugin` with a `tool.execute.before` hook is the optional hardening
-  for true substring parity.
+- **Destructive-bash blocking** uses `permission.bash` deny globs in `*…*`
+  (substring) form that mirror `block-destructive.sh`'s patterns (`rm -rf`,
+  `push --force`, `reset --hard`, `DROP TABLE`), so `cd x && rm -rf y` is caught.
+  It's glob-not-regex and can't run a custom script, so for richer logic a
+  `.opencode/plugin` with a `tool.execute.before` hook is the optional hardening.
 
 | Capability             | Claude Code                              | OpenCode                                   |
 | ---------------------- | ---------------------------------------- | ------------------------------------------ |
@@ -161,7 +165,7 @@ OpenCode reads `.opencode/opencode.jsonc`, which sets:
 | Subagent invocation    | "use the X subagent"                     | `@mention` / auto-delegation (Task tool)   |
 | Auto-format            | {% if include_claude_hooks and generate_scripts %}`PostToolUse` hook{% else %}manual (`{{ cmd('fmt') }}`){% endif %}                       | {% if generate_scripts %}native `formatter`{% else %}manual (`{{ cmd('fmt') }}`){% endif %}                          |
 | Verify gate            | {% if include_claude_hooks %}`Stop` hook (blocking){% else %}`/verify` + CI only{% endif %}                   | `/verify` + CI only (no session-end hook)  |
-| Block destructive bash | {% if include_claude_hooks %}`PreToolUse` hook (script){% else %}_(no hook generated)_{% endif %}                 | `permission.bash` deny (prefix glob)       |
+| Block destructive bash | {% if include_claude_hooks %}`PreToolUse` hook (script){% else %}_(no hook generated)_{% endif %}                 | `permission.bash` deny (`*…*` substring globs) |
 | Path-scoped rules      | `.claude/rules/`                         | _(no equivalent)_                          |
 
 ## Decision guide — which capability for which task

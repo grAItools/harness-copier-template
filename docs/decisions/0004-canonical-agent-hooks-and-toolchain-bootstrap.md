@@ -35,17 +35,22 @@ to it, generalized across package managers:
   of truth for the destructive-command deny-list. The Claude Code
   `PreToolUse(Bash)` hook pipes the candidate command through it; the OpenCode
   `permission.bash` deny globs remain a hand-kept, weaker (prefix-only) mirror,
-  documented as such (OpenCode cannot call a script). The Claude hook guards the
-  call **fail-closed** (`[ -r "$S" ] || exit 2`) so a missing matcher blocks
-  rather than silently failing open.
+  documented as such (OpenCode cannot call a script). OpenCode compiles each glob
+  to an anchored regex (`*`→`.*`), so the deny globs use `*…*` (substring) form
+  (`*rm -rf*`, `*push --force*`, `*reset --hard*`, `*DROP TABLE*`) to mirror the
+  script's patterns and catch them mid-command (e.g. `cd x && rm -rf y`). The
+  Claude hook guards the call **fail-closed** (`[ -r "$S" ] || exit 2`) so a
+  missing matcher blocks rather than silently failing open.
 - **`ensure-toolchain.sh`** — an idempotent build-tool bootstrap, generated
   **only for `uv` and `pixi`** (the package managers with a one-line installer),
   via the empty-filename conditional path
   `{% if package_manager in ['uv','pixi'] %}ensure-toolchain.sh{% endif %}.jinja`.
-  It is wired into the Claude Code `SessionStart` hook (`|| true`, so an offline
-  install failure is quiet) and the `Stop` hook self-heals through it before
-  running the gate. For `cmake`/`other` no script is produced and the hooks fall
-  back to running the gate directly.
+  The Claude Code `SessionStart` hook runs it (`|| true`) to **install** the tool
+  if missing; the installer puts it on PATH for *new* shells via the profile (a
+  hook can't mutate the agent's already-running shells). The `Stop` hook then
+  `export`s the install dir onto PATH for the verify run and skips the gate with
+  a message if the tool is still unavailable. For `cmake`/`other` no script is
+  produced and the hooks fall back to running the gate directly.
 - **OpenCode native `formatter`** (when `generate_scripts=true`) routes edits
   through the same per-file entry point Claude Code uses (`scripts/fmt-file.sh`)
   and disables the conflicting OpenCode built-in per `primary_language` (e.g.
@@ -58,12 +63,15 @@ to it, generalized across package managers:
   agent. **`template/docs/harness-usage.md`** is a unified driving guide
   (added to `_skip_if_exists`).
 - **Permission posture:** `ls/cat/head/tail` are added to the OpenCode allow-list
-  to match `.claude`, but `find` is dropped from **both** surfaces because
-  `find -delete` / `-exec rm` bypasses the deny-list.
-- The single-package-manager bin directory is centralized in a
-  `toolchain_bin_dir()` macro in `_macros.jinja`, imported by both
-  `ensure-toolchain.sh.jinja` and the Stop-hook `PATH` export so they cannot
-  drift.
+  to match `.claude`, but `find` is dropped from **both** primary surfaces — and
+  from the `explorer` and `reviewer` subagent scopes — because `find -delete` /
+  `-exec rm` is not read-only and bypasses the deny-list. (This refines the
+  read-only command list in [ADR 0003](0003-role-based-subagents-and-build-command.md),
+  which had listed `find` among the inspection commands.)
+- The per-manager constants are centralized in `_macros.jinja` — `toolchain_bin_dir()`,
+  `toolchain_install_url()`, and `toolchain_install_cmd()` — imported by
+  `ensure-toolchain.sh.jinja` (which runs them), the Stop-hook `PATH` export, and
+  `docs/tool-bootstrap.md.jinja` (the manual fallback), so none can drift.
 - The stray `"hooks"` entry is removed from `copier.yml`'s `_exclude`: it was a
   redundant leftover (the template's own `hooks/` lives outside `_subdirectory`)
   that matched — and silently dropped — the new `template/.agents/hooks/`.
@@ -82,11 +90,14 @@ Three scoping decisions were confirmed with the template owner:
 
 **Positive.**
 
-- One deny-list definition, consumed by Claude Code directly and mirrored (with a
-  documented weaker-glob caveat) by OpenCode. Fail-closed behavior removes the
-  shell-dependent fail-open/fail-shut hazard of calling a possibly-missing script.
-- `uv`/`pixi` projects bootstrap their build tool automatically at session start
-  and self-heal at the verify gate, including Claude Code on the web.
+- One deny-list definition, consumed by Claude Code directly and mirrored by
+  OpenCode's `*…*` substring globs (glob-not-regex, but equivalent coverage of
+  the patterns). Fail-closed behavior removes the shell-dependent
+  fail-open/fail-shut hazard of calling a possibly-missing script.
+- `uv`/`pixi` projects install their build tool automatically at session start
+  (including Claude Code on the web), and the verify gate degrades gracefully —
+  exporting the install dir onto PATH, or skipping with a message — rather than
+  hard-failing when the tool isn't yet available.
 - OpenCode reaches feature parity with Claude Code's auto-format without
   double-formatting.
 - The two permission surfaces no longer drift, and `find`'s destructive forms are

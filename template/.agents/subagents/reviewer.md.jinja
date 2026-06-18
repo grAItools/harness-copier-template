@@ -19,7 +19,6 @@ permission:
     "rg *": allow
     "grep *": allow
     "ls *": allow
-    "find *": allow
     "cat *": allow
     "head *": allow
     "tail *": allow
@@ -52,8 +51,8 @@ fix before the next push.
   feature branch) before judging anything.
 - Allowed bash: the project's verify/test/lint commands, plus
   read-only inspection (`git log`, `git diff`, `git blame`,
-  `git show`, `rg`, `grep`, `ls`, `find`, `cat`, `head`, `tail`,
-  `wc`).
+  `git show`, `rg`, `grep`, `ls`, `cat`, `head`, `tail`, `wc`).
+  `find` is not allowed — its `-delete`/`-exec` forms are not read-only.
 - Never edit files. Never run state-changing commands. Never auto-fix
   defects yourself — your job is to identify them, not to patch them.
 - Check **all three** axes:
