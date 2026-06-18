@@ -16,7 +16,8 @@ major version).
   [ADR 0004](docs/decisions/0004-canonical-agent-hooks-and-toolchain-bootstrap.md).
 - `.agents/hooks/ensure-toolchain.sh` (generated only for `uv`/`pixi`, mode
   `0755`) — idempotent build-tool bootstrap, wired into the Claude Code
-  `SessionStart` hook with the `Stop` hook self-healing through it.
+  `SessionStart` hook (install if missing); the `Stop` hook exports it onto PATH
+  for the verify gate.
 - `.agents/README.md` — supported-agents matrix (Claude Code, OpenCode,
   Copilot, Codex, Gemini CLI, natively-`AGENTS.md` agents), the add-an-agent
   recipe, and the single-source-of-truth rule.
@@ -35,6 +36,10 @@ major version).
 - `.opencode/opencode.jsonc` allow-list adds `ls`/`cat`/`head`/`tail` to match
   `.claude`; its deny globs use `*…*` substring form (`*rm -rf*`, `*push --force*`,
   `*reset --hard*`, `*DROP TABLE*`) for real parity with `block-destructive.sh`.
+  `.claude/settings.json`'s deny broadens `git reset --hard origin:*` to
+  `git reset --hard:*` (Claude permission syntax is prefix-anchored, so it can't
+  fully match the substring globs — `block-destructive.sh` is the canonical guard
+  when hooks are on).
 - `find` is dropped from every bash allow-list — the `.claude`/`.opencode`
   surfaces and the `explorer`/`reviewer` subagent scopes — because its
   `-delete`/`-exec rm` forms are not read-only and bypass the deny-list.

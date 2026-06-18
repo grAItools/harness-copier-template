@@ -34,8 +34,8 @@ to it, generalized across package managers:
 - **`block-destructive.sh`** (always generated, mode `0755`) — the single source
   of truth for the destructive-command deny-list. The Claude Code
   `PreToolUse(Bash)` hook pipes the candidate command through it; the OpenCode
-  `permission.bash` deny globs remain a hand-kept, weaker (prefix-only) mirror,
-  documented as such (OpenCode cannot call a script). OpenCode compiles each glob
+  `permission.bash` deny globs are a hand-kept mirror (OpenCode cannot call a
+  script). OpenCode compiles each glob
   to an anchored regex (`*`→`.*`), so the deny globs use `*…*` (substring) form
   (`*rm -rf*`, `*push --force*`, `*reset --hard*`, `*DROP TABLE*`) to mirror the
   script's patterns and catch them mid-command (e.g. `cd x && rm -rf y`). The
@@ -100,8 +100,14 @@ Three scoping decisions were confirmed with the template owner:
   hard-failing when the tool isn't yet available.
 - OpenCode reaches feature parity with Claude Code's auto-format without
   double-formatting.
-- The two permission surfaces no longer drift, and `find`'s destructive forms are
-  no longer auto-allowed.
+- The two permission **allow-lists** no longer drift, and `find`'s destructive
+  forms are no longer auto-allowed on any surface. The **deny-lists** can't be
+  byte-identical — Claude Code's `Bash(x:*)` permission syntax is prefix-anchored
+  while OpenCode supports `*…*` substring — so when `include_claude_hooks=false`
+  (no `block-destructive.sh`) the per-tool deny-lists are best-effort and a
+  mid-command `rm -rf` is caught by OpenCode but not by Claude's permission layer.
+  The canonical substring guard is `block-destructive.sh`, active whenever the
+  hooks are on.
 
 **Negative.**
 
