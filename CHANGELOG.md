@@ -19,7 +19,8 @@ major version).
   idempotently bootstraps the build tool; it is wired into the Claude Code
   `SessionStart` hook and the `Stop` hook self-heals through it before
   running the gate. Backports preserf PR #114, generalized from its
-  pixi-specific `ensure-pixi.sh`. Both scripts ship mode `0755`.
+  pixi-specific `ensure-pixi.sh`. Both scripts ship mode `0755`. See
+  [ADR 0004](docs/decisions/0004-canonical-agent-hooks-and-toolchain-bootstrap.md).
 - **New file `.agents/README.md`** — supported-agents matrix (Claude Code,
   OpenCode, Copilot, OpenAI Codex, Google Gemini CLI, and natively-`AGENTS.md`
   agents), the recipe for adding an agent, and the single-source-of-truth
