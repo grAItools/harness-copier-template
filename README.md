@@ -71,7 +71,12 @@ your-repo/
 │  ├─ skills/    -> ../.agents/skills         (symlink, post-gen)
 │  └─ agents/    -> ../.agents/subagents      (symlink, post-gen)
 ├─ .cursor/rules/project-context.mdc # if cursor
-├─ .github/copilot-instructions.md   # if copilot
+├─ .github/                          # if copilot_code_review / copilot_code_review_skill
+│  ├─ copilot-instructions.md        # populated review rules (if copilot_code_review)
+│  ├─ instructions/                  # path-scoped review rules (if copilot_code_review)
+│  │  ├─ language.instructions.md    #   applyTo: language sources
+│  │  └─ security.instructions.md    #   applyTo: ** (excludes coding agent)
+│  └─ skills/code-review/SKILL.md    # if copilot_code_review_skill
 └─ .mcp.json + .mcp.example.jsonc    # if mcp
 ```
 
@@ -105,7 +110,8 @@ The template asks you:
 | `commit_convention`       | `conventional` (default) \| `freeform`; drives the commit-message bullet in `AGENTS.md` (always updated) and the matching section in `docs/style.md` (greenfield-only — `_skip_if_exists`) |
 | `pr_merge_strategy`       | `squash` (default) \| `merge` \| `rebase` \| `unknown`; tailors where the convention applies |
 | `cursor`                  | Off by default                                           |
-| `copilot`                 | Off by default                                           |
+| `copilot_code_review`     | Off by default; populated Copilot code-review config under `.github/` (instructions + path-scoped rules). Copilot code review does **not** read `AGENTS.md`, so rules are restated directly |
+| `copilot_code_review_skill` | Off by default; adds `.github/skills/code-review/SKILL.md` (GitHub agent-skills public preview) |
 | `mcp`                     | Off by default                                           |
 | `include_example_adr`     | On                                                       |
 | `include_example_skill`   | On                                                       |
@@ -175,7 +181,8 @@ harness-copier-template/
 │  ├─ .claude/
 │  ├─ .opencode/
 │  ├─ {% if cursor %}.cursor{% endif %}/
-│  ├─ {% if copilot %}.github{% endif %}/
+│  ├─ {% if copilot_code_review %}.github{% endif %}/   # copilot-instructions.md + instructions/
+│  ├─ {% if copilot_code_review_skill %}.github{% endif %}/  # skills/code-review/SKILL.md
 │  └─ {% if mcp %}.mcp.json{% endif %}
 └─ README.md          # this file
 ```
