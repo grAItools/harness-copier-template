@@ -1,0 +1,45 @@
+{%- from '_macros.jinja' import cmd with context -%}
+{%- set lang_globs = {
+  'python': '**/*.py',
+  'typescript': '**/*.{ts,tsx}',
+  'javascript': '**/*.{js,jsx,mjs,cjs}',
+  'rust': '**/*.rs',
+  'go': '**/*.go',
+  'java': '**/*.java',
+  'csharp': '**/*.cs',
+  'cpp': '**/*.{c,cc,cpp,cxx,h,hh,hpp,cu,cuh}',
+  'fortran': '**/*.{f,for,f90,f95,f03,f08,F,F90}',
+  'julia': '**/*.jl',
+  'other': '**/*'
+} -%}
+{#- Fall back to `**/*` rather than hard-failing the render if a future
+    primary_language choice is added to copier.yml without a matching glob
+    here. A too-broad applyTo degrades gracefully (and the note below tells
+    the user to narrow it); a missing key would break generation. -#}
+{%- set lang_glob = lang_globs.get(primary_language, '**/*') -%}
+---
+applyTo: "{{ lang_glob }}"
+---
+# {{ primary_language }} review rules
+
+Path-scoped guidance for {{ primary_language }} sources, applied on top of
+the repo-wide rules in `.github/copilot-instructions.md`.
+
+- Flag exported/public functions whose error and edge-case behaviour isn't
+  covered by a test.
+- Flag data races in threaded / OpenMP / MPI / async code: shared mutable
+  state without clear ownership or synchronization.
+- Flag broad catch-alls that swallow errors without logging or rethrowing.
+- Flag array/buffer indexing that can run out of bounds, and off-by-one in
+  loop, grid, or halo boundaries.
+- Prefer established numerical libraries over hand-rolled routines; flag
+  reinvented BLAS/LAPACK, stdlib reductions, or framework array ops.
+
+{% if lang_glob == '**/*' -%}
+> `applyTo` is `**/*` because `primary_language` (`{{ primary_language }}`)
+> has no language-specific glob mapped. Narrow it to your real source
+> extensions (e.g. `**/*.{ext}`) so these rules only fire on code, not on
+> docs or config.
+{% endif -%}
+> Tighten this list for {{ project_name }}: add the review rules that
+> `{{ cmd('lint') }}` can't express, and delete anything it already enforces.

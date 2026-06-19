@@ -109,6 +109,8 @@ primary_language:
     - java
     - csharp
     - cpp
+    - fortran
+    - julia
     - other
 
 package_manager:
@@ -316,9 +318,26 @@ cursor:
   help: "Generate .cursor/rules/project-context.mdc for Cursor users?"
   default: false
 
-copilot:
+copilot_code_review:
   type: bool
-  help: "Generate .github/copilot-instructions.md (one-line redirect to AGENTS.md)?"
+  help: |
+    Generate GitHub Copilot code-review configuration under `.github/`?
+    Writes a populated `.github/copilot-instructions.md` (review rules,
+    not a redirect) plus a `.github/instructions/` directory with
+    path-scoped `language.instructions.md` and `security.instructions.md`
+    files. Copilot code review reads these from the PR's base branch,
+    capped at 4,000 characters per file; it does NOT read `AGENTS.md`, so
+    the review-relevant rules have to live here directly.
+  default: false
+
+copilot_code_review_skill:
+  type: bool
+  help: |
+    Also generate a Copilot agent skill at
+    `.github/skills/code-review/SKILL.md`? Agent skills for code review
+    are a GitHub public preview (since June 2026), so this is off by
+    default. Independent of `copilot_code_review`, but most useful with
+    it on.
   default: false
 
 mcp:
@@ -370,4 +389,12 @@ _message_after_copy: |
   the agent loop runs without prompts. To also allow related commands
   (e.g. other pixi/hatch tasks), add a broader wildcard entry to both
   config files manually.
+  {%- endif %}
+  {% if copilot_code_review_skill and not copilot_code_review -%}
+  Note: copilot_code_review_skill=true but copilot_code_review=false — the
+  Copilot agent skill at .github/skills/code-review/SKILL.md was generated
+  without the accompanying .github/copilot-instructions.md review rules and
+  .github/instructions/ path-scoped files. The skill works standalone, but
+  enabling copilot_code_review gives Copilot the repo-wide and path-scoped
+  rules too.
   {%- endif %}

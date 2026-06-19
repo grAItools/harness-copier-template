@@ -28,6 +28,20 @@ major version).
   `primary_language`, for parity with the Claude Code `PostToolUse` hook.
 - `docs/style.md` gains a `## Changelog` section (and an `AGENTS.md` Conventions
   pointer) on writing concise Keep-a-Changelog entries in generated projects.
+- New question **`copilot_code_review_skill`** (bool, default `false`) —
+  generates a Copilot agent skill at `.github/skills/code-review/SKILL.md`.
+  GitHub agent skills for code review are a public preview (since June
+  2026), so it is off by default. Independent of `copilot_code_review`,
+  but most useful with it on.
+- New **`.github/instructions/`** seed files, gated on
+  `copilot_code_review`: `language.instructions.md` (`applyTo:` glob
+  derived from `primary_language`) and `security.instructions.md`
+  (`applyTo: "**"`, `excludeAgent: "coding-agent"` to keep it out of the
+  coding agent). Copilot code review reads these from the PR's base branch.
+- `primary_language` gains **`fortran`** and **`julia`** choices, and the
+  `cpp` glob now covers CUDA (`.cu`/`.cuh`). Command defaults for the new
+  languages fall through to the generic `other` arm (TODO placeholders) —
+  fill them in after generation.
 
 ### Changed
 
@@ -47,14 +61,45 @@ major version).
   `.agents/hooks/ensure-toolchain.sh` as the canonical automated bootstrap;
   the installer URL/command and bin dir live in `_macros.jinja` macros so the
   script, the Stop-hook PATH export, and the doc can't drift.
+- The Copilot review seed rules (`copilot-instructions.md`,
+  `instructions/*.instructions.md`, `skills/code-review/SKILL.md`) now lead
+  with scientific-computing / HPC / ML concerns — numerical stability,
+  reproducibility, precision/dtype, vectorization, GPU/MPI resource use,
+  and unsafe deserialization of model checkpoints — instead of the
+  previous web-app emphasis (SQL injection, request handlers, IDOR). Web
+  /service-security rules are retained but scoped to service code.
 
-### Removed
+### Removed (breaking)
+
+- **Renamed question `copilot` → `copilot_code_review`.** The old name
+  suggested broader scope than the feature has; Copilot code review is the
+  surface this configures. Existing repos must rename the key in
+  `.copier-answers.yml` before `copier update`, or re-answer the prompt.
+- **`.github/copilot-instructions.md` is now a populated review-rules
+  file, not a one-line redirect to `AGENTS.md`.** Copilot code review does
+  not read `AGENTS.md` (confirmed by GitHub docs and community discussion
+  #174058), and does not follow deep import chains, so a redirect silently
+  propagated nothing. The file now carries the review-relevant subset of
+  the conventions directly, within Copilot code review's 4,000-character
+  per-file cap (target ≤ 3,500 chars).
 
 ### Upgrade notes
 
 - `docs/tool-bootstrap.md` is in `_skip_if_exists`, so a brownfield `copier
   update` keeps its existing copy and won't pick up the `ensure-toolchain.sh`
   reference — merge it by hand (the bootstrap and hook wiring work without it).
+- The `copilot` question was renamed to `copilot_code_review`. Existing
+  projects must rename the key in `.copier-answers.yml` (or delete it and
+  re-answer the prompt) **before** running `copier update` — otherwise the
+  stored answer is dropped and the question re-prompts with its default
+  (`false`), silently turning the feature off.
+- If you had `copilot: true`, the generated
+  `.github/copilot-instructions.md` changes from a one-line redirect to a
+  populated review-rules file, and `.github/instructions/` is added.
+  `copier update` shows a diff on `copilot-instructions.md`; accept it to
+  pick up the review rules, then trim the seeded rules to your project.
+- See [ADR 0005](docs/decisions/0005-copilot-code-review-gate.md) for the
+  rationale behind the rename and the populated-rules layout.
 
 ## [0.3.0] – 2026-05-28
 
