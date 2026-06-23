@@ -94,7 +94,7 @@ The template asks you:
 
 | Question                  | Notes                                                    |
 | ------------------------- | -------------------------------------------------------- |
-| `mode`                    | `greenfield` here                                        |
+| `mode`                    | `greenfield` here. Informational only — does not change what is generated (brown-field safety is automatic via `_skip_if_exists`) |
 | `project_name`            | Human-readable name                                      |
 | `project_slug`            | Lowercase-dashed slug                                    |
 | `project_description`     | One sentence                                             |
@@ -125,7 +125,10 @@ cd existing-repo
 copier copy gh:your-org/harness-copier-template .
 ```
 
-Choose `mode: brownfield`. The template:
+Answer `brownfield` for the `mode` question if you like — it's informational and
+doesn't change what's generated. Brown-field safety is automatic regardless of
+the answer, because it comes from `_skip_if_exists`. Run into the existing repo
+and the template:
 
 - **Never silently overwrites** `README.md`, `Makefile`, `justfile`,
   `.gitignore`, `.mcp.json`, or anything under `docs/`. They're listed in
