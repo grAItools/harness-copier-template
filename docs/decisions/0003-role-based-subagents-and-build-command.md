@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted (2026-05-27).
+Accepted (2026-05-27). Partially superseded by
+[ADR 0004](0004-canonical-agent-hooks-and-toolchain-bootstrap.md): `find` is no
+longer one of the read-only inspection commands (its `-delete`/`-exec` forms are
+not read-only), so disregard its mention in the Decision below.
 
 ## Context
 

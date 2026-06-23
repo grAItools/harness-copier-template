@@ -45,6 +45,12 @@ major version).
 
 ### Changed
 
+- Clarified that the `mode` question is informational only — it does not change
+  what is generated. Its `copier.yml` help text and the `README.md` brown-field
+  section no longer imply that answering `brownfield` is what enables file
+  skipping; brown-field safety comes unconditionally from `_skip_if_exists`. The
+  `copier.yml` header comment now lists the full protected set (adds `.mcp.json`
+  and the populated `docs/` files).
 - `AGENTS.md` gains "Driving the harness" and "Supported agents" links, plus a
   `uv`/`pixi` auto-bootstrap "Do" note.
 - `.opencode/opencode.jsonc` allow-list adds `ls`/`cat`/`head`/`tail` to match
