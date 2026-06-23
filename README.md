@@ -131,7 +131,8 @@ the answer, because it comes from `_skip_if_exists`. Run into the existing repo
 and the template:
 
 - **Never silently overwrites** `README.md`, `Makefile`, `justfile`,
-  `.gitignore`, `.mcp.json`, or anything under `docs/`. They're listed in
+  `.gitignore`, `.mcp.json`, or the populated `docs/` files (`architecture`,
+  `style`, `testing`, `tool-bootstrap`, `harness-usage`). They're listed in
   `_skip_if_exists` — copier leaves the existing file in place. (This also
   means switching `task_runner` later does not delete the previous file;
   remove it manually if you no longer want it.)
