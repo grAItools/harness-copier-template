@@ -67,6 +67,29 @@ just {{ target }}
 {%- endif -%}
 {%- endmacro -%}
 {#-
+  lang_glob() — the source-file glob for the chosen primary_language, used by
+  any path-scoped rule that should fire on code (Copilot `applyTo:`,
+  .claude/rules `paths:`). Single source of truth so the two consumers can't
+  drift. Falls back to `**/*` for an unmapped language: a too-broad glob
+  degrades gracefully, whereas a missing key would break the render.
+-#}
+{%- macro lang_glob() -%}
+{%- set globs = {
+  'python': '**/*.py',
+  'typescript': '**/*.{ts,tsx}',
+  'javascript': '**/*.{js,jsx,mjs,cjs}',
+  'rust': '**/*.rs',
+  'go': '**/*.go',
+  'java': '**/*.java',
+  'csharp': '**/*.cs',
+  'cpp': '**/*.{c,cc,cpp,cxx,h,hh,hpp,cu,cuh}',
+  'fortran': '**/*.{f,for,f90,f95,f03,f08,F,F90}',
+  'julia': '**/*.jl',
+  'other': '**/*'
+} -%}
+{{- globs.get(primary_language, '**/*') -}}
+{%- endmacro -%}
+{#-
   toolchain_bin_dir() — the directory the package manager's installer drops its
   binary into. Single source of truth for the install location, imported by both
   .agents/hooks/ensure-toolchain.sh.jinja and the .claude/settings.json Stop

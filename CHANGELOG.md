@@ -42,6 +42,17 @@ major version).
   `cpp` glob now covers CUDA (`.cu`/`.cuh`). Command defaults for the new
   languages fall through to the generic `other` arm (TODO placeholders) —
   fill them in after generation.
+- Comment-hygiene policy: `docs/style.md` gains a `## Comments` section
+  (comments describe the code, not the review/release process), a new
+  path-scoped `.claude/rules/comments.md` (`paths:` from `primary_language`)
+  surfaces it at edit time, and `AGENTS.md`, the `developer`/`reviewer`
+  subagents, and the Copilot `language.instructions.md` seed gain matching
+  pointers. Backported from preserf #110; enforcement tooling (ruff
+  `ERA`/`FIX`, a guard test) is left to downstream. See
+  [ADR 0006](docs/decisions/0006-comment-hygiene-policy.md).
+- `_macros.jinja` gains a `lang_glob()` macro (the `primary_language` →
+  source-glob map, previously inline in `language.instructions.md.jinja`),
+  now shared by that file and `.claude/rules/comments.md`.
 
 ### Changed
 

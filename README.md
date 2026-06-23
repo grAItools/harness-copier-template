@@ -64,7 +64,7 @@ your-repo/
 │  ├─ commands/  -> ../.agents/commands       (symlink, post-gen)
 │  ├─ skills/    -> ../.agents/skills         (symlink, post-gen)
 │  ├─ agents/    -> ../.agents/subagents      (symlink, post-gen)
-│  └─ rules/
+│  └─ rules/comments.md             # comment-hygiene policy (paths: by language)
 ├─ .opencode/                        # OpenCode (always)
 │  ├─ opencode.jsonc
 │  ├─ commands/  -> ../.agents/commands       (symlink, post-gen)
