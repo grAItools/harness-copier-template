@@ -1,24 +1,10 @@
-{%- from '_macros.jinja' import cmd with context -%}
-{%- set lang_globs = {
-  'python': '**/*.py',
-  'typescript': '**/*.{ts,tsx}',
-  'javascript': '**/*.{js,jsx,mjs,cjs}',
-  'rust': '**/*.rs',
-  'go': '**/*.go',
-  'java': '**/*.java',
-  'csharp': '**/*.cs',
-  'cpp': '**/*.{c,cc,cpp,cxx,h,hh,hpp,cu,cuh}',
-  'fortran': '**/*.{f,for,f90,f95,f03,f08,F,F90}',
-  'julia': '**/*.jl',
-  'other': '**/*'
-} -%}
-{#- Fall back to `**/*` rather than hard-failing the render if a future
-    primary_language choice is added to copier.yml without a matching glob
-    here. A too-broad applyTo degrades gracefully (and the note below tells
+{%- from '_macros.jinja' import cmd, lang_glob with context -%}
+{#- lang_glob() falls back to `**/*` for a primary_language with no mapped
+    source glob. A too-broad applyTo degrades gracefully (the note below tells
     the user to narrow it); a missing key would break generation. -#}
-{%- set lang_glob = lang_globs.get(primary_language, '**/*') -%}
+{%- set glob = lang_glob() -%}
 ---
-applyTo: "{{ lang_glob }}"
+applyTo: "{{ glob }}"
 ---
 # {{ primary_language }} review rules
 
@@ -34,8 +20,12 @@ the repo-wide rules in `.github/copilot-instructions.md`.
   loop, grid, or halo boundaries.
 - Prefer established numerical libraries over hand-rolled routines; flag
   reinvented BLAS/LAPACK, stdlib reductions, or framework array ops.
+- Flag review/release-process prose in comments and docstrings (`Slice X` /
+  `Phase N` labels, `v0.x` scope notes, "out of scope for this PR"), stale
+  comments, and commented-out code — comments describe the code, not the
+  process.
 
-{% if lang_glob == '**/*' -%}
+{% if glob == '**/*' -%}
 > `applyTo` is `**/*` because `primary_language` (`{{ primary_language }}`)
 > has no language-specific glob mapped. Narrow it to your real source
 > extensions (e.g. `**/*.{ext}`) so these rules only fire on code, not on

@@ -1,3 +1,4 @@
+{%- from '_macros.jinja' import cmd with context -%}
 # Style guide
 
 > One worked example beats a page of prose. Show, don't tell.
@@ -22,6 +23,42 @@ Example:
 > **Don't** catch a bare exception to swallow it.
 > **Do** catch the narrowest type that you can recover from, and re-raise
 > with `from` so the stack trace stays intact.
+
+## Comments
+
+Comments and docstrings describe the **code**, not the **process** that
+produced it. A comment earns its place only when it adds something the code
+cannot say for itself.
+
+- **Explain _why_, not _what_.** The code already says what it does. A good
+  comment captures what a reader can't recover from the code: an invariant, a
+  non-obvious constraint, the spec/ADR that motivates the shape. Don't narrate
+  the next line (`increment i`).
+- **Keep them true.** A wrong comment is worse than none — it actively
+  misleads. When you change behaviour, update or delete the adjacent comment in
+  the same change. Tests are the spec; comments get no such safety net, so
+  accuracy is on you.
+- **No review- or release-process prose.** `out of scope for this PR`,
+  `v0.1 covers…`, or internal `Slice X` / `Phase N` labels describe how the
+  work was cut up for review. That process moves on and the comment goes stale
+  at once. Scope, rationale, and future work belong in the PR description, an
+  issue, an ADR, or the spec — _referenced_ from the code, not inlined.
+  Reviewers enforce this; if your project wires a comment-content check or
+  `ERA`/`FIX`-style lint rules into `{{ cmd('verify') }}`, the gate fails on
+  process prose, commented-out code, and stray `TODO`/`FIXME` — file an issue
+  instead.
+- **State a rationale once.** Don't copy an explanatory block to every call
+  site; duplicated prose drifts out of sync. Put it at the definition (or an
+  ADR) and reference it.
+
+> **Don't** frame a limitation as review scope:
+> `# … out of scope for the minimal v0.1 helper.`
+> "v0.1" and "minimal helper" name a milestone that will move; a year on, the
+> reader can't tell whether it still holds.
+> **Do** state the limitation as a fact about the code, keeping the real
+> reason: `# append-mode resume isn't implemented — it needs a pre-sized
+> index, so we start at 0.` The behaviour is described; no PR is named. If
+> there's tracked future work, link the issue.
 
 ## Commit messages
 
