@@ -1,8 +1,8 @@
 {%- from '_macros.jinja' import lang_glob with context -%}
-{%- set lang_glob = lang_glob() -%}
+{%- set glob = lang_glob() -%}
 ---
 paths:
-  - "{{ lang_glob }}"
+  - "{{ glob }}"
 ---
 
 # Comment hygiene
@@ -11,7 +11,7 @@ When editing source here, comments and docstrings must describe the **code**,
 not the review/release process. This rule exists only to surface the policy at
 edit time; the policy itself — with a worked example — lives in one place:
 [`docs/style.md` → "Comments"](../../docs/style.md#comments).
-{% if lang_glob == '**/*' %}
+{% if glob == '**/*' %}
 > `paths` is `**/*` because `primary_language` (`{{ primary_language }}`) has no
 > language-specific glob mapped. Narrow it to your real source extensions (e.g.
 > `**/*.{ext}`) so this rule only fires on code, not on docs or config.
