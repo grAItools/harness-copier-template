@@ -97,9 +97,11 @@ major version).
   `git push --force`, and `git reset --hard` were never blocked despite the docs
   claiming so. `PostToolUse` now reads `.tool_input.file_path` and `PreToolUse`
   pipes `.tool_input.command` into `block-destructive.sh` (which already reads
-  stdin), matching the `Stop` hook's existing stdin pattern. Since
-  `.claude/settings.json` is not in `_skip_if_exists`, `copier update` propagates
-  the fix.
+  stdin), matching the `Stop` hook's existing stdin pattern. The `PreToolUse`
+  hook captures `jq`'s exit status (`c=$(jq …) || exit 2`) so it **fails closed**
+  — a missing or erroring `jq` blocks the command rather than silently allowing
+  it. Since `.claude/settings.json` is not in `_skip_if_exists`, `copier update`
+  propagates the fix.
 
 ### Removed (breaking)
 
