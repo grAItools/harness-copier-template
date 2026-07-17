@@ -86,6 +86,17 @@ major version).
   previous web-app emphasis (SQL injection, request handlers, IDOR). Web
   /service-security rules are retained but scoped to service code.
 
+### Fixed
+
+- Claude Code `PostToolUse`/`PreToolUse` hooks in `.claude/settings.json` now
+  read input from the JSON payload on **stdin** via `jq` (reading
+  `.tool_input.file_path` and `.tool_input.command`) instead of the nonexistent
+  `$CLAUDE_TOOL_INPUT_FILE_PATH` / `$CLAUDE_TOOL_INPUT` env vars, which left
+  format-on-save and destructive-command blocking (`rm -rf`, `git push --force`,
+  `git reset --hard`) silently no-opping. The `PreToolUse` guard fails closed
+  (exit 2) when `jq` errors or the extracted command is empty. `copier update`
+  propagates the fix (not in `_skip_if_exists`).
+
 ### Removed (breaking)
 
 - **Renamed question `copilot` → `copilot_code_review`.** The old name
