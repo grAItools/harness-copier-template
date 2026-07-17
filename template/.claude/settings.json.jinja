@@ -60,7 +60,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "S=\"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/block-destructive.sh\"; [ -r \"$S\" ] || exit 2; c=$(jq -r '.tool_input.command // empty') || exit 2; printf '%s' \"$c\" | sh \"$S\""
+            "command": "S=\"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/block-destructive.sh\"; [ -r \"$S\" ] || exit 2; c=$(jq -r '.tool_input.command // empty') || exit 2; [ -n \"$c\" ] || exit 2; printf '%s' \"$c\" | sh \"$S\""
           }
         ]
       }

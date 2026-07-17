@@ -88,20 +88,14 @@ major version).
 
 ### Fixed
 
-- Claude Code `PostToolUse` (format-on-save) and `PreToolUse`
-  (destructive-command blocking) hooks in `.claude/settings.json` now read
-  their input from the JSON payload Claude Code passes on **stdin** via `jq`,
-  instead of the nonexistent `$CLAUDE_TOOL_INPUT_FILE_PATH` / `$CLAUDE_TOOL_INPUT`
-  environment variables. Previously both silently no-opped: format-on-save got
-  an empty path and the deny-list saw an empty command, so `rm -rf`,
-  `git push --force`, and `git reset --hard` were never blocked despite the docs
-  claiming so. `PostToolUse` now reads `.tool_input.file_path` and `PreToolUse`
-  pipes `.tool_input.command` into `block-destructive.sh` (which already reads
-  stdin), matching the `Stop` hook's existing stdin pattern. The `PreToolUse`
-  hook captures `jq`'s exit status (`c=$(jq …) || exit 2`) so it **fails closed**
-  — a missing or erroring `jq` blocks the command rather than silently allowing
-  it. Since `.claude/settings.json` is not in `_skip_if_exists`, `copier update`
-  propagates the fix.
+- Claude Code `PostToolUse`/`PreToolUse` hooks in `.claude/settings.json` now
+  read input from the JSON payload on **stdin** via `jq` (reading
+  `.tool_input.file_path` and `.tool_input.command`) instead of the nonexistent
+  `$CLAUDE_TOOL_INPUT_FILE_PATH` / `$CLAUDE_TOOL_INPUT` env vars, which left
+  format-on-save and destructive-command blocking (`rm -rf`, `git push --force`,
+  `git reset --hard`) silently no-opping. The `PreToolUse` guard fails closed
+  (exit 2) when `jq` errors or the extracted command is empty. `copier update`
+  propagates the fix (not in `_skip_if_exists`).
 
 ### Removed (breaking)
 
