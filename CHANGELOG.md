@@ -201,9 +201,10 @@ major version).
   when missing), so it will neither add the new line nor remove the old one —
   and `.gitignore` is `_skip_if_exists`, so the template render won't fix it
   either. Expect the other `_skip_if_exists`-preserved files to keep old-path
-  prose after migration (`README.md`'s specs mention,
-  `.github/PULL_REQUEST_TEMPLATE.md`'s `docs/adr/` pointer) — update those by
-  hand — and be ready to resolve `copier update` merge conflicts inside the
+  prose after migration — `README.md`'s specs mention, and any paths inside a
+  PR template you already had (the *generated* `.github/PULL_REQUEST_TEMPLATE.md`
+  is new in this release and already points at `development/`) — update those
+  by hand, and be ready to resolve `copier update` merge conflicts inside the
   moved `development/` files (the example ADR is a known case).
 - `development/tool-bootstrap.md` is in `_skip_if_exists`, so a brownfield `copier
   update` keeps its existing copy and won't pick up the `ensure-toolchain.sh`
