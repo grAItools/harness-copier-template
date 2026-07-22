@@ -288,6 +288,11 @@ is the hard part.
   our generated layout (`docs/` + `specs/`) would be breaking and buys little:
   downstream repos don't generically publish a docs site, and our layout is
   already conventional. The boundary *idea* survives in P4's liveness table.
+  *Superseded 2026-07-22:* re-evaluated at the maintainer's request and
+  adopted after all — see
+  [proposal 0002](0002-development-tree-and-work-folder.md) and
+  [ADR 0010](../decisions/0010-development-tree-and-work-folder.md), which
+  weigh the brown-field collision argument this bullet undercounted.
 - **Implementer/reviewer fresh-agent loop.** Already structurally present:
   our role subagents get fresh context per invocation, and `/verify` is a
   different role from `/build`. P5/P8 import the protocol content.

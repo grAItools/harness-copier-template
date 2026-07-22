@@ -186,14 +186,25 @@ major version).
   mkdir -p development
   git mv docs/architecture.md docs/style.md docs/testing.md \
          docs/tool-bootstrap.md docs/harness-usage.md docs/adr development/
-  git mv specs development/work        # if you have one
+  git mv specs development/work        # only works if specs/ has committed
+                                       # content; a generated-but-empty specs/
+                                       # is untracked — just `rmdir specs`
+                                       # (development/work/ is created on the
+                                       # next /spec)
   rmdir docs 2>/dev/null || true       # keep docs/ if it has your own user docs
   copier update
   ```
 
-  Then delete the stale `specs/*/scratch.md` line from your `.gitignore`'s
-  managed block (the post-gen hook appends the new
-  `development/work/*/scratch.md` line but does not remove old entries).
+  Then **edit** the `specs/*/scratch.md` line in your `.gitignore`'s managed
+  block to `development/work/*/scratch.md`: the post-gen hook leaves an
+  existing managed block entirely untouched (it only appends the whole block
+  when missing), so it will neither add the new line nor remove the old one —
+  and `.gitignore` is `_skip_if_exists`, so the template render won't fix it
+  either. Expect the other `_skip_if_exists`-preserved files to keep old-path
+  prose after migration (`README.md`'s specs mention,
+  `.github/PULL_REQUEST_TEMPLATE.md`'s `docs/adr/` pointer) — update those by
+  hand — and be ready to resolve `copier update` merge conflicts inside the
+  moved `development/` files (the example ADR is a known case).
 - `development/tool-bootstrap.md` is in `_skip_if_exists`, so a brownfield `copier
   update` keeps its existing copy and won't pick up the `ensure-toolchain.sh`
   reference — merge it by hand (the bootstrap and hook wiring work without it).

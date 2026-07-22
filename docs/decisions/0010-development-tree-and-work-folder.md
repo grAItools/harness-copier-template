@@ -67,10 +67,13 @@ The evaluation, including the `policies/` question:
   ICON-sc's vocabulary; `work/` names what the folder holds.
 - **Negative (breaking).** Existing generated repos must `git mv` the harness
   files before `copier update`, or Copier re-creates them at the new paths
-  alongside the old ones — recipe in `CHANGELOG.md` Upgrade notes. The stale
-  `specs/*/scratch.md` gitignore line must be removed by hand (the post-gen
-  hook appends, never removes). `development/` is less conventional than
-  `docs/` — the cost of the boundary.
+  alongside the old ones — recipe in `CHANGELOG.md` Upgrade notes. The
+  `specs/*/scratch.md` gitignore line must be edited by hand: the post-gen
+  hook leaves an existing managed block entirely untouched (it only appends
+  the whole block when missing), and `.gitignore` is `_skip_if_exists`.
+  `development/` is less conventional than `docs/` — the cost of the boundary.
+  Links to `template/docs/*` inside the already-merged ADRs 0004 and 0006 now
+  dangle; they are frozen history and stay as written.
 - **Deliberate divergence from ICON-sc:** its architecture doc is published
   and lives in `docs/`; our generated `architecture.md` is agent orientation
   and lives in `development/`. A project that grows a real published
