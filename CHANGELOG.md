@@ -26,8 +26,10 @@ major version).
 - Decision-escalation protocol: a decision beyond an agent's authority becomes
   a `DECISION-PENDING:` line in `report.md` plus a row in the new decision
   register (a section of the generated `docs/adr/README.md`, with an
-  ADR-vs-register rule of thumb); the reviewer enforces the
-  line-must-have-a-pending-row grep contract. See
+  ADR-vs-register rule of thumb); the reviewer enforces the same-PR
+  register-row contract per diff, and the register alone records outcomes
+  once reports freeze. `docs/adr/README.md` joins `_skip_if_exists` so a
+  populated downstream register is never overwritten. See
   [ADR 0008](docs/decisions/0008-decision-register-and-escalation-marker.md).
 - New question **`pr_template`** (bool, default `true`) — generates
   `.github/PULL_REQUEST_TEMPLATE.md`, a definition-of-done checklist tied to

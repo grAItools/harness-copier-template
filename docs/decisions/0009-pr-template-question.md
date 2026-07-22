@@ -40,6 +40,11 @@ template to earn its place. See the proposal (item P7).
 - **Negative.** Default-`true` means brown-field repos *without* an existing
   PR template get one on `copier update` (those with one are protected by
   `_skip_if_exists`); projects not on GitHub carry a harmless extra file.
+  GitHub also reads root-level and `docs/` PR templates, and `.github/`
+  takes precedence — a brown-field repo keeping its template at one of those
+  legacy locations gets it silently shadowed by the generated file
+  (`_skip_if_exists` only protects the `.github/` path); answer
+  `pr_template=false` or move the existing template into `.github/` first.
 - The checklist references `report.md` and the register, so disabling those
   conventions downstream means editing the generated template by hand.
 

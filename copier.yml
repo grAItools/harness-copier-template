@@ -11,7 +11,8 @@
 #   Update:     cd repo && copier update
 #
 # Brown-field safety: README.md, Makefile, justfile, .gitignore, .mcp.json,
-# .github/PULL_REQUEST_TEMPLATE.md, and the populated docs/ files
+# .github/PULL_REQUEST_TEMPLATE.md, docs/adr/README.md (it accumulates
+# decision-register rows downstream), and the populated docs/ files
 # (architecture, style, testing, tool-bootstrap, harness-usage) are protected
 # via _skip_if_exists. Copier will leave the existing file in place and you
 # can diff/merge the template version manually if needed.
@@ -34,6 +35,7 @@ _skip_if_exists:
   - ".gitignore"
   - ".mcp.json"
   - ".github/PULL_REQUEST_TEMPLATE.md"
+  - "docs/adr/README.md"
   - "docs/architecture.md"
   - "docs/style.md"
   - "docs/testing.md"

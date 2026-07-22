@@ -35,8 +35,13 @@ feature's `report.md`) or that a human granted outside an ADR (a tolerance, a
 pin, a one-line operational fact). Rows are appended and their Status flipped
 in place (`pending` → `accepted` / `rejected`); nothing else is edited.
 
-Contract: `grep -rn "DECISION-PENDING" specs/` must only return lines whose
-row here is still `pending`. Add the row in the same PR that adds the line.
+Contract: every `DECISION-PENDING:` line lands in the same PR as its register
+row. After merge the report freezes, so the marker line stays as history and
+**this register alone** records the outcome — to see what is still open, scan
+the table for `pending` rows, not the reports. The reviewer checks the
+contract per change: a `DECISION-PENDING:` line in the diff without a row
+here is a defect. (The marker is the colon form, `DECISION-PENDING:`;
+mentions of the token without the colon are prose, not markers.)
 
 | ID | Date | Decision | Status | Source | Evidence |
 |---|---|---|---|---|---|

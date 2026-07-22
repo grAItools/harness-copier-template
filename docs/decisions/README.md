@@ -30,4 +30,4 @@ place (`pending` → `accepted` / `rejected`); nothing else is edited.
 
 | ID | Date | Decision | Status | Source | Evidence |
 |---|---|---|---|---|---|
-| icon-sc-adoption.1 | 2026-07-22 | Defer the freeze-guard hook (proposal item P9) until the report/liveness conventions settle | accepted | [proposal 0001](../proposals/0001-adopt-icon-sc-process-memory-practices.md) §3 P9 | — |
+| icon-sc-adoption.1 | 2026-07-22 | Defer the freeze-guard hook (proposal item P9) until the report/liveness conventions settle | accepted | [proposal 0001](../proposals/0001-adopt-icon-sc-process-memory-practices.md) §3 P9 | the PR landing ADRs 0007–0009 |

@@ -32,10 +32,13 @@ both. See the proposal (item P2) for the evaluation.
    decision: ID (`<feature-slug>.<k>`), date, decision, status
    (`pending` → `accepted`/`rejected`), source, evidence. Rows are appended
    and Status flipped in place; nothing else is edited.
-3. **Contract:** `grep -rn "DECISION-PENDING" specs/` must only return lines
-   whose register row is still `pending`; the row lands in the same PR as the
-   line. The `reviewer` subagent checks this and treats a missing row as a
-   MAJOR defect.
+3. **Contract:** every `DECISION-PENDING:` line (the colon form is the
+   marker; colon-less mentions are prose) lands in the same PR as its
+   register row. The `reviewer` subagent checks the contract per diff —
+   a marker line added without a row is a MAJOR defect. Because reports
+   freeze at merge, marker lines in merged reports stay as history and the
+   register alone records outcomes: "what is still open" is answered by
+   scanning the register for `pending` rows, never by grepping reports.
 4. **ADR-vs-register rule** (adopted from ICON-sc ADR-0002 nearly verbatim):
    structure-shaping decisions get an ADR plus a register row pointing at it;
    one-line operational facts get a row alone.
@@ -45,9 +48,13 @@ both. See the proposal (item P2) for the evaluation.
 - **Positive.** Escalation becomes cheap and auditable; "what is pending" is
   one grep; small decisions stop being invisible or bloating the ADR series.
 - **Negative.** The register is one more surface that can drift if humans
-  resolve decisions out-of-band; the reviewer's grep check only covers
-  `specs/`, so markers written elsewhere (PR descriptions) rely on the
-  PR-template checkbox (ADR 0009).
+  resolve decisions out-of-band; the reviewer's check only sees the diff, so
+  markers written elsewhere (PR descriptions) rely on the PR-template
+  checkbox (ADR 0009). The generated `docs/adr/README.md` now accumulates
+  downstream rows, so it joins `_skip_if_exists` — a brown-field re-copy
+  never overwrites a populated register (at the cost that register-section
+  wording improvements reach existing repos only via `copier update`'s
+  three-way merge or by hand).
 - This repo's own `docs/decisions/README.md` adopts the same register and
   rule, so the template practises what it generates.
 

@@ -74,7 +74,9 @@ fix before the next push.
      have observable evidence (a passing test, a screenshot, a log
      line)?
   2. **Plan conformance** — were the phases delivered as planned, or
-     were undocumented detours taken?
+     were undocumented detours taken? On any conflict between the
+     documents, judge against the higher authority:
+     `docs/architecture.md` > `spec.md` > `plan.md` > `tasks.md`.
   3. **Implementation quality** — bugs, dead code, style violations,
      missing tests, untouched `tasks.md` boxes, undocumented
      decisions that should have been ADRs, and comment hygiene:
@@ -85,8 +87,9 @@ fix before the next push.
      *undeclared* deviations: requirements silently skipped,
      reinterpreted, or "improved". An inaccurate report claim is a
      defect even when the code is correct. Every `DECISION-PENDING:`
-     line in `specs/` must have a `pending` row in the decision
-     register (`docs/adr/README.md`) in this same change.
+     line **added by this diff** must come with a row in the decision
+     register (`docs/adr/README.md`) in the same change; markers in
+     already-merged reports are history, judged by the register alone.
 - Run the project's verification gate. A failing gate is an automatic
   NEEDS-WORK with the failure cited verbatim. When reading gate output:
   passed counts may only grow (a drop the diff doesn't explain is a
@@ -96,8 +99,9 @@ fix before the next push.
 - Be specific. Every defect must cite `path/to/file.ext:LINE` and a
   one-sentence reason, ranked by severity:
   - **MAJOR** — blocks the merge: red or vacuous gate/test, scope
-    violation, weakened tolerance or assertion, undeclared deviation,
-    false report claim, missing register row for a `DECISION-PENDING:`.
+    violation, weakened tolerance or assertion, undeclared substantive
+    deviation, false report claim, a `DECISION-PENDING:` line added
+    without its register row.
   - **MINOR** — should be fixed, but a maintainer could waive it:
     fragile test construction, misleading comment/docstring, missing
     declaration of a harmless deviation.

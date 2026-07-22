@@ -143,7 +143,8 @@ the answer, because it comes from `_skip_if_exists`. Run into the existing repo
 and the template:
 
 - **Never silently overwrites** `README.md`, `Makefile`, `justfile`,
-  `.gitignore`, `.mcp.json`, `.github/PULL_REQUEST_TEMPLATE.md`, or the
+  `.gitignore`, `.mcp.json`, `.github/PULL_REQUEST_TEMPLATE.md`,
+  `docs/adr/README.md` (it accumulates decision-register rows), or the
   populated `docs/` files (`architecture`,
   `style`, `testing`, `tool-bootstrap`, `harness-usage`). They're listed in
   `_skip_if_exists` — copier leaves the existing file in place. (This also

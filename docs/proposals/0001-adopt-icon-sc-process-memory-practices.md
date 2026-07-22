@@ -14,7 +14,10 @@ inspected at its 2026-07-21 state.
 > register row `icon-sc-adoption.1` in
 > [`../decisions/README.md`](../decisions/README.md). Open questions were
 > resolved as recommended: register as a README section; the Developer writes
-> `report.md` and the Reviewer audits it; `pr_template` defaults on.
+> `report.md` and the Reviewer audits it; `pr_template` defaults on. During
+> review, P2's marker contract was refined from this document's sketch (a
+> repo-wide "grep must only return pending" rule) to a per-diff same-PR rule
+> compatible with frozen reports — ADR 0008 is authoritative.
 
 ## 1. What ICON-sc does (summary of the system inspected)
 

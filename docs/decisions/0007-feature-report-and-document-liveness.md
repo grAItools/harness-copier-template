@@ -36,7 +36,8 @@ is what makes "frozen" enforceable as a review criterion. See
 2. **`AGENTS.md` states the authority order** — `docs/architecture.md` >
    `spec.md` > `plan.md` > `tasks.md` — and the rule that contradictions are
    recorded in `report.md`, never silently resolved. Restated in the
-   `developer` subagent.
+   `developer` subagent (as a working rule) and the `reviewer` subagent (as
+   the standard for judging plan conformance).
 3. **`docs/harness-usage.md` gains a Document liveness table** (which files
    are living, when each freezes, `report.md` never retro-edited, ADR bodies
    frozen once accepted). `AGENTS.md` carries a three-line summary and links
