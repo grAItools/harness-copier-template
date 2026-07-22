@@ -21,7 +21,7 @@ template to earn its place. See the proposal (item P7).
    non-GitHub remotes) generating `.github/PULL_REQUEST_TEMPLATE.md` via the
    conditional-path gate `{% if pr_template %}.github{% endif %}/`, with
    `.jinja` outside the conditional segment per the repo rule.
-2. **Content:** a Feature pointer (the `specs/` directory delivered) and a
+2. **Content:** a Feature pointer (the `development/work/` directory delivered) and a
    definition-of-done checklist — gate green (rendered via `cmd('verify')`),
    success criteria evidenced, `report.md` written with deviations declared,
    no weakened tests/tolerances/assertions, every `DECISION-PENDING:` line

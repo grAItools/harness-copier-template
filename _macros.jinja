@@ -105,7 +105,7 @@ just {{ target }}
   toolchain_install_url() / toolchain_install_cmd() — the canonical installer
   URL and one-line install command for the package manager. Single source of
   truth, imported by both .agents/hooks/ensure-toolchain.sh.jinja (which runs it)
-  and docs/tool-bootstrap.md.jinja (which shows the manual fallback), so the two
+  and development/tool-bootstrap.md.jinja (which shows the manual fallback), so the two
   can't drift. Empty for managers without a one-line installer (cmake/other),
   which don't generate the bootstrap script.
 -#}

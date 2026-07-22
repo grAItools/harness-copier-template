@@ -71,7 +71,7 @@
           {
             "type": "command",
             {% if bootstrap -%}
-            "command": {{ ("INPUT=$(cat); [ \"$(printf '%s' \"$INPUT\" | jq -r '.stop_hook_active // false')\" = 'true' ] && exit 0; export PATH=\"" ~ bin_dir ~ ":$PATH\"; command -v " ~ package_manager ~ " >/dev/null 2>&1 || { echo 'verify skipped: " ~ package_manager ~ " unavailable (run .agents/hooks/ensure-toolchain.sh; see docs/tool-bootstrap.md)' >&2; exit 0; }; " ~ cmd('verify') ~ " || exit 2") | tojson }}
+            "command": {{ ("INPUT=$(cat); [ \"$(printf '%s' \"$INPUT\" | jq -r '.stop_hook_active // false')\" = 'true' ] && exit 0; export PATH=\"" ~ bin_dir ~ ":$PATH\"; command -v " ~ package_manager ~ " >/dev/null 2>&1 || { echo 'verify skipped: " ~ package_manager ~ " unavailable (run .agents/hooks/ensure-toolchain.sh; see development/tool-bootstrap.md)' >&2; exit 0; }; " ~ cmd('verify') ~ " || exit 2") | tojson }}
             {% else -%}
             "command": {{ ("INPUT=$(cat); [ \"$(printf '%s' \"$INPUT\" | jq -r '.stop_hook_active // false')\" = 'true' ] && exit 0; " ~ cmd('verify') ~ " || exit 2") | tojson }}
             {% endif -%}

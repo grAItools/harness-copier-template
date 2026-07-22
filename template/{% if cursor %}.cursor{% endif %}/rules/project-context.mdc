@@ -8,6 +8,6 @@ globs:
 This project follows the conventions in `AGENTS.md` at the repository root.
 Read `AGENTS.md` before any task. See @AGENTS.md.
 
-Architecture: @docs/architecture.md
-Style: @docs/style.md
-Testing: @docs/testing.md
+Architecture: @development/architecture.md
+Style: @development/style.md
+Testing: @development/testing.md

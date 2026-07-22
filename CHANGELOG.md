@@ -10,7 +10,7 @@ major version).
 
 ### Added
 
-- `specs/<YYYY-MM>-<slug>/report.md` joins the feature lifecycle — the durable
+- `development/work/<YYYY-MM>-<slug>/report.md` joins the feature lifecycle — the durable
   account of what actually happened (what was built, declared deviations,
   negative results, escalated decisions, follow-ups, gate result), written by
   the Developer as work happens, audited for honesty by the Reviewer, frozen
@@ -19,16 +19,16 @@ major version).
   from the ICON-sc project's per-work-unit reports. See
   [ADR 0007](docs/decisions/0007-feature-report-and-document-liveness.md).
 - `AGENTS.md` states an authority order for document conflicts
-  (`docs/architecture.md` > `spec.md` > `plan.md` > `tasks.md`) with the rule
+  (`development/architecture.md` > `spec.md` > `plan.md` > `tasks.md`) with the rule
   that contradictions are recorded in `report.md`, never silently resolved;
-  `docs/harness-usage.md` gains a **Document liveness** table saying when each
+  `development/harness-usage.md` gains a **Document liveness** table saying when each
   harness file freezes (ADR 0007).
 - Decision-escalation protocol: a decision beyond an agent's authority becomes
   a `DECISION-PENDING:` line in `report.md` plus a row in the new decision
-  register (a section of the generated `docs/adr/README.md`, with an
+  register (a section of the generated `development/adr/README.md`, with an
   ADR-vs-register rule of thumb); the reviewer enforces the same-PR
   register-row contract per diff, and the register alone records outcomes
-  once reports freeze. `docs/adr/README.md` joins `_skip_if_exists` so a
+  once reports freeze. `development/adr/README.md` joins `_skip_if_exists` so a
   populated downstream register is never overwritten. See
   [ADR 0008](docs/decisions/0008-decision-register-and-escalation-marker.md).
 - New question **`pr_template`** (bool, default `true`) — generates
@@ -37,14 +37,22 @@ major version).
   weakened tests, `DECISION-PENDING:` lines registered). Added to
   `_skip_if_exists`; independent of the `copilot_*` questions. See
   [ADR 0009](docs/decisions/0009-pr-template-question.md).
-- `docs/testing.md` gains a **Reading gate output** section: passed counts may
+- `development/testing.md` gains a **Reading gate output** section: passed counts may
   only grow, new skips are findings to explain, never narrow the gate
   (`-x`/`-k`/`--ignore`/marker edits) to make it pass; the
   `developer`/`reviewer` subagents carry matching rules.
-- `docs/proposals/0001-adopt-icon-sc-process-memory-practices.md` — the
-  evaluation of ICON-sc's harness this release implements (P9, a freeze-guard
-  hook, is deferred), plus `docs/decisions/README.md` — ADR index + this
-  repo's own decision register.
+- `development/README.md` — always-generated one-line index of the process
+  memory tree, the `development/` ↔ `docs/` boundary statement, and the
+  trunk-gated rule (harness docs are living but changed via a dedicated PR,
+  never silently mid-feature). The Document liveness table carries the same
+  rule. Adopted from ICON-sc's `policies/` rationale *instead of* a
+  `policies/` folder — see
+  [ADR 0010](docs/decisions/0010-development-tree-and-work-folder.md).
+- `docs/proposals/0001-adopt-icon-sc-process-memory-practices.md` and
+  `docs/proposals/0002-development-tree-and-work-folder.md` — the evaluations
+  of ICON-sc's harness this release implements (P9, a freeze-guard hook, is
+  deferred), plus `docs/decisions/README.md` — ADR index + this repo's own
+  decision register.
 
 - `.agents/hooks/block-destructive.sh` (always generated, mode `0755`) — the
   canonical destructive-command deny-list; the Claude Code `PreToolUse(Bash)`
@@ -57,12 +65,12 @@ major version).
 - `.agents/README.md` — supported-agents matrix (Claude Code, OpenCode,
   Copilot, Codex, Gemini CLI, natively-`AGENTS.md` agents), the add-an-agent
   recipe, and the single-source-of-truth rule.
-- `docs/harness-usage.md` — unified Claude Code + OpenCode driving guide; added
+- `development/harness-usage.md` — unified Claude Code + OpenCode driving guide; added
   to `_skip_if_exists`.
 - OpenCode native `formatter` (when `generate_scripts=true`) — routes edits
   through `scripts/fmt-file.sh`, disabling the conflicting built-in per
   `primary_language`, for parity with the Claude Code `PostToolUse` hook.
-- `docs/style.md` gains a `## Changelog` section (and an `AGENTS.md` Conventions
+- `development/style.md` gains a `## Changelog` section (and an `AGENTS.md` Conventions
   pointer) on writing concise Keep-a-Changelog entries in generated projects.
 - New question **`copilot_code_review_skill`** (bool, default `false`) —
   generates a Copilot agent skill at `.github/skills/code-review/SKILL.md`.
@@ -78,7 +86,7 @@ major version).
   `cpp` glob now covers CUDA (`.cu`/`.cuh`). Command defaults for the new
   languages fall through to the generic `other` arm (TODO placeholders) —
   fill them in after generation.
-- Comment-hygiene policy: `docs/style.md` gains a `## Comments` section
+- Comment-hygiene policy: `development/style.md` gains a `## Comments` section
   (comments describe the code, not the review/release process), a new
   path-scoped `.claude/rules/comments.md` (`paths:` from `primary_language`)
   surfaces it at edit time, and `AGENTS.md`, the `developer`/`reviewer`
@@ -107,7 +115,7 @@ major version).
   section no longer imply that answering `brownfield` is what enables file
   skipping; brown-field safety comes unconditionally from `_skip_if_exists`. The
   `copier.yml` header comment now lists the full protected set (adds `.mcp.json`
-  and the populated `docs/` files).
+  and the populated `development/` files).
 - `AGENTS.md` gains "Driving the harness" and "Supported agents" links, plus a
   `uv`/`pixi` auto-bootstrap "Do" note.
 - `.opencode/opencode.jsonc` allow-list adds `ls`/`cat`/`head`/`tail` to match
@@ -120,7 +128,7 @@ major version).
 - `find` is dropped from every bash allow-list — the `.claude`/`.opencode`
   surfaces and the `explorer`/`reviewer` subagent scopes — because its
   `-delete`/`-exec rm` forms are not read-only and bypass the deny-list.
-- `docs/tool-bootstrap.md` (uv/pixi arms) names
+- `development/tool-bootstrap.md` (uv/pixi arms) names
   `.agents/hooks/ensure-toolchain.sh` as the canonical automated bootstrap;
   the installer URL/command and bin dir live in `_macros.jinja` macros so the
   script, the Stop-hook PATH export, and the doc can't drift.
@@ -145,6 +153,17 @@ major version).
 
 ### Removed (breaking)
 
+- **The generated harness's process memory moves into a single top-level
+  `development/` tree, and `docs/` is no longer generated.** Every generated
+  `docs/` file moves: `docs/{architecture,style,testing,tool-bootstrap,harness-usage}.md`
+  → `development/…`, `docs/adr/` → `development/adr/`; and `specs/` →
+  `development/work/` ("specs" named one file kind of the five the folder now
+  holds). `docs/` stays reserved for the project's own user documentation, the
+  way `src/` is for sources — the `development/` tree is repo-internal and
+  never published. All agent surfaces (`AGENTS.md`, subagents, commands,
+  `.opencode` instructions, `.claude/rules`, Copilot seeds, `.gitignore`
+  scratch pattern, post-gen gitignore block, PR template) are retargeted. See
+  [ADR 0010](docs/decisions/0010-development-tree-and-work-folder.md).
 - **Renamed question `copilot` → `copilot_code_review`.** The old name
   suggested broader scope than the feature has; Copilot code review is the
   surface this configures. Existing repos must rename the key in
@@ -159,7 +178,23 @@ major version).
 
 ### Upgrade notes
 
-- `docs/tool-bootstrap.md` is in `_skip_if_exists`, so a brownfield `copier
+- **`docs/` → `development/` migration (existing generated repos):** before
+  running `copier update`, move the harness files so Copier tracks them at
+  their new paths instead of re-creating them alongside the old ones:
+
+  ```sh
+  mkdir -p development
+  git mv docs/architecture.md docs/style.md docs/testing.md \
+         docs/tool-bootstrap.md docs/harness-usage.md docs/adr development/
+  git mv specs development/work        # if you have one
+  rmdir docs 2>/dev/null || true       # keep docs/ if it has your own user docs
+  copier update
+  ```
+
+  Then delete the stale `specs/*/scratch.md` line from your `.gitignore`'s
+  managed block (the post-gen hook appends the new
+  `development/work/*/scratch.md` line but does not remove old entries).
+- `development/tool-bootstrap.md` is in `_skip_if_exists`, so a brownfield `copier
   update` keeps its existing copy and won't pick up the `ensure-toolchain.sh`
   reference — merge it by hand (the bootstrap and hook wiring work without it).
 - The `copilot` question was renamed to `copilot_code_review`. Existing

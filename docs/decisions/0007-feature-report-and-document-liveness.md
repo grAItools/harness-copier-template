@@ -33,12 +33,12 @@ is what makes "frozen" enforceable as a review criterion. See
    Decisions escalated · Follow-ups · Gate. The example file ships with the
    `include_example_spec` directory; the layout is documented in `AGENTS.md`
    regardless of that answer, like the rest of the spec-directory layout.
-2. **`AGENTS.md` states the authority order** — `docs/architecture.md` >
+2. **`AGENTS.md` states the authority order** — `development/architecture.md` >
    `spec.md` > `plan.md` > `tasks.md` — and the rule that contradictions are
    recorded in `report.md`, never silently resolved. Restated in the
    `developer` subagent (as a working rule) and the `reviewer` subagent (as
    the standard for judging plan conformance).
-3. **`docs/harness-usage.md` gains a Document liveness table** (which files
+3. **`development/harness-usage.md` gains a Document liveness table** (which files
    are living, when each freezes, `report.md` never retro-edited, ADR bodies
    frozen once accepted). `AGENTS.md` carries a three-line summary and links
    to it.
@@ -61,6 +61,6 @@ is what makes "frozen" enforceable as a review criterion. See
 
 - ICON-sc `development/` tree: `work/<NNNN>-<slug>/report.md`,
   `policies/document-kinds.md`, `AGENTS.md` (authority order).
-- [`template/specs/…/report.md`](../../template/specs/%7B%25%20if%20include_example_spec%20%25%7DYYYY-MM-example%7B%25%20endif%20%25%7D/report.md),
+- [`template/development/work/…/report.md`](../../template/development/work/%7B%25%20if%20include_example_spec%20%25%7DYYYY-MM-example%7B%25%20endif%20%25%7D/report.md),
   [`template/AGENTS.md.jinja`](../../template/AGENTS.md.jinja),
-  [`template/docs/harness-usage.md.jinja`](../../template/docs/harness-usage.md.jinja).
+  [`template/development/harness-usage.md.jinja`](../../template/development/harness-usage.md.jinja).

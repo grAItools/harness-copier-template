@@ -25,7 +25,7 @@ next agent doesn't re-litigate them blind. "Nothing abandoned" is valid.>
 <One line per decision that exceeded the agent's authority, each starting
 with the marker token — `DECISION-PENDING` followed by a colon and the
 decision needed. Each line gets a row in the decision register
-(`docs/adr/README.md`) in the same PR. "None" is a valid entry.>
+(`development/adr/README.md`) in the same PR. "None" is a valid entry.>
 
 ## Follow-ups
 

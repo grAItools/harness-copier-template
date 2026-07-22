@@ -16,6 +16,7 @@ first and graduate to ADRs here on acceptance.
 | [0007](0007-feature-report-and-document-liveness.md) | Feature `report.md`, authority order, document liveness | accepted |
 | [0008](0008-decision-register-and-escalation-marker.md) | Decision register and `DECISION-PENDING:` marker | accepted |
 | [0009](0009-pr-template-question.md) | `pr_template` question (definition-of-done PR template) | accepted |
+| [0010](0010-development-tree-and-work-folder.md) | Generated `development/` tree, `work/` folder, no `policies/` | accepted |
 
 **ADR or register row?** If the decision shapes structure — of the template,
 its questions, or the generated layout — and someone will later ask *why*,
@@ -30,4 +31,5 @@ place (`pending` → `accepted` / `rejected`); nothing else is edited.
 
 | ID | Date | Decision | Status | Source | Evidence |
 |---|---|---|---|---|---|
-| icon-sc-adoption.1 | 2026-07-22 | Defer the freeze-guard hook (proposal item P9) until the report/liveness conventions settle | accepted | [proposal 0001](../proposals/0001-adopt-icon-sc-process-memory-practices.md) §3 P9 | the PR landing ADRs 0007–0009 |
+| icon-sc-adoption.1 | 2026-07-22 | Defer the freeze-guard hook (proposal item P9) until the report/liveness conventions settle | accepted | [proposal 0001](../proposals/0001-adopt-icon-sc-process-memory-practices.md) §3 P9 | the PR landing ADRs 0007–0010 |
+| icon-sc-adoption.2 | 2026-07-22 | No `policies/` folder in the generated harness — adopt ICON-sc's index-README and trunk-gated rule instead | accepted | [proposal 0002](../proposals/0002-development-tree-and-work-folder.md) §3; [ADR 0010](0010-development-tree-and-work-folder.md) | the PR landing ADRs 0007–0010 |

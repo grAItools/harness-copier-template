@@ -25,9 +25,9 @@ both. See the proposal (item P2) for the evaluation.
 
 1. **Marker:** an agent that hits an out-of-authority decision writes a
    `DECISION-PENDING:` line in the feature's `report.md` and stops. Stated in
-   `AGENTS.md`, the `developer` subagent, and `docs/harness-usage.md`.
+   `AGENTS.md`, the `developer` subagent, and `development/harness-usage.md`.
 2. **Register:** a `## Decision register` section in the generated
-   `docs/adr/README.md` (a section, not a new file — the template has no ID
+   `development/adr/README.md` (a section, not a new file — the template has no ID
    allocator and the ADR index is already the natural home). One row per
    decision: ID (`<feature-slug>.<k>`), date, decision, status
    (`pending` → `accepted`/`rejected`), source, evidence. Rows are appended
@@ -50,7 +50,7 @@ both. See the proposal (item P2) for the evaluation.
 - **Negative.** The register is one more surface that can drift if humans
   resolve decisions out-of-band; the reviewer's check only sees the diff, so
   markers written elsewhere (PR descriptions) rely on the PR-template
-  checkbox (ADR 0009). The generated `docs/adr/README.md` now accumulates
+  checkbox (ADR 0009). The generated `development/adr/README.md` now accumulates
   downstream rows, so it joins `_skip_if_exists` — a brown-field re-copy
   never overwrites a populated register (at the cost that register-section
   wording improvements reach existing repos only via `copier update`'s
@@ -62,5 +62,5 @@ both. See the proposal (item P2) for the evaluation.
 
 - ICON-sc `development/REGISTRY.md` §3, `ADRs/0002-decision-register-and-adrs.md`,
   `policies/naming-conventions.md` (the `TD-PENDING:` contract).
-- [`template/docs/adr/README.md`](../../template/docs/adr/README.md),
+- [`template/development/adr/README.md`](../../template/development/adr/README.md),
   [`template/.agents/subagents/reviewer.md.jinja`](../../template/.agents/subagents/reviewer.md.jinja).

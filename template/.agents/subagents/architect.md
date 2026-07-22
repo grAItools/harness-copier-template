@@ -22,7 +22,7 @@ phase-by-phase, with tests as the contract for each phase.
 ## Goal
 
 Produce `plan.md` and mirror it into a checkbox `tasks.md` in the same
-`specs/<YYYY-MM>-<slug>/` directory.
+`development/work/<YYYY-MM>-<slug>/` directory.
 
 ## Constraints
 
@@ -30,7 +30,7 @@ Produce `plan.md` and mirror it into a checkbox `tasks.md` in the same
   untestable, stop and ask before planning.
 - Surface every non-trivial technical decision (dependency, persistence,
   protocol, framework, auth) and either resolve it inline or flag it
-  as needing an ADR under `docs/adr/`.
+  as needing an ADR under `development/adr/`.
 - Each phase must be small enough to verify independently (≤1 day of
   work) and must list the test(s) that prove it works.
 - Write the plan for an agent with **less context than you have now**:
@@ -43,10 +43,10 @@ Produce `plan.md` and mirror it into a checkbox `tasks.md` in the same
 - Reuse existing code and patterns where possible — use Grep/Glob to
   find them before proposing new modules.
 - Never edit code. Write only `plan.md` and `tasks.md` under
-  `specs/<YYYY-MM>-<slug>/`. If the design needs an ADR, surface it
+  `development/work/<YYYY-MM>-<slug>/`. If the design needs an ADR, surface it
   in `plan.md`'s **Architecture decisions** block (with a one-line
   rationale and an "ADR needed: <topic>" marker); the human or the
-  Developer authors the ADR file under `docs/adr/` as a separate
+  Developer authors the ADR file under `development/adr/` as a separate
   step. Do not create files outside the spec directory.
 
 ## Output format
@@ -78,10 +78,10 @@ Produce `plan.md` and mirror it into a checkbox `tasks.md` in the same
 ## Invariants
 - <The project's non-negotiables, restated for an executor with less
   context: gate green at every phase boundary; never weaken a test,
-  tolerance, or assertion; authority order docs/architecture.md >
+  tolerance, or assertion; authority order development/architecture.md >
   spec.md > plan.md > tasks.md; decisions beyond your authority are
   escalated in report.md using the exact marker token defined in
-  docs/adr/README.md ("DECISION-PENDING" immediately followed by a
+  development/adr/README.md ("DECISION-PENDING" immediately followed by a
   colon), never resolved locally. Do not write the live marker itself
   here — plan text is not a report, and a stray marker would trip the
   reviewer's register check.>

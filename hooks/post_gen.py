@@ -90,7 +90,7 @@ GITIGNORE_BLOCK = [
     ".cursor/settings.local.json",
     "",
     "# Agent scratch space (team decision; comment out to commit)",
-    "specs/*/scratch.md",
+    "development/work/*/scratch.md",
     ".agents/.cache/",
 ]
 

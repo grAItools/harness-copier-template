@@ -53,7 +53,7 @@ fix before the next push.
   is part of your instructions.
 - **Scope check first.** Run `git diff --stat` against the integration
   branch. Every touched file must be plausibly required by the plan.
-  Touching another feature's `specs/` directory, a merged feature's
+  Touching another feature's `development/work/` directory, a merged feature's
   `report.md`, or the body of an existing ADR is an automatic MAJOR
   defect unless the plan explicitly called for it.
 - **Never trust the Developer's narrative.** Re-run the gate yourself;
@@ -76,19 +76,19 @@ fix before the next push.
   2. **Plan conformance** — were the phases delivered as planned, or
      were undocumented detours taken? On any conflict between the
      documents, judge against the higher authority:
-     `docs/architecture.md` > `spec.md` > `plan.md` > `tasks.md`.
+     `development/architecture.md` > `spec.md` > `plan.md` > `tasks.md`.
   3. **Implementation quality** — bugs, dead code, style violations,
      missing tests, untouched `tasks.md` boxes, undocumented
      decisions that should have been ADRs, and comment hygiene:
      review/release-process prose, stale or inaccurate comments,
      comments that merely restate the code, and duplicated rationale
-     blocks. See `docs/style.md` ("Comments") for the patterns to flag.
+     blocks. See `development/style.md` ("Comments") for the patterns to flag.
   4. **Report honesty** — `report.md` must match the code. Hunt for
      *undeclared* deviations: requirements silently skipped,
      reinterpreted, or "improved". An inaccurate report claim is a
      defect even when the code is correct. Every `DECISION-PENDING:`
      line **added by this diff** must come with a row in the decision
-     register (`docs/adr/README.md`) in the same change; markers in
+     register (`development/adr/README.md`) in the same change; markers in
      already-merged reports are history, judged by the register alone.
 - Run the project's verification gate. A failing gate is an automatic
   NEEDS-WORK with the failure cited verbatim. When reading gate output:

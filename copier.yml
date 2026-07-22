@@ -11,11 +11,12 @@
 #   Update:     cd repo && copier update
 #
 # Brown-field safety: README.md, Makefile, justfile, .gitignore, .mcp.json,
-# .github/PULL_REQUEST_TEMPLATE.md, docs/adr/README.md (it accumulates
-# decision-register rows downstream), and the populated docs/ files
+# .github/PULL_REQUEST_TEMPLATE.md, development/adr/README.md (it accumulates
+# decision-register rows downstream), and the populated development/ files
 # (architecture, style, testing, tool-bootstrap, harness-usage) are protected
 # via _skip_if_exists. Copier will leave the existing file in place and you
-# can diff/merge the template version manually if needed.
+# can diff/merge the template version manually if needed. docs/ is never
+# generated: it stays reserved for the project's own user documentation.
 
 # ---------------------------------------------------------------------------
 # Copier engine settings
@@ -35,12 +36,12 @@ _skip_if_exists:
   - ".gitignore"
   - ".mcp.json"
   - ".github/PULL_REQUEST_TEMPLATE.md"
-  - "docs/adr/README.md"
-  - "docs/architecture.md"
-  - "docs/style.md"
-  - "docs/testing.md"
-  - "docs/tool-bootstrap.md"
-  - "docs/harness-usage.md"
+  - "development/adr/README.md"
+  - "development/architecture.md"
+  - "development/style.md"
+  - "development/testing.md"
+  - "development/tool-bootstrap.md"
+  - "development/harness-usage.md"
 
 # Optional post-generation tasks. The brown-field merger hook (see hooks/) runs
 # unconditionally and appends gitignore entries idempotently when an existing
@@ -74,8 +75,8 @@ mode:
   help: |
     Project mode, for your own orientation — this answer does NOT change what
     is generated. Brown-field safety is automatic either way: sensitive files
-    (README.md, Makefile, justfile, .gitignore, .mcp.json, the populated docs/
-    files) are listed in _skip_if_exists, so Copier preserves any that already
+    (README.md, Makefile, justfile, .gitignore, .mcp.json, the populated
+    development/ files) are listed in _skip_if_exists, so Copier preserves any that already
     exist at the destination and creates the rest. Pick greenfield for a new
     repo or brownfield for an existing one; the harness files are added
     alongside whatever is already there.
@@ -128,9 +129,9 @@ package_manager:
     Package / build manager. The harness ships first-class support for a
     curated set: `uv` (Python), `pixi` (conda-ecosystem), `cmake` (C/C++).
     Pick `other` for anything else and fill in the install steps in
-    `docs/tool-bootstrap.md` after generation. Language/runtime version
+    `development/tool-bootstrap.md` after generation. Language/runtime version
     managers (`mise`, `asdf`) are documented separately in
-    `docs/tool-bootstrap.md` under "Activate the language toolchain".
+    `development/tool-bootstrap.md` under "Activate the language toolchain".
   default: >-
     {%- if primary_language == 'python' -%}uv
     {%- elif primary_language == 'cpp' -%}cmake
@@ -274,8 +275,8 @@ commit_convention:
   help: |
     Commit-message convention surfaced to agents and humans. The full
     format, type list, examples, and merge-strategy detail live in
-    `docs/style.md#commit-messages`; `AGENTS.md` carries only a short
-    one-line orientation that links there. `docs/style.md` is
+    `development/style.md#commit-messages`; `AGENTS.md` carries only a short
+    one-line orientation that links there. `development/style.md` is
     `_skip_if_exists`, so on brownfield `copier update` an existing
     style guide is preserved — merge the template section by hand if
     you want the AGENTS.md link to resolve to one.
@@ -387,7 +388,7 @@ include_claude_hooks:
 
 include_example_spec:
   type: bool
-  help: "Include a stub specs/<date>-example/ directory with spec/plan/tasks templates?"
+  help: "Include a stub development/work/<date>-example/ directory with spec/plan/tasks/report templates?"
   default: false
 
 # ---------------------------------------------------------------------------
