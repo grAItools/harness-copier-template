@@ -21,8 +21,9 @@ One file per architecturally significant decision, named
 <What becomes easier, harder, or different as a result?>
 ```
 
-Supersession adds a new ADR that references the old one; it does not edit
-the old file's content. The full historical record is the value.
+Supersession adds a new ADR that references the old one; the only edit the
+old file receives is flipping its Status line to `Superseded by ADR M` —
+its body is never rewritten. The full historical record is the value.
 
 Optional: install [`adr-tools`](https://github.com/npryce/adr-tools) (single
 shell-script binary) and use `adr new "<title>"` to scaffold the next file
