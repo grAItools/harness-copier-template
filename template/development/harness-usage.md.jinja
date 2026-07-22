@@ -8,8 +8,8 @@ hooks) for different tasks — and how to phrase prompts so the existing `.agent
 configuration is used without restating conventions every time.
 
 See also: [`AGENTS.md`](../AGENTS.md) (agent instructions),
-[`CLAUDE.md`](../CLAUDE.md) (Claude Code specifics), [`docs/style.md`](style.md),
-[`docs/testing.md`](testing.md), [`.agents/README.md`](../.agents/README.md)
+[`CLAUDE.md`](../CLAUDE.md) (Claude Code specifics), [`development/style.md`](style.md),
+[`development/testing.md`](testing.md), [`.agents/README.md`](../.agents/README.md)
 (supported agents & how to add one).
 
 ## The shared model
@@ -35,7 +35,7 @@ idea ──/spec──▶ spec.md ──/plan──▶ plan.md + tasks.md ──
 ```
 
 Plus a read-only `explorer` agent any phase can call for codebase Q&A. Each
-phase writes fixed artifacts under `specs/<YYYY-MM>-<slug>/`.
+phase writes fixed artifacts under `development/work/<YYYY-MM>-<slug>/`.
 
 The five subagents and their access:
 
@@ -127,7 +127,7 @@ manually (`{{ cmd('fmt') }}` / `{{ cmd('verify') }}`).
 OpenCode reads `.opencode/opencode.jsonc`, which sets:
 
 - **`instructions`** — loads [`AGENTS.md`](../AGENTS.md),
-  [`docs/architecture.md`](architecture.md), [`docs/style.md`](style.md) as
+  [`development/architecture.md`](architecture.md), [`development/style.md`](style.md) as
   always-on context.
 - **`default_agent: "build"`** — the session starts in the full-access `build`
   primary. OpenCode has two built-in **primary** agents, cycled with **Tab**:
@@ -202,7 +202,7 @@ language and the correct agent + output format is selected automatically.
 
 ### Phase 2 — Plan (architect)
 
-- **Trigger:** `/plan` after the spec is reviewed (defaults to most recent `specs/*`).
+- **Trigger:** `/plan` after the spec is reviewed (defaults to most recent `development/work/*`).
 - **What you get:** `plan.md` (Architecture-decisions block + numbered phases,
   each ≤1 day with explicit Tests and Exit criteria) and a mirrored checkbox
   `tasks.md`.
@@ -226,11 +226,14 @@ language and the correct agent + output format is selected automatically.
 ### Phase 4 — Verify / review (reviewer)
 
 - **Trigger:** `/verify`.
-- **What you get:** a **GO / NEEDS-WORK** verdict across three axes — spec
+- **What you get:** a **GO / NEEDS-WORK** verdict across four axes — spec
   conformance (each criterion has observable evidence), plan conformance (no
-  undocumented detours), implementation quality — plus a citation-rich defect
-  list (`path/file.ext:LINE`). It runs the gate; a red gate is automatic
-  NEEDS-WORK.
+  undocumented detours), implementation quality, and report honesty
+  (`report.md` must match the code; undeclared deviations are defects) — plus
+  a citation-rich defect list (`path/file.ext:LINE`) ranked MAJOR / MINOR /
+  INFO. It re-runs the gate itself (it never takes the Developer's word), and
+  it reads `plan.md`'s **Review checklist** as extra instructions. A red gate
+  or any MAJOR is automatic NEEDS-WORK.
 - **Loop back:** NEEDS-WORK → `/build` to fix; GO → ship/next phase. The reviewer
   is read-only — it never fixes, only reports.
 {% if include_example_skill %}
@@ -244,6 +247,23 @@ These are distinct:
 - **/verify command** = full reviewer pass against spec + plan + diff with a GO
   verdict. Use at a phase boundary.
 {% endif %}
+## Document liveness
+
+Which harness files may still change, and when they freeze. "Frozen" means
+content-frozen: fixing a broken link in a sanctioned cleanup is fine; changing
+what the document *says* is not.
+
+| File | Liveness |
+| --- | --- |
+| `AGENTS.md`, `CLAUDE.md`, `development/*.md` | living, **trunk-gated**: changed via a dedicated PR (or an explicit maintainer request), never silently mid-feature |
+| `development/work/*/spec.md` | frozen once reviewed — scope changes get a new spec revision, noted in `report.md` |
+| `development/work/*/plan.md` | frozen once `/build` starts — if the plan is wrong, hand back to `/plan`; don't edit it mid-build |
+| `development/work/*/tasks.md` | living during build |
+| `development/work/*/report.md` | frozen at merge — **never retro-edited**; new findings go in the report of the feature that finds them |
+| `development/adr/NNNN-*.md` | frozen once accepted, except the Status line (supersede with a new ADR) |
+| `development/adr/README.md` decision register | living — rows appended, Status flipped in place |
+| `development/work/*/scratch.md` | dead on completion (gitignored) |
+
 ## Conventions the agents already know (don't re-specify)
 
 These are enforced by docs{% if include_claude_hooks %} + hooks{% endif %}; restating them in prompts is noise:
@@ -259,15 +279,19 @@ These are enforced by docs{% if include_claude_hooks %} + hooks{% endif %}; rest
   slow suites belong in CI.
 - **Tests are the spec** — a behaviour change means changing/adding a test first.
 {% if commit_convention == 'conventional' -%}
-- **Commits** — Conventional Commits 1.0.0{% if pr_merge_strategy == 'squash' %} in the **PR title** (squash-merge); branch commits can be freeform{% elif pr_merge_strategy == 'merge' %} on every branch commit *and* the merge commit{% elif pr_merge_strategy == 'rebase' %} on every branch commit (rebase-merge){% else %} (where it applies depends on the merge strategy){% endif %}. See [`docs/style.md#commit-messages`](style.md#commit-messages).
+- **Commits** — Conventional Commits 1.0.0{% if pr_merge_strategy == 'squash' %} in the **PR title** (squash-merge); branch commits can be freeform{% elif pr_merge_strategy == 'merge' %} on every branch commit *and* the merge commit{% elif pr_merge_strategy == 'rebase' %} on every branch commit (rebase-merge){% else %} (where it applies depends on the merge strategy){% endif %}. See [`development/style.md#commit-messages`](style.md#commit-messages).
 {%- else -%}
 - **Commits** — imperative mood, ≤72-char first line, no trailing period. See
-  [`docs/style.md#commit-messages`](style.md#commit-messages).
+  [`development/style.md#commit-messages`](style.md#commit-messages).
 {%- endif %}
 - **ADRs** — any new dependency/persistence/protocol/auth decision gets an ADR in
-  `docs/adr/` (append-only). The architect flags these.
+  `development/adr/` (append-only). The architect flags these.
 - **Working memory** — `scratch.md` is gitignored; promote durable notes into
-  spec/plan/ADR/docs.
+  spec/plan/report/ADR/docs. `report.md` is the durable account of what
+  actually happened (deviations, dead ends, follow-ups) and freezes at merge.
+- **Decision escalation** — a decision beyond the agent's authority becomes a
+  `DECISION-PENDING:` line in `report.md` plus a register row in
+  [`development/adr/README.md`](adr/README.md), never a silent local fix.
 
 ## Quick-start cheatsheet
 

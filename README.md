@@ -13,18 +13,29 @@ The harness ships a four-phase, role-based workflow — **Product Owner**
 `.agents/subagents/`. Each phase stops for user review before the next
 begins, and each role declares a tool allowlist that frames its
 intended scope: PO and Architect get `Read`/`Grep`/`Glob`/`Write` and
-are instructed to write only under `specs/`; Developer gets full
+are instructed to write only under `development/work/`; Developer gets full
 `Read`/`Write`/`Edit`/`Grep`/`Glob`/`Bash`; Reviewer drops `Write`/`Edit`
 and is instructed to run only read-only commands plus the verify
 gate. Each role file carries both a Claude Code `tools:` allowlist and an
 OpenCode `permission:` map, so the kind of action (read/write/edit/
-bash) is tool-enforced in both surfaces. Path scoping inside `specs/`
+bash) is tool-enforced in both surfaces. Path scoping inside `development/work/`
 for PO/Architect is by instruction, not enforcement — neither
 `tools:` nor `permission:` supports per-path restrictions for
-`Write` — so a misbehaving model could still write outside `specs/`. The pattern
+`Write` — so a misbehaving model could still write outside it. The pattern
 follows the role-handoff conventions used by MetaGPT, BMAD Method,
 GitHub Spec Kit, and CrewAI, normalised to the `AGENTS.md` + `.agents/`
 layout this template already uses.
+
+The loop leaves a durable audit trail: each feature directory ends with a
+`report.md` (what was built, declared deviations, negative results,
+follow-ups) that freezes at merge, and decisions beyond an agent's authority
+are escalated as `DECISION-PENDING:` lines into a decision register in
+`development/adr/README.md` instead of being silently resolved. The Reviewer
+audits the report for honesty and re-runs the gate itself. All process memory
+lives in a single `development/` tree — `docs/` is never generated and stays
+reserved for the project's own user documentation, the way `src/` is for
+sources. These conventions are adapted from the ICON-sc project's process
+memory (see ADRs 0007–0010).
 
 ## What it generates
 
@@ -35,14 +46,18 @@ your-repo/
 ├─ README.md                         # greenfield only
 ├─ Makefile  OR  justfile  (or neither)  # task_runner: make | just | none
 ├─ .gitignore                        # greenfield: full; brownfield: merged
-├─ docs/
+├─ development/                      # repo process memory (docs/ is NOT generated:
+│  │                                 # it stays reserved for user documentation)
+│  ├─ README.md                       # one-line index of the tree + docs boundary
 │  ├─ architecture.md
 │  ├─ style.md                        # greenfield: incl. commit-message convention
 │  ├─ testing.md
 │  ├─ tool-bootstrap.md               # per-package-manager install instructions
 │  ├─ harness-usage.md                # unified Claude Code + OpenCode driving guide
-│  └─ adr/0001-record-architecture-decisions.md   # if include_example_adr
-├─ specs/                            # per-feature; YYYY-MM-example/ if opted in
+│  ├─ adr/                            # ADRs + decision register (README.md)
+│  │  └─ 0001-record-architecture-decisions.md    # if include_example_adr
+│  └─ work/                           # per-feature spec/plan/tasks/report[/scratch];
+│                                     # YYYY-MM-example/ if opted in
 ├─ scripts/                          # shell entry points (if generate_scripts)
 │  ├─ verify.sh                      # default implementation of verify_command (canonical lint+test gate)
 │  └─ fmt-file.sh                    # per-file formatter slot for the PostToolUse hook
@@ -71,7 +86,8 @@ your-repo/
 │  ├─ skills/    -> ../.agents/skills         (symlink, post-gen)
 │  └─ agents/    -> ../.agents/subagents      (symlink, post-gen)
 ├─ .cursor/rules/project-context.mdc # if cursor
-├─ .github/                          # if copilot_code_review / copilot_code_review_skill
+├─ .github/                          # if pr_template / copilot_code_review / copilot_code_review_skill
+│  ├─ PULL_REQUEST_TEMPLATE.md       # definition-of-done checklist (if pr_template)
 │  ├─ copilot-instructions.md        # populated review rules (if copilot_code_review)
 │  ├─ instructions/                  # path-scoped review rules (if copilot_code_review)
 │  │  ├─ language.instructions.md    #   applyTo: language sources
@@ -107,11 +123,12 @@ The template asks you:
 | `verify_command`          | What hooks and `/verify` run; default `./scripts/verify.sh` |
 | `generate_scripts`        | Generate `scripts/` placeholders (`verify.sh`, `fmt-file.sh`); default `true` |
 | `license`                 | SPDX id                                                  |
-| `commit_convention`       | `conventional` (default) \| `freeform`; drives the commit-message bullet in `AGENTS.md` (always updated) and the matching section in `docs/style.md` (greenfield-only — `_skip_if_exists`) |
+| `commit_convention`       | `conventional` (default) \| `freeform`; drives the commit-message bullet in `AGENTS.md` (always updated) and the matching section in `development/style.md` (greenfield-only — `_skip_if_exists`) |
 | `pr_merge_strategy`       | `squash` (default) \| `merge` \| `rebase` \| `unknown`; tailors where the convention applies |
 | `cursor`                  | Off by default                                           |
 | `copilot_code_review`     | Off by default; populated Copilot code-review config under `.github/` (instructions + path-scoped rules). Copilot code review does **not** read `AGENTS.md`, so rules are restated directly |
 | `copilot_code_review_skill` | Off by default; adds `.github/skills/code-review/SKILL.md` (GitHub agent-skills public preview) |
+| `pr_template`             | On by default; adds `.github/PULL_REQUEST_TEMPLATE.md`, a definition-of-done checklist tied to the harness (gate, spec evidence, `report.md`, decision register). Inert for non-GitHub remotes |
 | `mcp`                     | Off by default                                           |
 | `include_example_adr`     | On                                                       |
 | `include_example_skill`   | On                                                       |
@@ -131,7 +148,9 @@ the answer, because it comes from `_skip_if_exists`. Run into the existing repo
 and the template:
 
 - **Never silently overwrites** `README.md`, `Makefile`, `justfile`,
-  `.gitignore`, `.mcp.json`, or the populated `docs/` files (`architecture`,
+  `.gitignore`, `.mcp.json`, `.github/PULL_REQUEST_TEMPLATE.md`,
+  `development/adr/README.md` (it accumulates decision-register rows), or the
+  populated `development/` files (`architecture`,
   `style`, `testing`, `tool-bootstrap`, `harness-usage`). They're listed in
   `_skip_if_exists` — copier leaves the existing file in place. (This also
   means switching `task_runner` later does not delete the previous file;
@@ -178,13 +197,13 @@ harness-copier-template/
 │  ├─ {% if task_runner == 'make' %}Makefile{% endif %}.jinja
 │  ├─ {% if task_runner == 'just' %}justfile{% endif %}.jinja
 │  ├─ .gitignore.jinja
-│  ├─ docs/
-│  ├─ specs/
+│  ├─ development/    # incl. adr/ and work/ (the per-feature lifecycle)
 │  ├─ scripts/
 │  ├─ .agents/
 │  ├─ .claude/
 │  ├─ .opencode/
 │  ├─ {% if cursor %}.cursor{% endif %}/
+│  ├─ {% if pr_template %}.github{% endif %}/   # PULL_REQUEST_TEMPLATE.md
 │  ├─ {% if copilot_code_review %}.github{% endif %}/   # copilot-instructions.md + instructions/
 │  ├─ {% if copilot_code_review_skill %}.github{% endif %}/  # skills/code-review/SKILL.md
 │  └─ {% if mcp %}.mcp.json{% endif %}

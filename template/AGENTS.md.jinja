@@ -11,7 +11,7 @@
 - Package / build manager: **{{ package_manager }}**
 - License: {{ license }}
 - Tool versions, install steps, and new-machine setup:
-  see [`docs/tool-bootstrap.md`](docs/tool-bootstrap.md).
+  see [`development/tool-bootstrap.md`](development/tool-bootstrap.md).
 
 ## Commands (prefer these over guessing)
 
@@ -25,12 +25,13 @@ this file.
 
 ## Where things live (capabilities, not paths)
 
-- Architecture overview: [`docs/architecture.md`](docs/architecture.md)
-- Driving the harness (Claude Code & OpenCode): [`docs/harness-usage.md`](docs/harness-usage.md)
-- Style guide: [`docs/style.md`](docs/style.md)
-- Testing strategy: [`docs/testing.md`](docs/testing.md)
-- ADRs (decisions of record): [`docs/adr/`](docs/adr/)
-- Per-feature specs: [`specs/<YYYY-MM>-<slug>/`](specs/)
+- Architecture overview: [`development/architecture.md`](development/architecture.md)
+- Driving the harness (Claude Code & OpenCode): [`development/harness-usage.md`](development/harness-usage.md)
+- Style guide: [`development/style.md`](development/style.md)
+- Testing strategy: [`development/testing.md`](development/testing.md)
+- ADRs (decisions of record): [`development/adr/`](development/adr/)
+- Per-feature work units: [`development/work/<YYYY-MM>-<slug>/`](development/work/)
+- Index of the whole tree: [`development/README.md`](development/README.md)
 - Supported agents & how to add one: [`.agents/README.md`](.agents/README.md)
 
 ## Do
@@ -39,15 +40,24 @@ this file.
 - `{{ package_manager }}` is bootstrapped automatically at session start by
   [`.agents/hooks/ensure-toolchain.sh`](.agents/hooks/ensure-toolchain.sh); if you
   land in a bare shell without it, run that script (details in
-  [`docs/tool-bootstrap.md`](docs/tool-bootstrap.md)).
+  [`development/tool-bootstrap.md`](development/tool-bootstrap.md)).
 {% endif -%}
 - Run `{{ cmd('verify') }}` before claiming a task is done.
 - For a net-new feature, follow the four-phase loop:
   `/spec` (Product Owner) → `/plan` (Architect) → `/build` (Developer)
   → `/verify` (Reviewer). Each phase stops for review before the next
   begins. See `.agents/commands/` and `.agents/subagents/`.
+- On any conflict between documents, the authority order is
+  [`development/architecture.md`](development/architecture.md) > `spec.md` > `plan.md` >
+  `tasks.md`. Never silently resolve a contradiction — record it in the
+  feature's `report.md` and stop if it blocks a success criterion.
+- When a decision exceeds your authority (loosening a test tolerance or
+  assertion, adding a dependency, changing behaviour the spec froze), write a
+  `DECISION-PENDING:` line in the feature's `report.md` and stop; every such
+  line gets a row in the decision register
+  ([`development/adr/README.md`](development/adr/README.md)) in the same PR.
 - For a new architectural choice (dependency, framework, persistence, auth),
-  add an ADR in `docs/adr/`. ADRs are append-only; supersede with a new file.
+  add an ADR in `development/adr/`. ADRs are append-only; supersede with a new file.
 - When investigating a large codebase, prefer the `explorer` subagent (read-only)
   over loading large files into the main context.
 
@@ -64,10 +74,10 @@ this file.
 
 ## Conventions
 
-- Code style: see `docs/style.md`. One worked example > a page of prose.
+- Code style: see `development/style.md`. One worked example > a page of prose.
 - Comments describe the code, not the process: explain *why*, keep them
   accurate, no review/release-process prose. See
-  [`docs/style.md`](docs/style.md#comments).
+  [`development/style.md`](development/style.md#comments).
 - Tests are the spec. If you change behaviour, change a test first.
 {%- if commit_convention == 'conventional' %}
 - Commit messages: **Conventional Commits 1.0.0**
@@ -75,30 +85,39 @@ this file.
 {%- if pr_merge_strategy == 'merge' %} — apply the format to every branch commit *and* the merge commit{% endif %}
 {%- if pr_merge_strategy == 'rebase' %} — apply the format to every branch commit (rebase-merge){% endif %}
 {%- if pr_merge_strategy not in ('squash', 'merge', 'rebase') %} — where it applies depends on the repo's merge strategy (squash → PR title; merge or rebase → every branch commit){% endif %}.
-  See [`docs/style.md`](docs/style.md#commit-messages) for the format,
+  See [`development/style.md`](development/style.md#commit-messages) for the format,
   type list, breaking-change syntax, examples, and full merge-strategy
   guidance.
 {%- else %}
 - Commit messages: imperative mood, first line ≤72 chars, no trailing
-  period. See [`docs/style.md`](docs/style.md#commit-messages) for details.
+  period. See [`development/style.md`](development/style.md#commit-messages) for details.
 {%- endif %}
 - Changelog: if the project keeps a `CHANGELOG.md`, log user-facing changes
   under `[Unreleased]` as one concise bullet each, leading with the
-  file/behaviour. See [`docs/style.md`](docs/style.md#changelog).
+  file/behaviour. See [`development/style.md`](development/style.md#changelog).
 - Branch names: `<initials>/<slug>` for personal branches; bare slug for
   shared feature branches.
 
 ## Working memory
 
-Per-feature spec directories use this layout:
+`development/` is the repo's process memory — agent-facing docs, ADRs, and
+work units; it is never published. `docs/`, if the project has one, is user
+documentation only (like `src/` is for sources). Per-feature work-unit
+directories use this layout:
 
 ```
-specs/<YYYY-MM>-<slug>/
+development/work/<YYYY-MM>-<slug>/
 ├─ spec.md     # WHAT and WHY; no implementation detail
 ├─ plan.md     # numbered phased plan; each phase has tests
 ├─ tasks.md    # checkbox list the agent ticks off
+├─ report.md   # what actually happened: deviations, negative results, follow-ups
 └─ scratch.md  # agent's working notes; cleared on completion (gitignored)
 ```
 
 `scratch.md` is gitignored by default. Promote anything durable into `spec.md`,
-`plan.md`, an ADR, or `docs/`.
+`plan.md`, `report.md`, an ADR, or the `development/` docs.
+
+Liveness: `spec.md` freezes once reviewed, `plan.md` once build starts,
+`report.md` at merge. Never retro-edit a merged report — new findings go in
+the report of the feature that finds them. Full table:
+[`development/harness-usage.md`](development/harness-usage.md#document-liveness).
