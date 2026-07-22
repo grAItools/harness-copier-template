@@ -79,8 +79,12 @@ Produce `plan.md` and mirror it into a checkbox `tasks.md` in the same
 - <The project's non-negotiables, restated for an executor with less
   context: gate green at every phase boundary; never weaken a test,
   tolerance, or assertion; authority order docs/architecture.md >
-  spec.md > plan.md > tasks.md; decisions beyond your authority become
-  DECISION-PENDING lines in report.md, not local fixes.>
+  spec.md > plan.md > tasks.md; decisions beyond your authority are
+  escalated in report.md using the exact marker token defined in
+  docs/adr/README.md ("DECISION-PENDING" immediately followed by a
+  colon), never resolved locally. Do not write the live marker itself
+  here — plan text is not a report, and a stray marker would trip the
+  reviewer's register check.>
 
 ## Review checklist
 - <Feature-specific checks for the Reviewer, one per line: the claims
