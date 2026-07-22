@@ -46,6 +46,15 @@ this file.
   `/spec` (Product Owner) → `/plan` (Architect) → `/build` (Developer)
   → `/verify` (Reviewer). Each phase stops for review before the next
   begins. See `.agents/commands/` and `.agents/subagents/`.
+- On any conflict between documents, the authority order is
+  [`docs/architecture.md`](docs/architecture.md) > `spec.md` > `plan.md` >
+  `tasks.md`. Never silently resolve a contradiction — record it in the
+  feature's `report.md` and stop if it blocks a success criterion.
+- When a decision exceeds your authority (loosening a test tolerance or
+  assertion, adding a dependency, changing behaviour the spec froze), write a
+  `DECISION-PENDING:` line in the feature's `report.md` and stop; every such
+  line gets a row in the decision register
+  ([`docs/adr/README.md`](docs/adr/README.md)) in the same PR.
 - For a new architectural choice (dependency, framework, persistence, auth),
   add an ADR in `docs/adr/`. ADRs are append-only; supersede with a new file.
 - When investigating a large codebase, prefer the `explorer` subagent (read-only)
@@ -97,8 +106,14 @@ specs/<YYYY-MM>-<slug>/
 ├─ spec.md     # WHAT and WHY; no implementation detail
 ├─ plan.md     # numbered phased plan; each phase has tests
 ├─ tasks.md    # checkbox list the agent ticks off
+├─ report.md   # what actually happened: deviations, negative results, follow-ups
 └─ scratch.md  # agent's working notes; cleared on completion (gitignored)
 ```
 
 `scratch.md` is gitignored by default. Promote anything durable into `spec.md`,
-`plan.md`, an ADR, or `docs/`.
+`plan.md`, `report.md`, an ADR, or `docs/`.
+
+Liveness: `spec.md` freezes once reviewed, `plan.md` once build starts,
+`report.md` at merge. Never retro-edit a merged report — new findings go in
+the report of the feature that finds them. Full table:
+[`docs/harness-usage.md`](docs/harness-usage.md#document-liveness).

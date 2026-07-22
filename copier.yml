@@ -11,10 +11,10 @@
 #   Update:     cd repo && copier update
 #
 # Brown-field safety: README.md, Makefile, justfile, .gitignore, .mcp.json,
-# and the populated docs/ files (architecture, style, testing, tool-bootstrap,
-# harness-usage) are protected via _skip_if_exists. Copier will leave the
-# existing file in place and you can diff/merge the template version manually
-# if needed.
+# .github/PULL_REQUEST_TEMPLATE.md, and the populated docs/ files
+# (architecture, style, testing, tool-bootstrap, harness-usage) are protected
+# via _skip_if_exists. Copier will leave the existing file in place and you
+# can diff/merge the template version manually if needed.
 
 # ---------------------------------------------------------------------------
 # Copier engine settings
@@ -33,6 +33,7 @@ _skip_if_exists:
   - "justfile"
   - ".gitignore"
   - ".mcp.json"
+  - ".github/PULL_REQUEST_TEMPLATE.md"
   - "docs/architecture.md"
   - "docs/style.md"
   - "docs/testing.md"
@@ -345,6 +346,16 @@ copilot_code_review_skill:
     default. Independent of `copilot_code_review`, but most useful with
     it on.
   default: false
+
+pr_template:
+  type: bool
+  help: |
+    Generate `.github/PULL_REQUEST_TEMPLATE.md`? A definition-of-done
+    checklist tied to the harness: gate green, success criteria evidenced,
+    `report.md` written with deviations declared, no weakened tests, and
+    every `DECISION-PENDING:` line registered. Inert for non-GitHub
+    remotes. Independent of the copilot_* questions.
+  default: true
 
 mcp:
   type: bool

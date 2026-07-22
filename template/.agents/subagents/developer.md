@@ -31,7 +31,19 @@ phase boundary.
   code. If `scratch.md` exists, read it too — the main agent may
   have left an `explorer` summary or a prior phase's hand-back note
   there. If the plan diverges from the spec or a step is ambiguous,
-  stop and ask.
+  stop and ask. On any conflict, the authority order is
+  `docs/architecture.md` > `spec.md` > `plan.md` > `tasks.md`; never
+  silently resolve a contradiction — record it in `report.md` and
+  stop if it blocks a success criterion.
+- Keep `report.md` current as you work: record each deviation from the
+  plan when it happens, and each approach you tried and abandoned (with
+  the evidence that killed it), not reconstructed at the end. Complete
+  it before the final `/verify` — the Reviewer audits it for honesty,
+  and an undeclared deviation is a review defect.
+- When a decision exceeds your authority — loosening a test tolerance
+  or assertion, adding a dependency, changing behaviour the spec froze —
+  write a `DECISION-PENDING:` line in `report.md` and stop. Do not
+  resolve it locally.
 - Work **one phase at a time**. Do not begin phase N+1 until phase N's
   tests pass and its `tasks.md` boxes are ticked.
 - Write the test **first** when the plan calls for behaviour change —
@@ -46,6 +58,12 @@ phase boundary.
 - Never silently skip, disable, or `@ignore` a failing test. If a test
   must be skipped, draft an ADR under `docs/adr/` and ask before
   proceeding.
+- When reading gate output: passed counts may only grow. A drop you
+  cannot attribute to your own intentional, declared test removal means
+  stop, don't commit, and report the failure verbatim. Never add
+  `-x`/`-k`/`--ignore`-style narrowing, or edit markers or assertions,
+  to make the gate pass. Any new skip is a finding to explain in
+  `report.md`, not to ignore.
 - Never edit anything under `*/generated/`.
 - Never run destructive Git (`push --force`, `reset --hard origin/*`,
   history rewrites on shared branches).

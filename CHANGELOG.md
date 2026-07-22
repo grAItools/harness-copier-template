@@ -10,6 +10,40 @@ major version).
 
 ### Added
 
+- `specs/<YYYY-MM>-<slug>/report.md` joins the feature lifecycle — the durable
+  account of what actually happened (what was built, declared deviations,
+  negative results, escalated decisions, follow-ups, gate result), written by
+  the Developer as work happens, audited for honesty by the Reviewer, frozen
+  at merge. `AGENTS.md`, the example spec directory, `/build`, `/verify`, and
+  the `developer`/`reviewer` subagents gain matching instructions. Adapted
+  from the ICON-sc project's per-work-unit reports. See
+  [ADR 0007](docs/decisions/0007-feature-report-and-document-liveness.md).
+- `AGENTS.md` states an authority order for document conflicts
+  (`docs/architecture.md` > `spec.md` > `plan.md` > `tasks.md`) with the rule
+  that contradictions are recorded in `report.md`, never silently resolved;
+  `docs/harness-usage.md` gains a **Document liveness** table saying when each
+  harness file freezes (ADR 0007).
+- Decision-escalation protocol: a decision beyond an agent's authority becomes
+  a `DECISION-PENDING:` line in `report.md` plus a row in the new decision
+  register (a section of the generated `docs/adr/README.md`, with an
+  ADR-vs-register rule of thumb); the reviewer enforces the
+  line-must-have-a-pending-row grep contract. See
+  [ADR 0008](docs/decisions/0008-decision-register-and-escalation-marker.md).
+- New question **`pr_template`** (bool, default `true`) — generates
+  `.github/PULL_REQUEST_TEMPLATE.md`, a definition-of-done checklist tied to
+  the harness (gate green, spec criteria evidenced, `report.md` written, no
+  weakened tests, `DECISION-PENDING:` lines registered). Added to
+  `_skip_if_exists`; independent of the `copilot_*` questions. See
+  [ADR 0009](docs/decisions/0009-pr-template-question.md).
+- `docs/testing.md` gains a **Reading gate output** section: passed counts may
+  only grow, new skips are findings to explain, never narrow the gate
+  (`-x`/`-k`/`--ignore`/marker edits) to make it pass; the
+  `developer`/`reviewer` subagents carry matching rules.
+- `docs/proposals/0001-adopt-icon-sc-process-memory-practices.md` — the
+  evaluation of ICON-sc's harness this release implements (P9, a freeze-guard
+  hook, is deferred), plus `docs/decisions/README.md` — ADR index + this
+  repo's own decision register.
+
 - `.agents/hooks/block-destructive.sh` (always generated, mode `0755`) — the
   canonical destructive-command deny-list; the Claude Code `PreToolUse(Bash)`
   hook calls it fail-closed instead of carrying an inline `grep`. See
@@ -56,6 +90,16 @@ major version).
 
 ### Changed
 
+- The `reviewer` subagent is hardened to a skeptical-review protocol: scope
+  check first (`git diff --stat`; out-of-plan touches are defects), never
+  trust the Developer's narrative (re-run the gate, re-derive claims), probe
+  that new tests can fail (vacuous tests are MAJOR defects), audit `report.md`
+  honesty (undeclared deviations are defects), and rank findings
+  MAJOR / MINOR / INFO — any MAJOR means NEEDS-WORK.
+- The `architect` subagent writes plans "for an agent with less context":
+  `plan.md` gains **Invariants** (non-negotiables restated inline) and
+  **Review checklist** (feature-specific checks the reviewer consumes)
+  sections, mirrored in the example spec directory and read by `/verify`.
 - Clarified that the `mode` question is informational only — it does not change
   what is generated. Its `copier.yml` help text and the `README.md` brown-field
   section no longer imply that answering `brownfield` is what enables file

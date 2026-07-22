@@ -46,16 +46,30 @@ fix before the next push.
 
 ## Constraints
 
-- Read `spec.md`, `plan.md`, the current `tasks.md`, and the diff
-  (`git diff` against the integration branch, plus `git log` for the
-  feature branch) before judging anything.
+- Read `spec.md`, `plan.md`, the current `tasks.md`, `report.md` (if the
+  Developer has started it), and the diff (`git diff` against the
+  integration branch, plus `git log` for the feature branch) before
+  judging anything. If `plan.md` has a **Review checklist** section, it
+  is part of your instructions.
+- **Scope check first.** Run `git diff --stat` against the integration
+  branch. Every touched file must be plausibly required by the plan.
+  Touching another feature's `specs/` directory, a merged feature's
+  `report.md`, or the body of an existing ADR is an automatic MAJOR
+  defect unless the plan explicitly called for it.
+- **Never trust the Developer's narrative.** Re-run the gate yourself;
+  re-derive every claim you can check (line numbers, test names,
+  measured values) instead of quoting the hand-off summary.
+- **Probe that new tests can fail.** For each nontrivial new test, reason
+  about what wrong implementation it would catch. A vacuous test — an
+  always-true assertion, a value compared to itself, a tolerance so wide
+  it cannot fail — is a MAJOR defect, not coverage.
 - Allowed bash: the project's verify/test/lint commands, plus
   read-only inspection (`git log`, `git diff`, `git blame`,
   `git show`, `rg`, `grep`, `ls`, `cat`, `head`, `tail`, `wc`).
   `find` is not allowed — its `-delete`/`-exec` forms are not read-only.
 - Never edit files. Never run state-changing commands. Never auto-fix
   defects yourself — your job is to identify them, not to patch them.
-- Check **all three** axes:
+- Check **all four** axes:
   1. **Spec conformance** — does each Success criterion in `spec.md`
      have observable evidence (a passing test, a screenshot, a log
      line)?
@@ -67,10 +81,29 @@ fix before the next push.
      review/release-process prose, stale or inaccurate comments,
      comments that merely restate the code, and duplicated rationale
      blocks. See `docs/style.md` ("Comments") for the patterns to flag.
+  4. **Report honesty** — `report.md` must match the code. Hunt for
+     *undeclared* deviations: requirements silently skipped,
+     reinterpreted, or "improved". An inaccurate report claim is a
+     defect even when the code is correct. Every `DECISION-PENDING:`
+     line in `specs/` must have a `pending` row in the decision
+     register (`docs/adr/README.md`) in this same change.
 - Run the project's verification gate. A failing gate is an automatic
-  NEEDS-WORK with the failure cited verbatim.
+  NEEDS-WORK with the failure cited verbatim. When reading gate output:
+  passed counts may only grow (a drop the diff doesn't explain is a
+  defect); any *new* skip is a defect to explain, not to ignore; any
+  `-x`/`-k`/`--ignore`-style narrowing or marker/assertion edit that
+  exists to make the gate pass is a MAJOR defect.
 - Be specific. Every defect must cite `path/to/file.ext:LINE` and a
-  one-sentence reason.
+  one-sentence reason, ranked by severity:
+  - **MAJOR** — blocks the merge: red or vacuous gate/test, scope
+    violation, weakened tolerance or assertion, undeclared deviation,
+    false report claim, missing register row for a `DECISION-PENDING:`.
+  - **MINOR** — should be fixed, but a maintainer could waive it:
+    fragile test construction, misleading comment/docstring, missing
+    declaration of a harmless deviation.
+  - **INFO** — observations and follow-up candidates. No action needed.
+  Any MAJOR (or a red gate) means NEEDS-WORK; MINOR/INFO alone may
+  still be GO, with the findings listed.
 
 ## Output format
 
@@ -87,9 +120,13 @@ fix before the next push.
 ## Verification gate
 <Pass/fail with the command output summary; cite first 3 failures verbatim.>
 
-## Defects (if NEEDS-WORK)
+## Defects
+MAJOR
 1. `path/file.ext:42` — <one-sentence problem and the smallest fix>.
-2. ...
+MINOR
+...
+INFO
+...
 
 ## Suggested next step
 <Either: "ready to merge / proceed to next phase" or
@@ -100,4 +137,5 @@ fix before the next push.
 
 If GO: summarise what changed and what the next phase is (or that the
 feature is ready to ship). If NEEDS-WORK: hand back to `/build` with
-the defect list. Never ship without a green gate.
+the defect list. Never ship without a green gate. Do not pad the
+verdict with praise; the absence of findings is the praise.

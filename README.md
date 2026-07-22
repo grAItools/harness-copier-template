@@ -26,6 +26,14 @@ follows the role-handoff conventions used by MetaGPT, BMAD Method,
 GitHub Spec Kit, and CrewAI, normalised to the `AGENTS.md` + `.agents/`
 layout this template already uses.
 
+The loop leaves a durable audit trail: each feature directory ends with a
+`report.md` (what was built, declared deviations, negative results,
+follow-ups) that freezes at merge, and decisions beyond an agent's authority
+are escalated as `DECISION-PENDING:` lines into a decision register in
+`docs/adr/README.md` instead of being silently resolved. The Reviewer audits
+the report for honesty and re-runs the gate itself. These conventions are
+adapted from the ICON-sc project's process memory (see ADRs 0007–0009).
+
 ## What it generates
 
 ```
@@ -41,8 +49,10 @@ your-repo/
 │  ├─ testing.md
 │  ├─ tool-bootstrap.md               # per-package-manager install instructions
 │  ├─ harness-usage.md                # unified Claude Code + OpenCode driving guide
-│  └─ adr/0001-record-architecture-decisions.md   # if include_example_adr
-├─ specs/                            # per-feature; YYYY-MM-example/ if opted in
+│  └─ adr/                            # ADRs + decision register (README.md)
+│     └─ 0001-record-architecture-decisions.md    # if include_example_adr
+├─ specs/                            # per-feature spec/plan/tasks/report[/scratch];
+│                                    # YYYY-MM-example/ if opted in
 ├─ scripts/                          # shell entry points (if generate_scripts)
 │  ├─ verify.sh                      # default implementation of verify_command (canonical lint+test gate)
 │  └─ fmt-file.sh                    # per-file formatter slot for the PostToolUse hook
@@ -71,7 +81,8 @@ your-repo/
 │  ├─ skills/    -> ../.agents/skills         (symlink, post-gen)
 │  └─ agents/    -> ../.agents/subagents      (symlink, post-gen)
 ├─ .cursor/rules/project-context.mdc # if cursor
-├─ .github/                          # if copilot_code_review / copilot_code_review_skill
+├─ .github/                          # if pr_template / copilot_code_review / copilot_code_review_skill
+│  ├─ PULL_REQUEST_TEMPLATE.md       # definition-of-done checklist (if pr_template)
 │  ├─ copilot-instructions.md        # populated review rules (if copilot_code_review)
 │  ├─ instructions/                  # path-scoped review rules (if copilot_code_review)
 │  │  ├─ language.instructions.md    #   applyTo: language sources
@@ -112,6 +123,7 @@ The template asks you:
 | `cursor`                  | Off by default                                           |
 | `copilot_code_review`     | Off by default; populated Copilot code-review config under `.github/` (instructions + path-scoped rules). Copilot code review does **not** read `AGENTS.md`, so rules are restated directly |
 | `copilot_code_review_skill` | Off by default; adds `.github/skills/code-review/SKILL.md` (GitHub agent-skills public preview) |
+| `pr_template`             | On by default; adds `.github/PULL_REQUEST_TEMPLATE.md`, a definition-of-done checklist tied to the harness (gate, spec evidence, `report.md`, decision register). Inert for non-GitHub remotes |
 | `mcp`                     | Off by default                                           |
 | `include_example_adr`     | On                                                       |
 | `include_example_skill`   | On                                                       |
@@ -131,7 +143,8 @@ the answer, because it comes from `_skip_if_exists`. Run into the existing repo
 and the template:
 
 - **Never silently overwrites** `README.md`, `Makefile`, `justfile`,
-  `.gitignore`, `.mcp.json`, or the populated `docs/` files (`architecture`,
+  `.gitignore`, `.mcp.json`, `.github/PULL_REQUEST_TEMPLATE.md`, or the
+  populated `docs/` files (`architecture`,
   `style`, `testing`, `tool-bootstrap`, `harness-usage`). They're listed in
   `_skip_if_exists` — copier leaves the existing file in place. (This also
   means switching `task_runner` later does not delete the previous file;
@@ -185,6 +198,7 @@ harness-copier-template/
 │  ├─ .claude/
 │  ├─ .opencode/
 │  ├─ {% if cursor %}.cursor{% endif %}/
+│  ├─ {% if pr_template %}.github{% endif %}/   # PULL_REQUEST_TEMPLATE.md
 │  ├─ {% if copilot_code_review %}.github{% endif %}/   # copilot-instructions.md + instructions/
 │  ├─ {% if copilot_code_review_skill %}.github{% endif %}/  # skills/code-review/SKILL.md
 │  └─ {% if mcp %}.mcp.json{% endif %}

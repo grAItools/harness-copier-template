@@ -27,3 +27,24 @@ the old file's content. The full historical record is the value.
 Optional: install [`adr-tools`](https://github.com/npryce/adr-tools) (single
 shell-script binary) and use `adr new "<title>"` to scaffold the next file
 with the correct number.
+
+## Decision register
+
+One row per decision that an agent escalated (a `DECISION-PENDING:` line in a
+feature's `report.md`) or that a human granted outside an ADR (a tolerance, a
+pin, a one-line operational fact). Rows are appended and their Status flipped
+in place (`pending` → `accepted` / `rejected`); nothing else is edited.
+
+Contract: `grep -rn "DECISION-PENDING" specs/` must only return lines whose
+row here is still `pending`. Add the row in the same PR that adds the line.
+
+| ID | Date | Decision | Status | Source | Evidence |
+|---|---|---|---|---|---|
+
+(ID = `<feature-slug>.<k>`, e.g. `2026-07-user-auth.1`. Source = the report
+or ADR that raised it. Evidence = the PR/commit that settled it.)
+
+**ADR or register row?** If the decision shapes structure — of the code, the
+repo, or the process — and someone will later ask *why*, write an ADR and add
+a register row whose Source points at it. If it is a one-line operational
+fact, a register row alone is enough.
