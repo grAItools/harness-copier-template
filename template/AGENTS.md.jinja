@@ -66,7 +66,9 @@ this file.
 ## Don't
 
 - Don't edit anything under `*/generated/` — it's overwritten by your project's codegen pipeline.
-- Don't take on a hard-to-reverse dependency or datastore without an ADR.
+- Don't lock in a new dependency or datastore without weighing it against the
+  ADR criteria ([`development/adr/README.md`](development/adr/README.md)) — such
+  choices usually clear all three and warrant an ADR.
 - Don't run destructive Git: `push --force`, `reset --hard origin/*`,
   history rewrites on shared branches.
 - Don't put secrets, hostnames, or per-developer paths in this file —
