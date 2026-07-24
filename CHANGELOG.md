@@ -139,6 +139,12 @@ major version).
   and unsafe deserialization of model checkpoints — instead of the
   previous web-app emphasis (SQL injection, request handlers, IDOR). Web
   /service-security rules are retained but scoped to service code.
+- `development/adr/README.md` gains a "When to write one" section: an ADR is
+  warranted only when a decision is hard to reverse, surprising without context,
+  *and* a real trade-off — trivial or easily reversed choices get none. The
+  `AGENTS.md` Do/Don't notes, the `development/harness-usage.md` decision guide,
+  and the architect subagent now defer to that gate instead of implying every
+  dependency/persistence/auth choice needs an ADR.
 
 ### Fixed
 
