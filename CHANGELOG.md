@@ -139,13 +139,14 @@ major version).
   and unsafe deserialization of model checkpoints — instead of the
   previous web-app emphasis (SQL injection, request handlers, IDOR). Web
   /service-security rules are retained but scoped to service code.
-- `development/adr/README.md` gains a "When to write one" section: an ADR is
-  warranted only when a decision is hard to reverse, surprising without context,
-  *and* a real trade-off — trivial or easily reversed choices get none. The
-  `AGENTS.md` Do/Don't notes, the `development/harness-usage.md` decision guide,
-  the architect subagent, and the Copilot review rules (`copilot-instructions.md`,
-  `skills/code-review/SKILL.md`) now defer to that gate instead of implying every
-  dependency/persistence/auth choice needs an ADR.
+- `development/adr/README.md` gains a "When to write one" section — the single
+  home for the ADR criteria (a decision must be hard to reverse, surprising
+  without context, *and* a real trade-off; trivial or easily reversed choices get
+  none). The `AGENTS.md` Do/Don't notes, the `development/harness-usage.md`
+  decision guide, the architect subagent, and the Copilot review rules
+  (`copilot-instructions.md`, `skills/code-review/SKILL.md`) point to it instead
+  of restating the criteria or implying every dependency/persistence/auth choice
+  needs an ADR.
 
 ### Fixed
 
