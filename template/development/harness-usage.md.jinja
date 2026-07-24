@@ -119,7 +119,7 @@ only). They allowlist the build tool, read-only git (`status/diff/log/show`), an
 were not generated for this project, so formatting and the verify gate are run
 manually (`{{ cmd('fmt') }}` / `{{ cmd('verify') }}`).
 {%- endif %}
-`.claude/rules/` holds path-scoped rule fragments (currently empty). Default to
+`.claude/rules/` holds path-scoped rule fragments (comment hygiene ships there). Default to
 **plan mode** (`shift-tab`) for non-trivial work.
 
 ## OpenCode specifics

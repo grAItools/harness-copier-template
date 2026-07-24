@@ -16,9 +16,11 @@
 - **Slash commands** are under `.claude/commands/` (symlink to `.agents/commands/`):
   `/spec` (PO), `/plan` (Architect), `/build` (Developer),
   `/verify` (Reviewer).
+{%- if include_claude_hooks %}
 - **Hooks** in `.claude/settings.json` enforce: auto-format on Write/Edit,
   block destructive bash, run `{{ cmd('verify') }}` on Stop. They are deterministic
   and run outside your reasoning chain — don't try to work around them.
+{%- endif %}
 
 # Working with this repo
 

@@ -169,6 +169,13 @@ major version).
 
 ### Fixed
 
+- `AGENTS.local.md` is now ignored in brown-field repos too: it was present in
+  the greenfield `.gitignore` but missing from the managed block appended by
+  `hooks/post_gen.py`.
+- `CLAUDE.md` no longer claims hook enforcement when `include_claude_hooks=false`
+  (the hooks stanza is now gated, matching `harness-usage.md`).
+- `harness-usage.md` no longer calls `.claude/rules/` "currently empty" — the
+  comment-hygiene fragment always ships there.
 - Claude Code `PostToolUse`/`PreToolUse` hooks in `.claude/settings.json` now
   read input from the JSON payload on **stdin** via `jq` (reading
   `.tool_input.file_path` and `.tool_input.command`) instead of the nonexistent

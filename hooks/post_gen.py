@@ -80,6 +80,7 @@ GITIGNORE_END = "# <<< ai-agent-harness (managed by copier) <<<"
 
 GITIGNORE_BLOCK = [
     "# Personal overrides — never commit",
+    "AGENTS.local.md",
     "CLAUDE.local.md",
     ".claude/settings.local.json",
     ".claude/.last_*",
