@@ -25,7 +25,7 @@ These defaults assume correctness-critical numerical / data / compute code
 - Resource leaks: unfreed GPU memory, leaked file handles, MPI
   communicators or device contexts not released, unbounded memory growth.
 - Missing error handling on I/O, network, or subprocess calls.
-- New runtime dependencies without a matching ADR under `development/adr/`.
+- New hard-to-reverse dependencies or datastores without a matching ADR under `development/adr/`.
 - Secrets, tokens, or per-developer absolute paths to data/scratch in source.
 
 ## Don't comment on

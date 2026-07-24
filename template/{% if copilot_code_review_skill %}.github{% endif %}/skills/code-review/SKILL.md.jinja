@@ -34,7 +34,7 @@ description: |
    (`pickle`/`torch.load`/`yaml.load`); committed secrets.{% if copilot_code_review %} See
    [`../../instructions/security.instructions.md`](../../instructions/security.instructions.md).{% endif %}
 5. **Maintainability** — functions over ~50 lines or nested beyond 4 levels;
-   new runtime dependencies without an ADR under `development/adr/`.
+   new hard-to-reverse dependencies or datastores without an ADR under `development/adr/`.
 
 ## What to skip
 

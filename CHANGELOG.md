@@ -143,7 +143,8 @@ major version).
   warranted only when a decision is hard to reverse, surprising without context,
   *and* a real trade-off — trivial or easily reversed choices get none. The
   `AGENTS.md` Do/Don't notes, the `development/harness-usage.md` decision guide,
-  and the architect subagent now defer to that gate instead of implying every
+  the architect subagent, and the Copilot review rules (`copilot-instructions.md`,
+  `skills/code-review/SKILL.md`) now defer to that gate instead of implying every
   dependency/persistence/auth choice needs an ADR.
 
 ### Fixed
