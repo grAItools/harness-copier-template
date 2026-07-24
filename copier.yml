@@ -37,6 +37,7 @@ _skip_if_exists:
   - ".mcp.json"
   - ".github/PULL_REQUEST_TEMPLATE.md"
   - "development/adr/README.md"
+  - "development/glossary.md"
   - "development/architecture.md"
   - "development/style.md"
   - "development/testing.md"

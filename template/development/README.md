@@ -12,6 +12,7 @@ readers, not rewritten from these files mechanically.
 | [`harness-usage.md`](harness-usage.md) | how to drive the agent harness (Claude Code & OpenCode): phases, subagents, hooks, document liveness |
 | [`architecture.md`](architecture.md) | orientation: system structure, boundaries, invariants |
 | [`style.md`](style.md) | code style, comments, commit messages, changelog |
+| [`glossary.md`](glossary.md) | the project's ubiquitous language: domain terms used in specs, code, and conversation |
 | [`testing.md`](testing.md) | test layering, gate commands, gate-output reading rules |
 | [`tool-bootstrap.md`](tool-bootstrap.md) | toolchain install and new-machine setup |
 | [`adr/`](adr/) | architecture decision records (append-only) + the decision register |

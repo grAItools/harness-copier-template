@@ -10,6 +10,25 @@ major version).
 
 ### Added
 
+- Role playbook skills: `.agents/skills/{product-owner,architect,developer,reviewer}-playbook/`
+  plus a shared `.agents/skills/design-principles/` (design ground rules and a
+  red-flag checklist distilled from *A Philosophy of Software Design*, *The
+  Pragmatic Programmer*, *Domain-Driven Design*, and *The Design of Design*).
+  Each role subagent now reads its playbook before acting; the Reviewer's
+  playbook adds review depth without overriding the verdict/gate rules. See
+  [ADR 0011](docs/decisions/0011-knowledge-grounded-role-playbooks.md).
+- `development/glossary.md` — the project's ubiquitous language; added to
+  `_skip_if_exists`. Specs gain a `## Glossary` section (promoted to the
+  glossary at `/spec` review wrap-up) and a `## Constraints` section naming
+  the budgeted resource (ADR 0011).
+- Architect de-risking: `plan.md`'s Architecture decisions block gains a
+  `Considered:` (design-it-twice) line, plans gain an optional
+  `## Spike findings` section, and `/plan` runs architect-requested spikes in
+  the main agent (throwaway code, findings via `scratch.md`). Phase 1 defaults
+  to a tracer bullet for cross-layer features (ADR 0011).
+- Product Owner questioning protocol: explore the repo before asking, then one
+  question per turn with a recommended answer, until the user explicitly
+  confirms shared understanding (ADR 0011).
 - `development/work/<YYYY-MM>-<slug>/report.md` joins the feature lifecycle — the durable
   account of what actually happened (what was built, declared deviations,
   negative results, escalated decisions, follow-ups, gate result), written by

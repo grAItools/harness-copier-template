@@ -15,6 +15,13 @@ You are expanding a feature spec into an implementation plan.
    (`.agents/subagents/architect.md`). It owns the phased-plan format,
    the architecture-decisions block, the "each phase has tests"
    contract, and the "stop and ask before coding" boundary.
+4. If the architect hands back a **spike request** in `scratch.md`
+   (it cannot run code itself), run the smallest throwaway experiment
+   that answers the stated question — in a temp dir or scratch space,
+   never left in the source tree — append the findings (question →
+   method → answer → evidence) to `scratch.md`, and re-invoke the
+   architect. Spike code is disposable; only the findings survive,
+   in the plan's **Spike findings** section.
 
 The architect subagent will write `plan.md` and mirror it into
 `tasks.md`, then stop for user review. Once the user confirms the

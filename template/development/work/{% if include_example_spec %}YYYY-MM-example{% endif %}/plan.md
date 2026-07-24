@@ -2,6 +2,17 @@
 
 Filled in by `/plan` after `spec.md` is reviewed.
 
+## Architecture decisions
+
+- <Decision>: <chosen option> — <one-line rationale>.
+  Considered: <rejected option> — <one-line why it lost>.
+  ADR: <link, "ADR needed: <topic>", or "n/a">.
+
+## Spike findings
+
+- <Question> → <answer>. Method: <what was run>. Evidence: <output>.
+  (Omit the section if no spikes were needed.)
+
 ## Phase 1 — <name>
 
 **Scope.** <One paragraph.>

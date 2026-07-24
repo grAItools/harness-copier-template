@@ -26,6 +26,19 @@ follows the role-handoff conventions used by MetaGPT, BMAD Method,
 GitHub Spec Kit, and CrewAI, normalised to the `AGENTS.md` + `.agents/`
 layout this template already uses.
 
+Each role reads a **playbook skill** before acting
+(`.agents/skills/<role>-playbook/`), all grounded in a shared
+`design-principles` skill — a distillation of Ousterhout's *A Philosophy
+of Software Design*, Hunt & Thomas's *The Pragmatic Programmer*, Evans's
+*Domain-Driven Design*, and Brooks's *The Design of Design*: the Product
+Owner interrogates one question at a time with recommended answers and
+grows a project glossary (`development/glossary.md`); the Architect
+designs twice, spikes risky assumptions (via a main-agent hand-back),
+and plans a tracer-bullet first phase; the Developer writes contracts
+and interface comments first and self-checks against a red-flag list;
+the Reviewer probes change amplification and hunts absent artifacts. See
+ADR 0011.
+
 The loop leaves a durable audit trail: each feature directory ends with a
 `report.md` (what was built, declared deviations, negative results,
 follow-ups) that freezes at merge, and decisions beyond an agent's authority
@@ -51,6 +64,7 @@ your-repo/
 │  ├─ README.md                       # one-line index of the tree + docs boundary
 │  ├─ architecture.md
 │  ├─ style.md                        # greenfield: incl. commit-message convention
+│  ├─ glossary.md                     # ubiquitous language; starts empty, grows via specs
 │  ├─ testing.md
 │  ├─ tool-bootstrap.md               # per-package-manager install instructions
 │  ├─ harness-usage.md                # unified Claude Code + OpenCode driving guide
@@ -66,7 +80,13 @@ your-repo/
 │  ├─ hooks/
 │  │  ├─ block-destructive.sh        # canonical deny-list (Claude PreToolUse pipes to it)
 │  │  └─ ensure-toolchain.sh         # idempotent build-tool bootstrap; if package_manager in {uv, pixi}
-│  ├─ skills/verify/SKILL.md         # if include_example_skill
+│  ├─ skills/
+│  │  ├─ design-principles/SKILL.md  # shared design ground rules + red-flag checklist
+│  │  ├─ product-owner-playbook/     # role playbooks (one SKILL.md each): the
+│  │  ├─ architect-playbook/         #   method each role reads before acting,
+│  │  ├─ developer-playbook/         #   grounded in PoSD / Pragmatic Programmer /
+│  │  ├─ reviewer-playbook/          #   DDD / Design of Design
+│  │  └─ verify/SKILL.md             # if include_example_skill
 │  ├─ subagents/
 │  │  ├─ product-owner.md            # paired with /spec
 │  │  ├─ architect.md                # paired with /plan
