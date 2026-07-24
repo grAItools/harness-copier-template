@@ -284,8 +284,10 @@ These are enforced by docs{% if include_claude_hooks %} + hooks{% endif %}; rest
 - **Commits** — imperative mood, ≤72-char first line, no trailing period. See
   [`development/style.md#commit-messages`](style.md#commit-messages).
 {%- endif %}
-- **ADRs** — any new dependency/persistence/protocol/auth decision gets an ADR in
-  `development/adr/` (append-only). The architect flags these.
+- **ADRs** — a significant decision may warrant an ADR in `development/adr/`
+  (append-only); check the criteria in [`development/adr/README.md`](adr/README.md)
+  before writing one — trivial or reversible choices get none. The architect flags
+  candidates.
 - **Working memory** — `scratch.md` is gitignored; promote durable notes into
   spec/plan/report/ADR/docs. `report.md` is the durable account of what
   actually happened (deviations, dead ends, follow-ups) and freezes at merge.

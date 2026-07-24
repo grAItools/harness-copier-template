@@ -29,8 +29,9 @@ Produce `plan.md` and mirror it into a checkbox `tasks.md` in the same
 - Read `spec.md` in full first. If a success criterion is unclear or
   untestable, stop and ask before planning.
 - Surface every non-trivial technical decision (dependency, persistence,
-  protocol, framework, auth) and either resolve it inline or flag it
-  as needing an ADR under `development/adr/`.
+  protocol, framework, auth) and either resolve it inline or flag it as needing
+  an ADR under `development/adr/` when it meets the criteria there
+  (`development/adr/README.md`).
 - Each phase must be small enough to verify independently (≤1 day of
   work) and must list the test(s) that prove it works.
 - Write the plan for an agent with **less context than you have now**:
