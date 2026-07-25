@@ -65,6 +65,10 @@ expected `.gitignore` block and symlinks.
   add an ADR in `docs/decisions/`.
 - Render with multiple answer combinations after changing anything that's
   gated by a question.
+- In `template/` docs, mark downstream fill-ins `_Fill in: …_`, inline
+  placeholders bare `<name>` (never backticked, in prose as in fenced
+  blocks), and durable how-this-doc-works notes as `>` blockquotes. (See
+  README, "Scaffold markers in generated docs".)
 - Log every user-facing change in [`CHANGELOG.md`](CHANGELOG.md) under
   `[Unreleased]`: pick the right group (`Added`/`Changed`/`Removed`), write one
   concise bullet (lead with the question/file/behaviour that changed), mark

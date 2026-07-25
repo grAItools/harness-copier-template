@@ -8,7 +8,7 @@
 
 ## What was built
 
-<What actually shipped, versus what `spec.md` promised. A few sentences.>
+<What actually shipped, versus what spec.md promised. A few sentences.>
 
 ## Deviations from plan
 
@@ -23,9 +23,9 @@ next agent doesn't re-litigate them blind. "Nothing abandoned" is valid.>
 ## Decisions escalated
 
 <One line per decision that exceeded the agent's authority, each starting
-with the marker token — `DECISION-PENDING` followed by a colon and the
+with the marker token — "DECISION-PENDING" followed by a colon and the
 decision needed. Each line gets a row in the decision register
-(`development/adr/README.md`) in the same PR. "None" is a valid entry.>
+(development/adr/README.md) in the same PR. "None" is a valid entry.>
 
 ## Follow-ups
 

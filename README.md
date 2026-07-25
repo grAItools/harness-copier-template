@@ -26,6 +26,19 @@ follows the role-handoff conventions used by MetaGPT, BMAD Method,
 GitHub Spec Kit, and CrewAI, normalised to the `AGENTS.md` + `.agents/`
 layout this template already uses.
 
+Each role reads a **playbook skill** before acting
+(`.agents/skills/<role>-playbook/`), all grounded in a shared
+`design-principles` skill — a distillation of Ousterhout's *A Philosophy
+of Software Design*, Hunt & Thomas's *The Pragmatic Programmer*, Evans's
+*Domain-Driven Design*, and Brooks's *The Design of Design*: the Product
+Owner interrogates one question at a time with recommended answers and
+grows a project glossary (`development/glossary.md`); the Architect
+designs twice, spikes risky assumptions (via a main-agent hand-back),
+and plans a tracer-bullet first phase; the Developer writes contracts
+and interface comments first and self-checks against a red-flag list;
+the Reviewer probes change amplification and hunts absent artifacts. See
+ADR 0011.
+
 The loop leaves a durable audit trail: each feature directory ends with a
 `report.md` (what was built, declared deviations, negative results,
 follow-ups) that freezes at merge, and decisions beyond an agent's authority
@@ -51,6 +64,7 @@ your-repo/
 │  ├─ README.md                       # one-line index of the tree + docs boundary
 │  ├─ architecture.md
 │  ├─ style.md                        # greenfield: incl. commit-message convention
+│  ├─ glossary.md                     # ubiquitous language; starts empty, grows via specs
 │  ├─ testing.md
 │  ├─ tool-bootstrap.md               # per-package-manager install instructions
 │  ├─ harness-usage.md                # unified Claude Code + OpenCode driving guide
@@ -66,7 +80,13 @@ your-repo/
 │  ├─ hooks/
 │  │  ├─ block-destructive.sh        # canonical deny-list (Claude PreToolUse pipes to it)
 │  │  └─ ensure-toolchain.sh         # idempotent build-tool bootstrap; if package_manager in {uv, pixi}
-│  ├─ skills/verify/SKILL.md         # if include_example_skill
+│  ├─ skills/
+│  │  ├─ design-principles/SKILL.md  # shared design ground rules + red-flag checklist
+│  │  ├─ product-owner-playbook/     # role playbooks (one SKILL.md each): the
+│  │  ├─ architect-playbook/         #   method each role reads before acting,
+│  │  ├─ developer-playbook/         #   grounded in PoSD / Pragmatic Programmer /
+│  │  ├─ reviewer-playbook/          #   DDD / Design of Design
+│  │  └─ verify/SKILL.md             # if include_example_skill
 │  ├─ subagents/
 │  │  ├─ product-owner.md            # paired with /spec
 │  │  ├─ architect.md                # paired with /plan
@@ -150,14 +170,18 @@ and the template:
 - **Never silently overwrites** `README.md`, `Makefile`, `justfile`,
   `.gitignore`, `.mcp.json`, `.github/PULL_REQUEST_TEMPLATE.md`,
   `development/adr/README.md` (it accumulates decision-register rows), or the
-  populated `development/` files (`architecture`,
-  `style`, `testing`, `tool-bootstrap`, `harness-usage`). They're listed in
+  populated `development/` files (`architecture`, `style`, `testing`,
+  `tool-bootstrap`, `harness-usage`, `glossary`). They're listed in
   `_skip_if_exists` — copier leaves the existing file in place. (This also
   means switching `task_runner` later does not delete the previous file;
   remove it manually if you no longer want it.)
 - **Appends** the harness's gitignore entries inside a fenced
   `# >>> ai-agent-harness >>>` … `# <<< ai-agent-harness <<<` block via the
-  post-generation hook, so the operation is idempotent across re-runs.
+  post-generation hook. It merges per entry, not per block: a re-run or a
+  `copier update` adds only the entries the block is missing, so a repo
+  generated from an older version picks up newly added ones. An entry you
+  comment out inside the block stays commented out, and nothing outside the
+  fence is touched.
 - **Symlinks** `.claude/{skills,agents,commands}` and
   `.opencode/{skills,agents,commands}` to `.agents/{skills,subagents,commands}`
   after generation.
@@ -217,6 +241,21 @@ Copier drops the file/dir. Note that `.jinja` (the configured
 Copier strips the suffix at file-name parsing time, before the Jinja-in-path
 condition is evaluated, so a path like `{% if x %}foo.jinja{% endif %}`
 would keep its literal `.jinja` extension in the output.
+
+### Scaffold markers in generated docs
+
+Generated documents that the downstream user completes use three markers,
+consistently: `_Fill in: …_` for a block to replace (delete the marker;
+greppable via `rg 'Fill in:'`), bare `<placeholder>` — angle brackets,
+never backticked — for inline substitution, and `>` blockquotes for durable
+notes about how a document works — those stay. The bare form matches the
+output formats the role subagents are instructed to emit, so a scaffold and
+a freshly written document are the same shape; the cost is that a Markdown
+preview may swallow `<word>` as an unknown HTML tag, which these
+repo-internal, read-as-text files accept. The generated
+`.github/PULL_REQUEST_TEMPLATE.md` is the deliberate exception: it uses
+HTML comments, because its prompts are re-filled by every PR author and
+must not show in the rendered PR description.
 
 ## Choosing a task runner
 

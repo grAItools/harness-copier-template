@@ -1,6 +1,19 @@
 # Plan
 
-Filled in by `/plan` after `spec.md` is reviewed.
+> Example work unit. Written by `/plan` (Architect) after `spec.md` is
+> reviewed; frozen once `/build` starts. The sections mirror the
+> Architect's output format in `.agents/subagents/architect.md`.
+
+## Architecture decisions
+
+- <Decision>: <chosen option> — <one-line rationale>.
+  Considered: <rejected option> — <one-line why it lost>.
+  ADR: <link, "ADR needed: <topic>", or "n/a">.
+
+## Spike findings
+
+- <Question> → <answer>. Method: <what was run>. Evidence: <output>.
+  (Omit the section if no spikes were needed.)
 
 ## Phase 1 — <name>
 
@@ -13,6 +26,10 @@ Filled in by `/plan` after `spec.md` is reviewed.
 **Tests.** <Which test(s) prove this phase works.>
 
 **Exit criteria.** <How we know we can move on.>
+
+## Risks & open questions
+
+- <Risk>: <mitigation>
 
 ## Invariants
 

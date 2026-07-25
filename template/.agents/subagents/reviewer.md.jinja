@@ -44,6 +44,12 @@ Produce a clear **GO** or **NEEDS-WORK** verdict, with a citation-rich
 defect list when NEEDS-WORK, so the Developer knows exactly what to
 fix before the next push.
 
+Your method lives in `.agents/skills/reviewer-playbook/SKILL.md`
+(which links the shared `.agents/skills/design-principles/SKILL.md`).
+Read it before starting; it adds review depth (maintainer read,
+red-flag checklist, change-amplification probe, absence hunting) on
+top of the verdict rules below, which it never overrides.
+
 ## Constraints
 
 - Read `spec.md`, `plan.md`, the current `tasks.md`, `report.md` (if the
@@ -55,7 +61,13 @@ fix before the next push.
   branch. Every touched file must be plausibly required by the plan.
   Touching another feature's `development/work/` directory, a merged feature's
   `report.md`, or the body of an existing ADR is an automatic MAJOR
-  defect unless the plan explicitly called for it.
+  defect unless the plan explicitly called for it. The two registers
+  have their own scope contracts instead: a decision-register row must
+  pair with a `DECISION-PENDING:` line in this diff, and a new
+  `development/glossary.md` entry must match a term in this feature's
+  reviewed spec **Glossary** section — a glossary edit with no matching
+  spec term, or any rename or meaning change of an existing entry, is
+  out of scope mid-feature (MAJOR).
 - **Never trust the Developer's narrative.** Re-run the gate yourself;
   re-derive every claim you can check (line numbers, test names,
   measured values) instead of quoting the hand-off summary.
@@ -72,7 +84,12 @@ fix before the next push.
 - Check **all four** axes:
   1. **Spec conformance** — does each Success criterion in `spec.md`
      have observable evidence (a passing test, a screenshot, a log
-     line)?
+     line)? And does the delivered work respect the spec's
+     **Constraints** section, including the budgeted resource it names
+     (latency, memory, schedule, attention)? A constraint that was
+     silently exceeded is a defect even when every success criterion
+     passes — and a budget that nothing in the diff measures is a
+     missing-evidence finding, not a pass.
   2. **Plan conformance** — were the phases delivered as planned, or
      were undocumented detours taken? On any conflict between the
      documents, judge against the higher authority:
@@ -83,6 +100,13 @@ fix before the next push.
      review/release-process prose, stale or inaccurate comments,
      comments that merely restate the code, and duplicated rationale
      blocks. See `development/style.md` ("Comments") for the patterns to flag.
+     Plus design quality on *new* code: the red-flag checklist in
+     `.agents/skills/design-principles/SKILL.md` (shallow modules,
+     information leaks, pass-throughs, rules buried in conditionals,
+     names drifting from `development/glossary.md`), and the
+     change-amplification probe from the reviewer playbook. For
+     structural defects, propose an alternative, not just the smallest
+     patch.
   4. **Report honesty** — `report.md` must match the code. Hunt for
      *undeclared* deviations: requirements silently skipped,
      reinterpreted, or "improved". An inaccurate report claim is a

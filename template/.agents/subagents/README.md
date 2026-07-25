@@ -39,5 +39,10 @@ A subagent runs in its own context window. Use them to keep heavy
 exploration or repetitive review out of the main session's context.
 
 **Note:** Claude Code subagents cannot spawn other subagents. If a
-subagent needs to delegate (e.g. to `explorer`), it must hand back to
-the main agent via the slash command that invoked it.
+subagent needs something run outside itself (an `explorer` pass, a
+spike experiment, a user's answer), it must **stop and hand back to
+the main agent, carrying the request and the resume instruction in
+its own reply** — the role subagents' Handoff sections define these
+protocols. The reply must be self-contained because a subagent can be
+reached by description match as well as by its slash command, and in
+the former case the command's instructions were never loaded.
