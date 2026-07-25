@@ -10,12 +10,12 @@ You are creating a new feature spec.
 2. Compute today's date as `YYYY-MM`. The directory is
    `development/work/<YYYY-MM>-$ARGUMENTS/`.
 3. Create the directory if it doesn't exist. **Do not** pre-create
-   `plan.md`, `tasks.md`, or `scratch.md` — each role creates the
-   artifacts it owns (Architect: `plan.md`/`tasks.md`), and pre-creating
-   them would force those roles to `edit` files they should be able to
-   `write` from scratch. `scratch.md` is owned by no one role: whichever
-   of the Architect, Developer, or main agent needs it first creates it,
-   and everyone after that appends.
+   `plan.md`, `tasks.md`, `report.md`, or `scratch.md` — each role
+   creates the deliverables it owns (Architect: `plan.md`/`tasks.md`;
+   Developer: `report.md`), and pre-creating them would force those
+   roles to `edit` files they should be able to `write` from scratch.
+   `scratch.md` is not a deliverable but the feature's shared channel:
+   whoever needs it first creates it, and everyone after that appends.
 4. Delegate the actual spec authoring to the **product-owner** subagent
    (`.agents/subagents/product-owner.md`). It owns the spec format,
    the testable-criteria rule, the non-goals requirement, and the
@@ -35,8 +35,9 @@ review. Once the user confirms the spec, the next step is `/plan`
 If the reviewed spec's **Glossary** section pins down new domain terms,
 promote them to `development/glossary.md` as part of the review wrap-up
 (the product-owner subagent cannot write outside the feature
-directory). This is the one sanctioned mid-feature edit to a
-`development/*.md` file — see the Document liveness table in
-`development/harness-usage.md`. Ask the user before making it, and put
-it in its own commit, separate from any implementation change, so the
-Reviewer's scope check can tell it apart from an out-of-scope edit.
+directory). The glossary is a **register**: promotion from a reviewed
+spec is its one sanctioned mid-feature channel (see Document liveness
+in `development/harness-usage.md`), and the Reviewer checks each
+promoted entry against the spec's Glossary section — so promote the
+reviewed terms verbatim, and don't fold in renames or meaning changes
+of existing entries (those are trunk-gated, a dedicated PR).

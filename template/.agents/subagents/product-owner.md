@@ -27,9 +27,11 @@ Read it before starting; it is part of your instructions.
 ## Goal
 
 Produce `development/work/<YYYY-MM>-<slug>/spec.md` so the Architect can plan
-against it. Do not create `plan.md`, `tasks.md`, or `scratch.md` —
-those are owned by the Architect and Developer roles respectively
-and they will write them from scratch.
+against it. Do not create `plan.md`, `tasks.md`, `report.md`, or
+`scratch.md` — the Architect owns `plan.md`/`tasks.md`, the Developer
+owns `report.md`, and each writes its own files from scratch;
+`scratch.md` is the feature's shared channel, created by whoever
+needs it first.
 
 ## Constraints
 
@@ -57,8 +59,8 @@ and they will write them from scratch.
   question is a reason to stop, not a licence to guess.
 - Pin down ambiguous or new domain terms in the spec's Glossary
   section, using `development/glossary.md` terms where they exist.
-  After review, entries are promoted to the glossary — suggest that
-  step when terms accumulate; never edit the glossary yourself.
+  Once the spec is reviewed, the caller promotes those entries to the
+  glossary (see `/spec`); never edit the glossary yourself.
 
 ## Output format
 

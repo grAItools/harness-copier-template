@@ -30,10 +30,11 @@ description: |
    `it.skip(...)`, or `#[ignore]` a failing test.
 
 ## Gotchas
-
-- The `Stop` hook in `.claude/settings.json` already runs `{{ cmd('verify') }}`.
-  This skill is for the *interactive* case where the user wants verification
-  before the agent's natural stop.
+{% if include_claude_hooks %}
+- The `Stop` hook in `.claude/settings.json` already runs `{{ cmd('verify') }}`
+  (Claude Code only). This skill is for the *interactive* case where the user
+  wants verification before the agent's natural stop.
+{%- endif %}
 {%- if verify_command == './scripts/verify.sh' and generate_scripts %}
 - `verify.sh` exits with code 2 on failure (Stop-hook convention). Don't
   treat exit 2 as a different signal from exit 1 — both mean "fix it".

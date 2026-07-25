@@ -18,10 +18,14 @@ major version).
   playbook adds review depth without overriding the verdict/gate rules. See
   [ADR 0011](docs/decisions/0011-knowledge-grounded-role-playbooks.md).
 - `development/glossary.md` — the project's ubiquitous language; added to
-  `_skip_if_exists` and to the `development/README.md` index. It is the one
-  `development/*.md` file the harness may edit mid-feature, and only to promote
-  terms from a reviewed spec at `/spec` wrap-up, in its own commit; the
-  **Document liveness** table records the carve-out (ADR 0011).
+  `_skip_if_exists` and to the `development/README.md` index. Like the
+  decision register in `development/adr/README.md`, it is a **register**, not
+  a trunk-gated prose doc: entries accrete mid-feature through one channel
+  only (promotion from a reviewed spec's Glossary section at `/spec`
+  wrap-up), the Reviewer's scope check verifies each new entry against the
+  spec that proposed it, and renames or meaning changes of existing entries
+  stay trunk-gated. The **Document liveness** table gains rows for both
+  registers (ADR 0011).
 - `development/work/<YYYY-MM>-<slug>/report.md` joins the feature lifecycle — the durable
   account of what actually happened (what was built, declared deviations,
   negative results, escalated decisions, follow-ups, gate result), written by
@@ -112,6 +116,14 @@ major version).
 
 ### Changed
 
+- Generated docs mark their fill-in points with one consistent set of
+  scaffold markers: `_Fill in: …_` for blocks the downstream user replaces
+  (greppable), backticked `` `<placeholder>` `` inline (bare `<…>` only
+  inside fenced code blocks, so rendered views don't strip it as an HTML
+  tag), and `>` blockquotes reserved for durable how-this-doc-works notes.
+  The PR template keeps HTML comments deliberately (its prompts are
+  re-filled by every PR author and must not render). Documented in
+  `development/README.md` and the template README.
 - The `spec.md` skeleton gains two mandatory sections: `## Constraints` (with a
   `Budgeted resource:` line naming the scarce thing trade-offs must respect) and
   `## Glossary` (terms pinned during the discussion, promoted to
@@ -232,7 +244,25 @@ major version).
   `.agents/skills/design-principles/SKILL.md` path in the developer and reviewer
   playbooks, matching every other reference.
 - `CLAUDE.md` no longer claims hook enforcement when `include_claude_hooks=false`
-  (the hooks stanza is now gated, matching `harness-usage.md`).
+  (the hooks stanza is now gated, matching `harness-usage.md`), and the example
+  `verify` skill's Stop-hook gotcha is gated the same way. `CLAUDE.md`'s
+  skill-invocation example now names a role playbook (always generated) instead
+  of the optional `verify` skill.
+- The example `development/work/YYYY-MM-example/` files match the output
+  formats the subagents write: `spec.md` gains the missing
+  **Users & stakeholders** and **Open questions** sections and the Product
+  Owner's section order; `plan.md` gains **Risks & open questions**; the
+  `tasks.md` note no longer suggests merging straight after a green gate
+  (the feature merges on `/verify` GO) or "archiving" the gitignored
+  `scratch.md`.
+- `.agents/subagents/README.md` no longer says a subagent hands back "via the
+  slash command that invoked it" — hand-back protocols travel in the
+  subagent's own reply (Handoff sections), which is what keeps them alive
+  under description-match invocation; `explorer` states its clarifying
+  question the same stop-and-return way.
+- `development/harness-usage.md`'s Phase-2 section sets the spike-loop
+  expectation (`SPIKE-REQUEST:` hand-backs, three rounds max), matching the
+  dialogue expectation Phase 1 already documents.
 - `harness-usage.md` no longer calls `.claude/rules/` "currently empty" — the
   comment-hygiene fragment always ships there.
 - Claude Code `PostToolUse`/`PreToolUse` hooks in `.claude/settings.json` now
@@ -304,11 +334,13 @@ major version).
   reference — merge it by hand (the bootstrap and hook wiring work without it).
 - `development/harness-usage.md` is in `_skip_if_exists` too, so an existing
   repo keeps its copy and will still promise "expect _one_ clarifying question"
-  from `/spec`, still describe skills as conditional on the example skill, and
-  still lack the `development/glossary.md` row in the **Document liveness**
-  table. Diff it against the template version and merge those three sections by
-  hand; the agents themselves follow the (updated, not skip-listed) `.agents/`
-  files either way, so the risk is a confused human, not a confused agent.
+  from `/spec`, still describe skills as conditional on the example skill, say
+  nothing about `/plan` spike round-trips, and still lack the register rows in
+  the **Document liveness** table. Diff it against the template version and
+  merge the changed sections (Phase-1 dialogue, Phase-2 spikes, skills prose,
+  liveness registers) by hand; the agents themselves follow the (updated, not
+  skip-listed) `.agents/` files either way, so the risk is a confused human,
+  not a confused agent.
 - The `architect` subagent now declares `Edit` / `permission.edit: allow` so it
   can append to `scratch.md` instead of overwriting it. If you pinned or
   hand-edited `.agents/subagents/architect.md`, re-apply the frontmatter change;

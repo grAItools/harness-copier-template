@@ -242,6 +242,18 @@ Copier strips the suffix at file-name parsing time, before the Jinja-in-path
 condition is evaluated, so a path like `{% if x %}foo.jinja{% endif %}`
 would keep its literal `.jinja` extension in the output.
 
+### Scaffold markers in generated docs
+
+Generated documents that the downstream user completes use three markers,
+consistently: `_Fill in: …_` for a block to replace (delete the marker;
+greppable via `rg 'Fill in:'`), backticked `` `<placeholder>` `` for inline
+substitution (bare `<…>` only inside fenced code blocks, where renderers
+don't strip it as an HTML tag), and `>` blockquotes for durable notes about
+how a document works — those stay. The generated
+`.github/PULL_REQUEST_TEMPLATE.md` is the deliberate exception: it uses
+HTML comments, because its prompts are re-filled by every PR author and
+must not show in the rendered PR description.
+
 ## Choosing a task runner
 
 `task_runner` defaults to `make` — the universal choice the source report

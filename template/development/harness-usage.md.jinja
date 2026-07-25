@@ -220,6 +220,12 @@ language and the correct agent + output format is selected automatically.
 - **Prompt tips:** Run only once the spec is approved. New
   dependency/persistence/protocol choices are surfaced in the **Architecture
   decisions** block and flagged "ADR needed". It writes no code and stops.
+- **Expect spike round-trips.** When the plan would rest on an untested
+  assumption, the architect hands back a `SPIKE-REQUEST:` and the main agent
+  runs a throwaway experiment (three rounds max), folding the findings into
+  the plan's **Spike findings** section — so `/plan` may take a few
+  hand-backs before `plan.md` appears. Spike code is disposable; only the
+  findings survive.
 
 ### Phase 3 — Build (developer)
 
@@ -266,14 +272,14 @@ what the document *says* is not.
 
 | File | Liveness |
 | --- | --- |
-| `AGENTS.md`, `CLAUDE.md`, `development/*.md` | living, **trunk-gated**: changed via a dedicated PR (or an explicit maintainer request), never silently mid-feature. One carve-out: `development/glossary.md`, below |
-| `development/glossary.md` | trunk-gated, **except** promoting terms from a reviewed spec's Glossary at `/spec` wrap-up — sanctioned mid-feature, with the user's go-ahead, in its own commit. Nothing else edits it mid-feature |
+| `AGENTS.md`, `CLAUDE.md`, `development/*.md` | living, **trunk-gated**: changed via a dedicated PR (or an explicit maintainer request), never silently mid-feature. The two **registers** (last rows) accrete by their own contracts instead |
 | `development/work/*/spec.md` | frozen once reviewed — scope changes get a new spec revision, noted in `report.md` |
 | `development/work/*/plan.md` | frozen once `/build` starts — if the plan is wrong, hand back to `/plan`; don't edit it mid-build |
 | `development/work/*/tasks.md` | living during build |
 | `development/work/*/report.md` | frozen at merge — **never retro-edited**; new findings go in the report of the feature that finds them |
 | `development/adr/NNNN-*.md` | frozen once accepted, except the Status line (supersede with a new ADR) |
-| `development/adr/README.md` decision register | living — rows appended, Status flipped in place |
+| `development/adr/README.md` decision register | **register** — rows appended mid-feature (each `DECISION-PENDING:` marker lands with its row in the same PR), Status flipped in place |
+| `development/glossary.md` | **register** — entries appended mid-feature only by promotion from a reviewed spec's **Glossary** section at `/spec` wrap-up (the Reviewer checks each new entry against that spec); renames and meaning changes are trunk-gated like prose |
 | `development/work/*/scratch.md` | dead on completion (gitignored) |
 
 ## Conventions the agents already know (don't re-specify)

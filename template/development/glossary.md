@@ -13,11 +13,15 @@ Entry format — term, domain meaning, code name only if it must differ:
   (code: `TermInCode`, only when it can't match the term itself)
 ```
 
-New terms usually arrive through a feature spec's **Glossary** section
-(`/spec`, Product Owner): the spec proposes, review promotes entries
-here. Renames and meaning changes beyond a feature's scope are a
-dedicated PR (this file is trunk-gated like the rest of
-`development/` — see [`README.md`](README.md)).
+This file is a **register**, like the decision register in
+[`adr/README.md`](adr/README.md): it accretes mid-feature through one
+channel only. New terms arrive through a feature spec's **Glossary**
+section (`/spec`, Product Owner): the spec proposes, the user reviews
+the spec, and the reviewed entries are promoted here verbatim at
+`/spec` wrap-up — the Reviewer checks each new entry against the spec
+that proposed it. Renames and meaning changes are not register
+traffic: those are a dedicated PR, trunk-gated like the rest of
+`development/` (see [`README.md`](README.md)).
 
 ## Terms
 

@@ -18,10 +18,23 @@ readers, not rewritten from these files mechanically.
 | [`adr/`](adr/) | architecture decision records (append-only) + the decision register |
 | `work/<YYYY-MM>-<slug>/` | one folder per feature: `spec.md` / `plan.md` / `tasks.md` / `report.md` (+ gitignored `scratch.md`) |
 
+Scaffold markers, used consistently across these files (and the example
+`work/` unit):
+
+- `_Fill in: …_` — a block for you to replace with real content, deleting
+  the marker. `rg 'Fill in:' development/` lists what is still scaffold.
+- `` `<placeholder>` `` — inline: replace the bracketed text, keep what's
+  around it. Bare `<…>` (no backticks) appears only inside fenced code
+  blocks, where renderers leave it alone.
+- `> blockquote` — a durable note about how the document itself works;
+  it stays.
+
 These documents are living but **trunk-gated**: agents follow them and
-propose changes via a dedicated PR or a decision-register row
-([`adr/README.md`](adr/README.md)) — never by silently editing them in the
-middle of a feature. The one carve-out is [`glossary.md`](glossary.md), which
-also takes term promotions from a reviewed spec at `/spec` wrap-up, in their
-own commit. Which files freeze, and when:
+propose changes via a dedicated PR — never by silently editing them in the
+middle of a feature. Two files are **registers**, not prose docs, and accrete
+mid-feature through their own reviewable channels: the decision register in
+[`adr/README.md`](adr/README.md) (one row per escalated decision, in the same
+PR as its `DECISION-PENDING:` marker) and [`glossary.md`](glossary.md) (entries
+promoted from a reviewed spec's Glossary section at `/spec` wrap-up). Which
+files freeze, and when:
 [`harness-usage.md`](harness-usage.md#document-liveness).
