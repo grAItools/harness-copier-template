@@ -11,9 +11,11 @@ You are creating a new feature spec.
    `development/work/<YYYY-MM>-$ARGUMENTS/`.
 3. Create the directory if it doesn't exist. **Do not** pre-create
    `plan.md`, `tasks.md`, or `scratch.md` — each role creates the
-   artifacts it owns (Architect: `plan.md`/`tasks.md`; Developer:
-   `scratch.md`), and pre-creating them would force those roles to
-   `edit` files they should be able to `write` from scratch.
+   artifacts it owns (Architect: `plan.md`/`tasks.md`), and pre-creating
+   them would force those roles to `edit` files they should be able to
+   `write` from scratch. `scratch.md` is owned by no one role: whichever
+   of the Architect, Developer, or main agent needs it first creates it,
+   and everyone after that appends.
 4. Delegate the actual spec authoring to the **product-owner** subagent
    (`.agents/subagents/product-owner.md`). It owns the spec format,
    the testable-criteria rule, the non-goals requirement, and the

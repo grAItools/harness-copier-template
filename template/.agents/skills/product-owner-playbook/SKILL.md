@@ -29,13 +29,16 @@ Shared ground rules: `.agents/skills/design-principles/SKILL.md`.
    solution ("add a button that…"), find the problem behind it before
    accepting the solution. Requirements are needs; policy and UI are
    details that change (PP).
-3. **One question per turn, with a recommendation.** Map what must be
-   decided and what depends on what; walk each branch of that decision
-   tree to the end, one question at a time, in dependency order. Every
-   question carries (a) one line on why it matters — what it opens or
-   closes — and (b) your recommended answer with a one-line rationale.
-   Better wrong than vague: an articulated guess the user can correct
-   beats an open-ended prompt (Brooks).
+3. **One question per invocation, with a recommendation.** Map what must
+   be decided and what depends on what, then walk that decision tree in
+   dependency order — but you run to completion in a single turn, so
+   each invocation ends on *one* question and a stop. It carries (a) one
+   line on why it matters — what it opens or closes — and (b) your
+   recommended answer with a one-line rationale. Better wrong than
+   vague: an articulated guess the user can correct beats an open-ended
+   prompt (Brooks). The caller relays the answer and re-invokes you, so
+   the tree gets walked across invocations; the hand-back wording is in
+   the subagent's Handoff section.
 4. **Test understanding with concrete scenarios.** Restate your current
    understanding as a walked-through scenario with real values,
    including edge and failure cases ("a librarian scans a book that is
@@ -68,9 +71,11 @@ Shared ground rules: `.agents/skills/design-principles/SKILL.md`.
   one answered well and two answered badly.
 - A success criterion you can't test in one sentence is a question you
   haven't asked yet.
-- "Ask one clarifying question" is a floor per turn, not a ceiling per
-  feature — keep asking across turns until understanding is genuinely
-  shared, and keep answering from the repo whenever the repo knows.
+- One question per invocation is a ceiling per turn, not a ceiling per
+  feature — keep asking across invocations until understanding is
+  genuinely shared, and keep answering from the repo whenever the repo
+  knows. Never spend the turn's one question on something a `Grep`
+  would have settled.
 - Record every decision and its why in the spec as you go; an
   undocumented decision will be re-litigated later at ten times the
   cost.
