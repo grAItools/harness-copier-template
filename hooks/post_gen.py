@@ -96,6 +96,41 @@ GITIGNORE_BLOCK = [
 ]
 
 
+def _read_untranslated(path: Path) -> str:
+    """Read text with newline translation off, so CRLF survives a round trip.
+
+    `Path.read_text` opens in universal-newlines mode, which turns every
+    CRLF into a bare LF before we ever see the content; writing it back
+    then rewrites the whole file on a CRLF checkout. `newline=""` hands us
+    the bytes as they are.
+    """
+    with path.open("r", encoding="utf-8", newline="") as fh:
+        return fh.read()
+
+
+def _write_untranslated(path: Path, text: str) -> None:
+    """Write text verbatim — no LF -> os.linesep translation on the way out."""
+    with path.open("w", encoding="utf-8", newline="") as fh:
+        fh.write(text)
+
+
+def _newline_of(line: str, default: str = "\n") -> str:
+    """The terminator of one line, or `default` if it has none."""
+    for ending in ("\r\n", "\r", "\n"):
+        if line.endswith(ending):
+            return ending
+    return default
+
+
+def _prevailing_newline(lines: list[str]) -> str:
+    """The terminator of the last terminated line — what inserts should match."""
+    for line in reversed(lines):
+        ending = _newline_of(line, "")
+        if ending:
+            return ending
+    return "\n"
+
+
 def _block_bounds(lines: list[str]) -> "tuple[int, int | None] | None":
     """Locate the fenced block.
 
@@ -136,13 +171,19 @@ def merge_gitignore(path: Path) -> str:
     An entry the user has commented out inside the block counts as present:
     the scratch-space line ships documented as opt-out ("comment out to
     commit"), and re-adding it on every update would silently undo that
-    choice. Lines outside the fence are never touched.
+    choice.
+
+    Lines outside the fence are never touched, byte for byte: we read and
+    write with newline translation off and keep each line's own terminator,
+    so a CRLF `.gitignore` stays CRLF and `copier update` produces a diff
+    of only the lines we actually inserted. Inserted lines take the
+    terminator the file already uses.
     """
     if not path.exists():
         return "skip: .gitignore not present"
 
-    content = path.read_text(encoding="utf-8")
-    lines = content.splitlines()
+    content = _read_untranslated(path)
+    lines = content.splitlines(keepends=True)
     bounds = _block_bounds(lines)
 
     if bounds is not None and bounds[1] is None:
@@ -154,9 +195,10 @@ def merge_gitignore(path: Path) -> str:
         )
 
     if bounds is None:
-        suffix = "" if content.endswith("\n") else "\n"
-        block = "\n".join([GITIGNORE_BEGIN, *GITIGNORE_BLOCK, GITIGNORE_END]) + "\n"
-        path.write_text(content + suffix + "\n" + block, encoding="utf-8")
+        nl = _prevailing_newline(lines)
+        terminated = not content or content.endswith(("\n", "\r"))
+        block = nl.join([GITIGNORE_BEGIN, *GITIGNORE_BLOCK, GITIGNORE_END]) + nl
+        _write_untranslated(path, content + ("" if terminated else nl) + nl + block)
         return "appended managed block to .gitignore"
 
     begin, end = bounds
@@ -177,8 +219,9 @@ def merge_gitignore(path: Path) -> str:
     if not missing:
         return "skip: .gitignore managed block already complete"
 
-    lines[end:end] = missing
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    nl = _newline_of(lines[end], _prevailing_newline(lines))
+    lines[end:end] = [entry + nl for entry in missing]
+    _write_untranslated(path, "".join(lines))
     return "added to .gitignore managed block: " + ", ".join(missing)
 
 
