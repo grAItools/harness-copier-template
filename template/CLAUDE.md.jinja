@@ -7,7 +7,8 @@
 - Use **TodoWrite** liberally; it doubles as harness echo and helps you stay
   on track during long runs.
 - **Skills** are under `.claude/skills/` (symlink to `.agents/skills/`).
-  Invoke by capability, e.g. "use the verify skill".
+  Invoke by capability, e.g. "use the architect-playbook skill"{% if include_example_skill %} or
+  "use the verify skill"{% endif %}.
 - **Subagents** are under `.claude/agents/` (symlink to `.agents/subagents/`).
   Role agents pair 1:1 with the slash commands below
   (`product-owner`, `architect`, `developer`, `reviewer`); `explorer`
@@ -16,9 +17,11 @@
 - **Slash commands** are under `.claude/commands/` (symlink to `.agents/commands/`):
   `/spec` (PO), `/plan` (Architect), `/build` (Developer),
   `/verify` (Reviewer).
+{%- if include_claude_hooks %}
 - **Hooks** in `.claude/settings.json` enforce: auto-format on Write/Edit,
   block destructive bash, run `{{ cmd('verify') }}` on Stop. They are deterministic
   and run outside your reasoning chain — don't try to work around them.
+{%- endif %}
 
 # Working with this repo
 

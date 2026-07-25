@@ -1,6 +1,19 @@
 # Plan
 
-Filled in by `/plan` after `spec.md` is reviewed.
+> Example work unit. Written by `/plan` (Architect) after `spec.md` is
+> reviewed; frozen once `/build` starts. The sections mirror the
+> Architect's output format in `.agents/subagents/architect.md`.
+
+## Architecture decisions
+
+- <Decision>: <chosen option> — <one-line rationale>.
+  Considered: <rejected option> — <one-line why it lost>.
+  ADR: <link, "ADR needed: <topic>", or "n/a">.
+
+## Spike findings
+
+- <Question> → <answer>. Method: <what was run>. Evidence: <output>.
+  (Omit the section if no spikes were needed.)
 
 ## Phase 1 — <name>
 
@@ -14,6 +27,10 @@ Filled in by `/plan` after `spec.md` is reviewed.
 
 **Exit criteria.** <How we know we can move on.>
 
+## Risks & open questions
+
+- <Risk>: <mitigation>
+
 ## Invariants
 
 - <The non-negotiables, restated for an executor with less context than
@@ -22,7 +39,8 @@ Filled in by `/plan` after `spec.md` is reviewed.
   plan.md > tasks.md; decisions beyond your authority are escalated in
   report.md using the exact marker token defined in development/adr/README.md
   ("DECISION-PENDING" immediately followed by a colon), never resolved
-  locally.>
+  locally. Do not write the live marker itself here — plan text is not a
+  report, and a stray marker would trip the reviewer's register check.>
 
 ## Review checklist
 

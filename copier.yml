@@ -13,8 +13,8 @@
 # Brown-field safety: README.md, Makefile, justfile, .gitignore, .mcp.json,
 # .github/PULL_REQUEST_TEMPLATE.md, development/adr/README.md (it accumulates
 # decision-register rows downstream), and the populated development/ files
-# (architecture, style, testing, tool-bootstrap, harness-usage) are protected
-# via _skip_if_exists. Copier will leave the existing file in place and you
+# (architecture, style, testing, tool-bootstrap, harness-usage, glossary) are
+# protected via _skip_if_exists. Copier leaves the existing file in place and you
 # can diff/merge the template version manually if needed. docs/ is never
 # generated: it stays reserved for the project's own user documentation.
 
@@ -37,6 +37,7 @@ _skip_if_exists:
   - ".mcp.json"
   - ".github/PULL_REQUEST_TEMPLATE.md"
   - "development/adr/README.md"
+  - "development/glossary.md"
   - "development/architecture.md"
   - "development/style.md"
   - "development/testing.md"
