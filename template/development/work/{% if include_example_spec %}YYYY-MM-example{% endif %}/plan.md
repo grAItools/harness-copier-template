@@ -39,7 +39,8 @@
   plan.md > tasks.md; decisions beyond your authority are escalated in
   report.md using the exact marker token defined in development/adr/README.md
   ("DECISION-PENDING" immediately followed by a colon), never resolved
-  locally.>
+  locally. Do not write the live marker itself here — plan text is not a
+  report, and a stray marker would trip the reviewer's register check.>
 
 ## Review checklist
 

@@ -23,9 +23,12 @@ next agent doesn't re-litigate them blind. "Nothing abandoned" is valid.>
 ## Decisions escalated
 
 <One line per decision that exceeded the agent's authority, each starting
-with the marker token — "DECISION-PENDING" followed by a colon and the
-decision needed. Each line gets a row in the decision register
-(development/adr/README.md) in the same PR. "None" is a valid entry.>
+with the marker token — "DECISION-PENDING" immediately followed by a colon
+— and the decision needed. (Spelled out rather than written literally: a
+live marker in this scaffold would have no register row, which is exactly
+what the Reviewer's register check flags as a defect.) Each line gets a row
+in the decision register (development/adr/README.md) in the same PR. "None"
+is a valid entry.>
 
 ## Follow-ups
 

@@ -207,7 +207,11 @@ major version).
   version — `AGENTS.local.md`, below — could never reach a repo generated from
   an older one, despite the docstring and `README.md` promising an append-only
   merge. Entries a user commented out inside the fence are left alone, and
-  nothing outside the fence is touched.
+  nothing outside the fence is touched. A **half-open fence** (a begin marker
+  whose end marker was hand-deleted) is now warned about and left alone;
+  previously it read as "no block at all" and a second block was appended,
+  leaving two begin markers and pulling every line between them inside the
+  managed fence.
 - `AGENTS.local.md` is now ignored in brown-field repos too: it was present in
   the greenfield `.gitignore` but missing from the managed block appended by
   `hooks/post_gen.py`.
