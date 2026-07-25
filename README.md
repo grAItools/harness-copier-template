@@ -246,10 +246,13 @@ would keep its literal `.jinja` extension in the output.
 
 Generated documents that the downstream user completes use three markers,
 consistently: `_Fill in: …_` for a block to replace (delete the marker;
-greppable via `rg 'Fill in:'`), backticked `` `<placeholder>` `` for inline
-substitution (bare `<…>` only inside fenced code blocks, where renderers
-don't strip it as an HTML tag), and `>` blockquotes for durable notes about
-how a document works — those stay. The generated
+greppable via `rg 'Fill in:'`), bare `<placeholder>` — angle brackets,
+never backticked — for inline substitution, and `>` blockquotes for durable
+notes about how a document works — those stay. The bare form matches the
+output formats the role subagents are instructed to emit, so a scaffold and
+a freshly written document are the same shape; the cost is that a Markdown
+preview may swallow `<word>` as an unknown HTML tag, which these
+repo-internal, read-as-text files accept. The generated
 `.github/PULL_REQUEST_TEMPLATE.md` is the deliberate exception: it uses
 HTML comments, because its prompts are re-filled by every PR author and
 must not show in the rendered PR description.

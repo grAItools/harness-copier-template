@@ -23,9 +23,13 @@ Scaffold markers, used consistently across these files (and the example
 
 - `_Fill in: …_` — a block for you to replace with real content, deleting
   the marker. `rg 'Fill in:' development/` lists what is still scaffold.
-- `` `<placeholder>` `` — inline: replace the bracketed text, keep what's
-  around it. Bare `<…>` (no backticks) appears only inside fenced code
-  blocks, where renderers leave it alone.
+- `<placeholder>` — inline: replace the bracketed text, keep what's around
+  it. The brackets are never given backticks of their own, and they stay
+  bare inside a backticked path too (`work/<YYYY-MM>-<slug>/`). That is the
+  form the role subagents emit in their output formats, so a scaffold and a
+  freshly written document look alike — at the price of a Markdown preview
+  swallowing a bare `<word>` as an unknown HTML tag, which these
+  read-as-text files accept.
 - `> blockquote` — a durable note about how the document itself works;
   it stays.
 

@@ -118,10 +118,10 @@ major version).
 
 - Generated docs mark their fill-in points with one consistent set of
   scaffold markers: `_Fill in: …_` for blocks the downstream user replaces
-  (greppable), backticked `` `<placeholder>` `` inline (bare `<…>` only
-  inside fenced code blocks, so rendered views don't strip it as an HTML
-  tag), and `>` blockquotes reserved for durable how-this-doc-works notes.
-  The PR template keeps HTML comments deliberately (its prompts are
+  (greppable), bare `<placeholder>` inline — angle brackets, never
+  backticked, the same form the role subagents emit in their output
+  formats — and `>` blockquotes reserved for durable how-this-doc-works
+  notes. The PR template keeps HTML comments deliberately (its prompts are
   re-filled by every PR author and must not render). Documented in
   `development/README.md` and the template README.
 - The `spec.md` skeleton gains two mandatory sections: `## Constraints` (with a
