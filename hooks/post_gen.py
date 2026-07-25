@@ -197,8 +197,15 @@ def merge_gitignore(path: Path) -> str:
     if bounds is None:
         nl = _prevailing_newline(lines)
         terminated = not content or content.endswith(("\n", "\r"))
+        prefix = content + ("" if terminated else nl)
+        if content.strip():
+            # Blank line separating the user's own entries from ours. Skipped
+            # when there are none to separate from, so an empty .gitignore
+            # starts at the begin marker rather than a stray blank line.
+            # Whitespace-only content is still kept verbatim, never trimmed.
+            prefix += nl
         block = nl.join([GITIGNORE_BEGIN, *GITIGNORE_BLOCK, GITIGNORE_END]) + nl
-        _write_untranslated(path, content + ("" if terminated else nl) + nl + block)
+        _write_untranslated(path, prefix + block)
         return "appended managed block to .gitignore"
 
     begin, end = bounds
