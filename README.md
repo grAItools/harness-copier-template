@@ -170,14 +170,18 @@ and the template:
 - **Never silently overwrites** `README.md`, `Makefile`, `justfile`,
   `.gitignore`, `.mcp.json`, `.github/PULL_REQUEST_TEMPLATE.md`,
   `development/adr/README.md` (it accumulates decision-register rows), or the
-  populated `development/` files (`architecture`,
-  `style`, `testing`, `tool-bootstrap`, `harness-usage`). They're listed in
+  populated `development/` files (`architecture`, `style`, `testing`,
+  `tool-bootstrap`, `harness-usage`, `glossary`). They're listed in
   `_skip_if_exists` — copier leaves the existing file in place. (This also
   means switching `task_runner` later does not delete the previous file;
   remove it manually if you no longer want it.)
 - **Appends** the harness's gitignore entries inside a fenced
   `# >>> ai-agent-harness >>>` … `# <<< ai-agent-harness <<<` block via the
-  post-generation hook, so the operation is idempotent across re-runs.
+  post-generation hook. It merges per entry, not per block: a re-run or a
+  `copier update` adds only the entries the block is missing, so a repo
+  generated from an older version picks up newly added ones. An entry you
+  comment out inside the block stays commented out, and nothing outside the
+  fence is touched.
 - **Symlinks** `.claude/{skills,agents,commands}` and
   `.opencode/{skills,agents,commands}` to `.agents/{skills,subagents,commands}`
   after generation.

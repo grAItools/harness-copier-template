@@ -78,7 +78,12 @@ top of the verdict rules below, which it never overrides.
 - Check **all four** axes:
   1. **Spec conformance** — does each Success criterion in `spec.md`
      have observable evidence (a passing test, a screenshot, a log
-     line)?
+     line)? And does the delivered work respect the spec's
+     **Constraints** section, including the budgeted resource it names
+     (latency, memory, schedule, attention)? A constraint that was
+     silently exceeded is a defect even when every success criterion
+     passes — and a budget that nothing in the diff measures is a
+     missing-evidence finding, not a pass.
   2. **Plan conformance** — were the phases delivered as planned, or
      were undocumented detours taken? On any conflict between the
      documents, judge against the higher authority:

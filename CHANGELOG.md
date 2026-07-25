@@ -18,17 +18,10 @@ major version).
   playbook adds review depth without overriding the verdict/gate rules. See
   [ADR 0011](docs/decisions/0011-knowledge-grounded-role-playbooks.md).
 - `development/glossary.md` — the project's ubiquitous language; added to
-  `_skip_if_exists`. Specs gain a `## Glossary` section (promoted to the
-  glossary at `/spec` review wrap-up) and a `## Constraints` section naming
-  the budgeted resource (ADR 0011).
-- Architect de-risking: `plan.md`'s Architecture decisions block gains a
-  `Considered:` (design-it-twice) line, plans gain an optional
-  `## Spike findings` section, and `/plan` runs architect-requested spikes in
-  the main agent (throwaway code, findings via `scratch.md`). Phase 1 defaults
-  to a tracer bullet for cross-layer features (ADR 0011).
-- Product Owner questioning protocol: explore the repo before asking, then one
-  question per turn with a recommended answer, until the user explicitly
-  confirms shared understanding (ADR 0011).
+  `_skip_if_exists` and to the `development/README.md` index. It is the one
+  `development/*.md` file the harness may edit mid-feature, and only to promote
+  terms from a reviewed spec at `/spec` wrap-up, in its own commit; the
+  **Document liveness** table records the carve-out (ADR 0011).
 - `development/work/<YYYY-MM>-<slug>/report.md` joins the feature lifecycle — the durable
   account of what actually happened (what was built, declared deviations,
   negative results, escalated decisions, follow-ups, gate result), written by
@@ -119,6 +112,33 @@ major version).
 
 ### Changed
 
+- The `spec.md` skeleton gains two mandatory sections: `## Constraints` (with a
+  `Budgeted resource:` line naming the scarce thing trade-offs must respect) and
+  `## Glossary` (terms pinned during the discussion, promoted to
+  `development/glossary.md` after review). Both are wired to readers: the
+  architect compares its design alternatives on the budgeted resource and stops
+  rather than relaxing it, and the reviewer's spec-conformance axis now fails a
+  phase that exceeds a constraint or leaves the budget unmeasured, however green
+  the success criteria are. In-flight specs written to the old skeleton lack
+  both sections (ADR 0011).
+- The `plan.md` skeleton changes with the architect's de-risking rules: the
+  Architecture decisions block gains a `Considered:` (design-it-twice) line and
+  plans gain an optional `## Spike findings` section. `/plan` gains a spike loop
+  — the architect writes a `SPIKE-REQUEST:` line in `scratch.md` and hands back,
+  the main agent runs the throwaway experiment and appends a `SPIKE-FINDING:`
+  line, capped at three rounds — and Phase 1 now defaults to a tracer bullet for
+  cross-layer features. The architect gains `Edit` (it appends to the shared
+  `scratch.md` rather than overwriting it) and reads `scratch.md` alongside
+  `spec.md`. Downstream repos' example `plan.md` carries the old skeleton
+  (ADR 0011).
+- The Product Owner's "stop and ask **one** clarifying question before writing
+  anything" rule is replaced by a multi-round interrogation protocol: look up
+  whatever the repo can answer, then stop on the single highest-value remaining
+  question, carrying a recommended answer. `/spec` relays the reply and
+  re-invokes the subagent (capped at five rounds) until nothing blocking is
+  left. The handoff instruction travels in the subagent's own reply, so the loop
+  survives description-match invocation without the slash command. Expect a
+  dialogue where the old harness stopped after one question (ADR 0011).
 - The `reviewer` subagent is hardened to a skeptical-review protocol: scope
   check first (`git diff --stat`; out-of-plan touches are defects), never
   trust the Developer's narrative (re-run the gate, re-derive claims), probe
@@ -169,9 +189,48 @@ major version).
 
 ### Fixed
 
+- `hooks/post_gen.py` merges the `.gitignore` managed block **per entry**
+  instead of skipping it wholesale once the fence marker is present. Previously
+  it returned early on any existing block, so an entry added by a later template
+  version — `AGENTS.local.md`, below — could never reach a repo generated from
+  an older one, despite the docstring and `README.md` promising an append-only
+  merge. Entries a user commented out inside the fence are left alone, and
+  nothing outside the fence is touched.
 - `AGENTS.local.md` is now ignored in brown-field repos too: it was present in
   the greenfield `.gitignore` but missing from the managed block appended by
   `hooks/post_gen.py`.
+- The `architect` subagent could not execute its own spike protocol: one
+  constraint told it to write the spike question to `scratch.md` while another
+  allowed it to write only `plan.md` and `tasks.md`, so an architect reading the
+  narrower rule silently planned on the untested assumption instead. The write
+  allowance now names `scratch.md`, and the hand-back contract lives in the
+  subagent's Handoff section, where description-match invocation still reaches
+  it.
+- The `developer` subagent must re-run the verification gate when its
+  end-of-phase red-flag rework touches code. The rework step sat after the
+  gate-green step in the working loop, so a phase could hand off reporting
+  "gate: green" for a tree that no longer passed — which the Reviewer ranks
+  MAJOR as a false report claim.
+- `development/harness-usage.md` no longer gates every mention of skills on
+  `include_example_skill`. Five skills (four role playbooks plus
+  `design-principles`) ship unconditionally and the subagents require reading
+  them, but with the example skill declined the guide told the reader the
+  project had no skills at all.
+- `development/harness-usage.md`'s Phase-1 prompting section no longer promises
+  "expect _one_ clarifying question", which the Product Owner protocol above
+  contradicts; it documents the question loop and its round cap instead. The
+  file is in `_skip_if_exists`, so downstream repos need the correction applied
+  by hand.
+- The `reviewer-playbook` skill no longer tells the Reviewer that "praise is not
+  padding" — the `reviewer` subagent forbids padding the verdict with praise,
+  and the playbook is explicitly subordinate to it.
+- `development/glossary.md` was in `_skip_if_exists` but missing from the
+  brown-field protected-file lists in `README.md` and the `copier.yml` header
+  comment, so an adopter with an existing glossary had no way to know it would
+  be skipped without a prompt or diff.
+- The `design-principles` skill is referenced by its full
+  `.agents/skills/design-principles/SKILL.md` path in the developer and reviewer
+  playbooks, matching every other reference.
 - `CLAUDE.md` no longer claims hook enforcement when `include_claude_hooks=false`
   (the hooks stanza is now gated, matching `harness-usage.md`).
 - `harness-usage.md` no longer calls `.claude/rules/` "currently empty" — the
@@ -229,12 +288,12 @@ major version).
   copier update
   ```
 
-  Then **edit** the `specs/*/scratch.md` line in your `.gitignore`'s managed
-  block to `development/work/*/scratch.md`: the post-gen hook leaves an
-  existing managed block entirely untouched (it only appends the whole block
-  when missing), so it will neither add the new line nor remove the old one —
-  and `.gitignore` is `_skip_if_exists`, so the template render won't fix it
-  either. Expect the other `_skip_if_exists`-preserved files to keep old-path
+  Then **delete** the stale `specs/*/scratch.md` line from your `.gitignore`'s
+  managed block. The post-gen hook adds `development/work/*/scratch.md` for you
+  (it merges the block per entry, so a missing entry is appended), but it never
+  removes anything — and `.gitignore` is `_skip_if_exists`, so the template
+  render won't clean it up either. Leaving the old line is harmless but
+  misleading. Expect the other `_skip_if_exists`-preserved files to keep old-path
   prose after migration — `README.md`'s specs mention, and any paths inside a
   PR template you already had (the *generated* `.github/PULL_REQUEST_TEMPLATE.md`
   is new in this release and already points at `development/`) — update those
@@ -243,6 +302,18 @@ major version).
 - `development/tool-bootstrap.md` is in `_skip_if_exists`, so a brownfield `copier
   update` keeps its existing copy and won't pick up the `ensure-toolchain.sh`
   reference — merge it by hand (the bootstrap and hook wiring work without it).
+- `development/harness-usage.md` is in `_skip_if_exists` too, so an existing
+  repo keeps its copy and will still promise "expect _one_ clarifying question"
+  from `/spec`, still describe skills as conditional on the example skill, and
+  still lack the `development/glossary.md` row in the **Document liveness**
+  table. Diff it against the template version and merge those three sections by
+  hand; the agents themselves follow the (updated, not skip-listed) `.agents/`
+  files either way, so the risk is a confused human, not a confused agent.
+- The `architect` subagent now declares `Edit` / `permission.edit: allow` so it
+  can append to `scratch.md` instead of overwriting it. If you pinned or
+  hand-edited `.agents/subagents/architect.md`, re-apply the frontmatter change;
+  an architect left on `Write`-only will clobber prior spike findings and
+  Developer hand-back notes, and `scratch.md` is gitignored, so they're gone.
 - The `copilot` question was renamed to `copilot_code_review`. Existing
   projects must rename the key in `.copier-answers.yml` (or delete it and
   re-answer the prompt) **before** running `copier update` — otherwise the

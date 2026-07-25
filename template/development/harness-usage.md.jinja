@@ -3,7 +3,7 @@
 
 `{{ project_name }}` ships a single agentic coding harness that both **Claude
 Code** and **OpenCode** can drive. This guide explains how it is wired and how to
-trigger the configured capabilities (subagents, slash commands{% if include_example_skill %}, skills{% endif %},
+trigger the configured capabilities (subagents, slash commands, skills,
 hooks) for different tasks — and how to phrase prompts so the existing `.agents/`
 configuration is used without restating conventions every time.
 
@@ -15,7 +15,7 @@ See also: [`AGENTS.md`](../AGENTS.md) (agent instructions),
 ## The shared model
 
 The canonical definitions live once under `.agents/` and are symlinked into each
-tool's config directory, so the same roles{% if include_example_skill %}, commands, and skill{% else %} and commands{% endif %} serve every
+tool's config directory, so the same roles, commands, and skills serve every
 tool. **You edit the files under `.agents/`, never the symlinks.**
 
 ```
@@ -23,6 +23,11 @@ tool. **You edit the files under `.agents/`, never the symlinks.**
 .agents/commands/   ─┼─►  .claude/commands/    .opencode/commands/    # /spec /plan /build /verify
 .agents/skills/     ─┴─►  .claude/skills/      .opencode/skills/      # skills
 ```
+
+`.agents/skills/` holds the four **role playbooks** (`{product-owner,architect,
+developer,reviewer}-playbook`) plus the shared `design-principles` ground rules
+they all link. Each role subagent reads its own playbook as part of its
+instructions{% if include_example_skill %}; the `verify` skill is separate — see below{% endif %}.
 
 The design is a **gated four-phase loop** — one slash command per phase, each
 backed by a single-purpose subagent that **stops for human review before the
@@ -52,22 +57,23 @@ The five subagents and their access:
 ### 1. Manual (you type it)
 
 - **Slash commands:** `/spec <slug>`, `/plan [dir]`, `/build [dir]`, `/verify`.
-{% if include_example_skill -%}
-- **Skill by name:** "use the verify skill".
-{% endif -%}
+- **Skill by name:** "use the architect playbook skill"{% if include_example_skill %}, "use the verify
+  skill"{% endif %}.
 - **Subagent by name:** Claude Code — "use the explorer subagent to find where X
   is wired up"; OpenCode — `@explorer find where X is wired up` (the filename is
   the agent id).
 
 ### 2. Automatic by description match (the model decides)
 
-Each subagent{% if include_example_skill %} and skill{% endif %} has a `description` written as a _trigger_. When
+Each subagent and skill has a `description` written as a _trigger_. When
 your prompt matches that language, the capability fires without you naming it:
 
 {% if include_example_skill -%}
 - The `verify` skill fires on "verify", "is this ready", "ready to commit",
   "check this", or after any non-trivial edit.
 {% endif -%}
+- The role playbooks fire on method cues — "how should I design this", "weigh
+  the alternatives", "is this good" — independently of the slash commands.
 - `explorer` fires on "find where X is implemented", "how does Y work", "what
   calls Z".
 - The role agents fire on their phase cues (see [per-phase prompting](#writing-prompts-so-the-right-phase-config-is-used)).
@@ -194,11 +200,16 @@ language and the correct agent + output format is selected automatically.
 
 - **Trigger words:** "new feature", "spec out", "I want to add…", or `/spec <slug>`.
 - **What you get:** `spec.md` with Problem / Goal / Users & stakeholders /
-  Success criteria / Non-goals / Open questions. WHAT and WHY only — no file
-  paths or libraries.
+  Success criteria / Non-goals / Constraints / Glossary / Open questions. WHAT
+  and WHY only — no file paths or libraries.
 - **Prompt tips:** Give the user-facing intent and at least one observable
-  success condition. Don't prescribe implementation — the PO strips it. Expect
-  _one_ clarifying question if ambiguous, then it stops for your review.
+  success condition. Don't prescribe implementation — the PO strips it.
+- **Expect a dialogue, not one round.** The PO looks up whatever the repo can
+  answer, then stops on the single highest-value question it still needs you
+  for — with its own recommended answer attached, so "yes, go with that" is a
+  valid reply. Answer it and the loop resumes; it writes the spec once nothing
+  blocking is left (`/spec` caps this at five rounds). Repeated questions are
+  the design working, not the agent stuck.
 
 ### Phase 2 — Plan (architect)
 
@@ -255,7 +266,8 @@ what the document *says* is not.
 
 | File | Liveness |
 | --- | --- |
-| `AGENTS.md`, `CLAUDE.md`, `development/*.md` | living, **trunk-gated**: changed via a dedicated PR (or an explicit maintainer request), never silently mid-feature |
+| `AGENTS.md`, `CLAUDE.md`, `development/*.md` | living, **trunk-gated**: changed via a dedicated PR (or an explicit maintainer request), never silently mid-feature. One carve-out: `development/glossary.md`, below |
+| `development/glossary.md` | trunk-gated, **except** promoting terms from a reviewed spec's Glossary at `/spec` wrap-up — sanctioned mid-feature, with the user's go-ahead, in its own commit. Nothing else edits it mid-feature |
 | `development/work/*/spec.md` | frozen once reviewed — scope changes get a new spec revision, noted in `report.md` |
 | `development/work/*/plan.md` | frozen once `/build` starts — if the plan is wrong, hand back to `/plan`; don't edit it mid-build |
 | `development/work/*/tasks.md` | living during build |

@@ -27,7 +27,8 @@ Shared ground rules: `.agents/skills/design-principles/SKILL.md`.
 2. **Assume competence, then check.** When something looks wrong, ask
    "what led them to do this?" — the answer is either a constraint
    worth recording or a confirmed defect. Both are findings (Brooks).
-3. **Run the red-flag checklist** from `design-principles/SKILL.md`
+3. **Run the red-flag checklist** from
+   `.agents/skills/design-principles/SKILL.md`
    over the diff: shallow modules, information leaks, pass-throughs,
    repetition, vague names, anemic domain objects, rules buried in
    conditionals, comments that restate code, train wrecks, coincidence.
@@ -65,5 +66,6 @@ Shared ground rules: `.agents/skills/design-principles/SKILL.md`.
 - Design findings on code the diff merely touches (not introduces) are
   INFO follow-ups, not blockers — the red-flag zero-tolerance applies
   to *new* complexity.
-- Praise is not padding when it's specific: one line naming a practice
-  worth repeating teaches as much as a defect.
+- Don't pad the verdict with praise; the absence of findings is the
+  praise. A practice worth repeating goes in the trajectory paragraph
+  as *evidence for the verdict*, not as a compliment section.

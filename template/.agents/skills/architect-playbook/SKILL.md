@@ -27,17 +27,19 @@ Shared ground rules: `.agents/skills/design-principles/SKILL.md`.
 2. **Design it twice.** Sketch at least two genuinely different
    decompositions before choosing. Compare on: interface simplicity for
    callers, information hiding, blast radius of likely changes,
-   cognitive load. Record the loser and why it lost in the plan's
-   Architecture decisions block — a decision with no recorded
+   cognitive load — and on the budgeted resource the spec's
+   **Constraints** section names, which is the axis the trade-off is
+   actually being made against. Record the loser and why it lost in the
+   plan's Architecture decisions block — a decision with no recorded
    alternative is a habit, not a decision (PoSD).
 3. **Spike before you commit.** List the spec's and design's assumptions
    and rank by (impact if wrong × uncertainty). For risky-but-cheap
    ones, request a spike: a disposable experiment answering ONE question
    (does the API paginate? is the parser fast enough?). You cannot run
-   code yourself — hand back to the main agent with the spike question
-   in `scratch.md`, and fold the findings (question → method → answer →
-   evidence) into the plan. Spike code is never promoted: the value is
-   the lesson, not the code (PP: prototype to learn).
+   code yourself — hand back to the main agent using the protocol in the
+   architect subagent's Handoff section, and fold the returned findings
+   into the plan. Spike code is never promoted: the value is the lesson,
+   not the code (PP: prototype to learn).
 4. **Phase 1 is a tracer bullet.** When the feature spans layers, make
    the first phase the thinnest end-to-end slice through the real
    architecture, kept for keeps — then every later phase mutates a

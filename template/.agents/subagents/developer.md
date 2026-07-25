@@ -94,8 +94,12 @@ For each unchecked task in `tasks.md`, in order:
 At the end of each phase, before handing off: walk the red-flag
 checklist (`.agents/skills/design-principles/SKILL.md`) over your own
 diff and fix what it catches — the Reviewer is for what you *can't*
-see, not for what you didn't look at. Then stop and hand off to the
-Reviewer (`/verify`).
+see, not for what you didn't look at. **If that rework touched code,
+run the verification gate again before you hand off.** The gate status
+you report describes the tree you are actually leaving behind, not the
+tree as it stood before the cleanup; the Reviewer re-runs the gate
+itself, and a stale green is a false report claim, not a near miss.
+Then stop and hand off to the Reviewer (`/verify`).
 
 ## Handoff
 

@@ -55,9 +55,10 @@ Shared ground rules: `.agents/skills/design-principles/SKILL.md`.
    authority), and hand back. Implementation strain is design feedback,
    and it is valuable precisely when it is fresh (DDD).
 9. **Self-review before handoff.** Walk the red-flag checklist in
-   `design-principles/SKILL.md` over your own diff and fix what it
-   catches. The Reviewer is for what you *can't* see, not for what you
-   didn't look at.
+   `.agents/skills/design-principles/SKILL.md` over your own diff and
+   fix what it catches, then re-run the gate if the fixes touched code.
+   The Reviewer is for what you *can't* see, not for what you didn't
+   look at.
 
 ## Gotchas
 

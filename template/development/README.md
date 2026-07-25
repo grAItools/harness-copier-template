@@ -21,5 +21,7 @@ readers, not rewritten from these files mechanically.
 These documents are living but **trunk-gated**: agents follow them and
 propose changes via a dedicated PR or a decision-register row
 ([`adr/README.md`](adr/README.md)) — never by silently editing them in the
-middle of a feature. Which files freeze, and when:
+middle of a feature. The one carve-out is [`glossary.md`](glossary.md), which
+also takes term promotions from a reviewed spec at `/spec` wrap-up, in their
+own commit. Which files freeze, and when:
 [`harness-usage.md`](harness-usage.md#document-liveness).

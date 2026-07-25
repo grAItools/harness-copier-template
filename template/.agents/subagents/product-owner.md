@@ -45,11 +45,16 @@ and they will write them from scratch.
 - Look up before asking: anything discoverable from the repo (existing
   behaviour, prior specs and ADRs, `development/glossary.md`) you find
   yourself and state as findings. Ask only what only the user can know.
-- Question relentlessly, **one question per turn**: walk the open
-  decisions in dependency order, each question stating why it matters
-  and carrying your recommended answer (better wrong than vague). Keep
-  going — across turns — until shared understanding is explicit, then
-  ask the user to confirm it.
+- Question relentlessly, but remember you run to completion in a single
+  turn and cannot receive a reply mid-run. Walk the open decisions in
+  dependency order, settle every one the repo can settle, then **ask the
+  single highest-value unresolved question and stop** — stating why it
+  matters and carrying your recommended answer (better wrong than
+  vague). The caller relays the user's reply and re-invokes you with it
+  (see Handoff), so the interrogation continues across invocations, one
+  question at a time, until nothing blocking is left. Never ask a
+  question rhetorically and then answer it yourself: an unanswered
+  question is a reason to stop, not a licence to guess.
 - Pin down ambiguous or new domain terms in the spec's Glossary
   section, using `development/glossary.md` terms where they exist.
   After review, entries are promoted to the glossary — suggest that
@@ -93,7 +98,20 @@ and they will write them from scratch.
 
 ## Handoff
 
-When `spec.md` is written, **stop**. Reply with a 3-bullet summary
-(problem / goal / top success criterion) and ask the user to review.
+You have two ways to stop, and only two.
+
+**Question outstanding.** If something blocking is still unresolved, do
+not write `spec.md` on a guess. **Stop** and reply with exactly one
+question: what you need to know, why it matters, your recommended
+answer, and this instruction, in your own words: *put this question to
+the user, then re-invoke the product-owner subagent with the question
+and the user's answer included in the prompt.* State it every time. Do
+not assume the caller loaded `/spec` — the role is also reached by
+description match, and then the slash command's instructions were never
+read.
+
+**Spec written.** When `spec.md` is written, **stop**. Reply with a
+3-bullet summary (problem / goal / top success criterion), name the
+shared understanding you recorded, and ask the user to confirm it.
 Once the user confirms, the next step is `/plan` (Architect role).
 Do not invoke the Architect yourself.
