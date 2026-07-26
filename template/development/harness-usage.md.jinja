@@ -241,10 +241,11 @@ language and the correct agent + output format is selected automatically.
   `*/generated/*`.
 - **Expect explorer round-trips.** Subagents cannot spawn subagents, so when a
   mid-phase search needs longer-context summarisation the developer hands back
-  an `EXPLORER-REQUEST: [phase <n>]` and the main agent runs the `explorer`
-  pass, appends a matching `EXPLORER-FINDING:` to `scratch.md` and re-invokes it
-  (three rounds per phase — `scratch.md` spans the whole feature, which is what
-  the phase tag counts against). A stop before the gate is green is never a
+  an `EXPLORER-REQUEST: [phase <n>] <what it needs summarised>` and the main
+  agent runs the `explorer` pass, appends the answer as
+  `EXPLORER-FINDING: [phase <n>] <the question> → <answer>` to `scratch.md` and
+  re-invokes it (three rounds per phase — `scratch.md` spans the whole feature,
+  which is what the phase tag counts against). A stop before the gate is green is never a
   phase boundary: it is this, a `DECISION-PENDING:` escalation in `report.md`,
   a `PLAN-REVISION:` hand-back that belongs to `/plan` and not `/verify`, or a
   gate failure reported verbatim. Read which one it is before reaching for
