@@ -239,6 +239,13 @@ language and the correct agent + output format is selected automatically.
   code, it runs an explorer pass first and drops notes in `scratch.md`. Don't ask
   it to "skip the test" — it refuses and drafts an ADR instead. It never edits
   `*/generated/*`.
+- **Expect explorer round-trips.** Subagents cannot spawn subagents, so when a
+  mid-phase search needs longer-context summarisation the developer hands back
+  an `EXPLORER-REQUEST:` and the main agent runs the `explorer` pass, appends an
+  `EXPLORER-FINDING:` to `scratch.md` and re-invokes it (three rounds per phase
+  max). A stop before the gate is green is this or a `DECISION-PENDING:`
+  escalation, not a phase boundary — read what it asked for before reaching for
+  `/verify`.
 
 ### Phase 4 — Verify / review (reviewer)
 

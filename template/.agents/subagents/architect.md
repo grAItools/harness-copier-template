@@ -147,9 +147,14 @@ append the result to `scratch.md` as `SPIKE-FINDING: <question> →
 <answer>. Method: <what was run>. Evidence: <output>`, then re-invoke
 the architect subagent.* State it every time. Do not assume the caller
 loaded `/plan` — the role is also reached by description match, and then
-the slash command's instructions were never read. If a finding
-contradicts `spec.md`, hand back to the Product Owner rather than
-planning around it.
+the slash command's instructions were never read. That makes the cap
+yours to keep as well: **three spike rounds per plan**. You start each
+invocation with fresh context, so count the `SPIKE-REQUEST:` lines
+already in `scratch.md` before appending another — they are the round
+counter. If there are already three, do not ask for a fourth: the
+uncertainty is not a design experiment, so stop and put the question to
+the user. If a finding contradicts `spec.md`, hand back to the Product
+Owner rather than planning around it.
 
 **Plan written.** When `plan.md` and `tasks.md` are written, **stop**.
 Reply with a 1-line summary per phase and the list of architecture

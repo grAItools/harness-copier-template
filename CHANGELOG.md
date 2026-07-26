@@ -113,6 +113,17 @@ major version).
 - `_macros.jinja` gains a `lang_glob()` macro (the `primary_language` →
   source-glob map, previously inline in `language.instructions.md.jinja`),
   now shared by that file and `.claude/rules/comments.md`.
+- The Developer's mid-build search hand-back is now a serviced round-trip:
+  `/build` gains a step 5 that reads an `EXPLORER-REQUEST:` line from
+  `scratch.md`, runs the `explorer` pass, appends an `EXPLORER-FINDING:`
+  line and re-invokes the developer (three rounds per phase), mirroring the
+  `SPIKE-REQUEST:`/`SPIKE-FINDING:` protocol `/plan` already had. The same
+  step says what to do with a `DECISION-PENDING:` stop, which `/build` never
+  covered. The `developer` subagent's Handoff section now enumerates all four
+  ways it stops (search needed / plan wrong / decision beyond authority /
+  phase complete) with the marker and the cap stated inline, and
+  `development/harness-usage.md`'s Phase-3 section sets the round-trip
+  expectation.
 
 ### Changed
 
@@ -279,6 +290,16 @@ major version).
   `git reset --hard`) silently no-opping. The `PreToolUse` guard fails closed
   (exit 2) when `jq` errors or the extracted command is empty. `copier update`
   propagates the fix (not in `_skip_if_exists`).
+- Hand-back loops are now bounded where they run, not only in the slash
+  command that starts them. The `/spec` five-round and `/plan` three-round caps
+  were the loops' only termination condition, in the one file both subagents
+  say may never have been read ("do not assume the caller loaded `/spec`"). The
+  `architect` subagent now states its own three-spike cap and counts the
+  `SPIKE-REQUEST:` lines already in `scratch.md`; the `product-owner`, which
+  cannot write `scratch.md`, numbers each question ("question 2 of at most 5")
+  and asks the caller to carry the count; and `AGENTS.md` — the one file loaded
+  on every path, including description match — gains a "hand-back loops are
+  bounded" rule with a default cap of three for any role that states none.
 
 ### Removed (breaking)
 
