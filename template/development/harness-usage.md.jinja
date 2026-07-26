@@ -244,8 +244,11 @@ language and the correct agent + output format is selected automatically.
   an `EXPLORER-REQUEST: [phase <n>] <what it needs summarised>` and the main
   agent runs the `explorer` pass, appends the answer as
   `EXPLORER-FINDING: [phase <n>] <the question> → <answer>` to `scratch.md` and
-  re-invokes it (three rounds per phase — `scratch.md` spans the whole feature,
-  which is what the phase tag counts against). A stop before the gate is green is never a
+  re-invokes it, passing the round number back. **Three rounds per phase**: that
+  carried number is the count, and the `[phase <n>]` tag is what narrows a
+  fallback tally to the phase in hand when it goes missing — `scratch.md` is
+  the whole feature's channel, so an untagged tally would charge one phase for
+  another's searches. A stop before the gate is green is never a
   phase boundary: it is this, a `DECISION-PENDING:` escalation in `report.md`,
   a `PLAN-REVISION:` hand-back that belongs to `/plan` and not `/verify`, or a
   gate failure reported verbatim. Read which one it is before reaching for
