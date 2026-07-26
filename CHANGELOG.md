@@ -116,6 +116,15 @@ major version).
 
 ### Changed
 
+- The `reviewer` subagent now treats `plan.md`'s **Review checklist** as
+  add-only: it may add checks, never narrow scope or relax a verdict rule, and
+  a checklist entry that tries to is itself a finding to report. Previously the
+  checklist was declared "part of your instructions" with no bound, while the
+  two neighbouring inputs (the reviewer playbook, the Developer's narrative)
+  were both explicitly subordinated — an asymmetry a careful agent could read
+  as deliberate. `/verify` and `development/harness-usage.md` restate the bound
+  (the principle is already on record in
+  [ADR 0011](docs/decisions/0011-knowledge-grounded-role-playbooks.md) §2).
 - Generated docs mark their fill-in points with one consistent set of
   scaffold markers: `_Fill in: …_` for blocks the downstream user replaces
   (greppable), bare `<placeholder>` inline — angle brackets, never
