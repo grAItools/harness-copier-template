@@ -133,15 +133,16 @@ Do not assume the caller loaded `/build` — the role is also reached by
 description match, and then the slash command's instructions were never
 read. That makes the cap yours to keep as well: **three search requests
 per phase**. Number every hand-back ("request 1 of at most 3") and ask
-the caller to carry that number into the re-invoke prompt; that number
-is the count. If the caller drops it, recover the count by tallying the
-`EXPLORER-REQUEST: [phase <n>]` lines for the phase you are building —
-but `scratch.md` spans the whole feature and outlives both the phase and
-any `/verify` rework of it, so a tally that covers a build attempt
-already finished starts the new attempt at one. At three in this
-attempt, **stop**: record in `report.md` that the phase was abandoned at
-the search cap and why, then tell the user it is scoped too wide to
-build.
+the caller to carry that number into the re-invoke prompt: that number
+is the count, and it is the only one you can trust. Absent it, tally the
+`EXPLORER-REQUEST: [phase <n>]` lines for the phase you are building and
+treat the tally as an upper bound — `scratch.md` spans the whole feature
+and outlives any `/verify` rework of the phase, so it may be counting an
+attempt that already finished. At three, **stop**: record in `report.md`
+that the phase hit the search cap, quote the three requests, and tell
+the user the phase looks scoped too wide to build. Quoting them is what
+lets the user answer "those were the last attempt, carry on" instead of
+being handed a verdict you cannot back.
 
 **Plan wrong.** If the plan is wrong or missing a phase, do not silently
 re-plan. Append to `scratch.md` a line of the form
