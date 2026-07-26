@@ -202,20 +202,15 @@ major version).
 ### Fixed
 
 - The `reviewer` subagent read `plan.md`'s **Review checklist** as unbounded
-  instructions — "it is part of your instructions", with no precedence clause,
-  while the two neighbouring inputs (the reviewer playbook, the Developer's
-  narrative) were explicitly subordinated, an asymmetry a careful agent could
-  read as deliberate. The checklist is now **additive only**: it may add
-  checks, never narrow the review or relax a verdict rule, and an entry that
-  tries is a MINOR finding against the plan (whose fix belongs to `/plan` — the
-  plan is frozen mid-build). Scope the plan explicitly *grants* is unaffected;
-  the scope check already honours it. `/verify`, the example `plan.md`, and
-  `development/harness-usage.md` restate the bound, extending to `plan.md` the
-  non-override principle
-  [ADR 0011](docs/decisions/0011-knowledge-grounded-role-playbooks.md) §2
-  states for the reviewer playbook. `development/harness-usage.md` is
-  `_skip_if_exists`, so repos that customised it keep the old wording — see
-  **Upgrade notes**.
+  instructions ("it is part of your instructions", no precedence clause, unlike
+  the two neighbouring inputs). The checklist is now **additive only**: it may
+  add checks, never narrow the review or relax a verdict rule, and an entry that
+  tries is a MINOR finding against the plan, whose fix belongs to `/plan`. Scope
+  the plan explicitly *grants* is unaffected. `/verify`, the example `plan.md`,
+  and `development/harness-usage.md` (`_skip_if_exists` — see **Upgrade notes**)
+  restate the bound, which extends to `plan.md` the non-override principle that
+  [ADR 0011](docs/decisions/0011-knowledge-grounded-role-playbooks.md) §2 states
+  for the reviewer playbook.
 - `hooks/post_gen.py` merges the `.gitignore` managed block **per entry**
   instead of skipping it wholesale once the fence marker is present. Previously
   it returned early on any existing block, so an entry added by a later template
