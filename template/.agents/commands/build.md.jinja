@@ -32,15 +32,18 @@ You are carrying out the implementation phase of a feature.
    - Stop at the end of each phase and hand off to `/verify`
      (Reviewer) before starting the next.
 5. If the developer hands back a **search request** — an
-   `EXPLORER-REQUEST:` line in `scratch.md` naming what it needs
-   summarised (it cannot spawn the `explorer` subagent itself, see
-   step 3) — run the `explorer` pass, append its summary to `scratch.md`
-   on an `EXPLORER-FINDING:` line, then re-invoke the developer, telling
-   it to read `scratch.md` first; it starts with fresh context and picks
-   the summary up there. Cap this at **three rounds per phase**; a fourth
-   means the phase is scoped too wide — stop and put it to the user. If
-   instead the developer hands back a `DECISION-PENDING:` line in
-   `report.md`, put that question to the user.
+   `EXPLORER-REQUEST: [phase <phase name>] …` line in `scratch.md`
+   naming what it needs summarised (it cannot spawn the `explorer`
+   subagent itself, see step 3) — run the `explorer` pass, append its
+   summary to `scratch.md` on an `EXPLORER-FINDING:` line carrying the
+   same phase tag, then re-invoke the developer, telling it to read
+   `scratch.md` first; it starts with fresh context and picks the
+   summary up there. Cap this at **three rounds per phase**: `scratch.md`
+   spans the whole feature, so count only the requests tagged with the
+   phase being built. A fourth in one phase means it is scoped too wide
+   — stop and put it to the user. If instead the developer hands back a
+   `DECISION-PENDING:` line in `report.md`, put that question to the
+   user.
 6. When the developer reports a phase complete, **stop** and ask the
    user to run `/verify` before proceeding. Do not auto-start the
    next phase.

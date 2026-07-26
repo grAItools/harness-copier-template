@@ -111,19 +111,22 @@ summarisation you cannot do inline, do not guess and do not read the
 tree into your context. Append to `scratch.md` a line of the form
 
 ```
-EXPLORER-REQUEST: <what you need summarised, and why>
+EXPLORER-REQUEST: [phase <phase name>] <what you need summarised, and why>
 ```
 
 then **stop** and reply with that request plus this instruction, in your
 own words: *run an `explorer` subagent pass over it, append the summary
-to `scratch.md` as `EXPLORER-FINDING: <request> → <summary>`, then
-re-invoke the developer subagent, telling it to read `scratch.md`
-first.* State it every time. Do not assume the caller loaded `/build` —
-the role is also reached by description match, and then the slash
-command's instructions were never read. That makes the cap yours to keep
-as well: **three search requests per phase**. Count the
-`EXPLORER-REQUEST:` lines already in `scratch.md` before appending
-another and number the hand-back ("request 1 of at most 3"); at three,
+to `scratch.md` as `EXPLORER-FINDING: [phase <phase name>] <request> →
+<summary>`, carrying the same phase tag, then re-invoke the developer
+subagent, telling it to read `scratch.md` first.* State it every time.
+Do not assume the caller loaded `/build` — the role is also reached by
+description match, and then the slash command's instructions were never
+read. That makes the cap yours to keep as well: **three search requests
+per phase**. `scratch.md` is the *feature's* channel and spans every
+phase of it, which is what the phase tag is for: count only the
+`EXPLORER-REQUEST:` lines tagged with the phase you are building, and
+number the hand-back from that count ("request 1 of at most 3"). Earlier
+phases' requests do not count against this one. At three in this phase,
 stop and tell the user the phase is scoped too wide to build.
 
 **Plan wrong.** If the plan is wrong or missing a phase, **stop** and

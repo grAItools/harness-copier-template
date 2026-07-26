@@ -116,7 +116,9 @@ major version).
 - The Developer's mid-build search hand-back is now a serviced round-trip:
   `/build` gains a step 5 that reads an `EXPLORER-REQUEST:` line from
   `scratch.md`, runs the `explorer` pass, appends an `EXPLORER-FINDING:`
-  line and re-invokes the developer (three rounds per phase), mirroring the
+  line and re-invokes the developer (three rounds per phase — both markers
+  carry a `[phase <name>]` tag, since `scratch.md` spans the whole feature),
+  mirroring the
   `SPIKE-REQUEST:`/`SPIKE-FINDING:` protocol `/plan` already had. The same
   step says what to do with a `DECISION-PENDING:` stop, which `/build` never
   covered. The `developer` subagent's Handoff section now enumerates all four
