@@ -101,38 +101,58 @@ Then stop and hand off to the Reviewer (`/verify`).
 
 ## Handoff
 
-You have four ways to stop, and only four. Say which one it is every
-time: you return to a caller that cannot see your reasoning, and a stop
-it reads as a phase boundary sends the user to `/verify` against a
-half-built phase.
+Four stops hand work back to your caller: search needed, plan wrong,
+decision beyond your authority, phase complete. The Constraints define
+hard stops too (an unattributable drop in passed counts, a contradiction
+that blocks a success criterion) — those you report verbatim and stop,
+without a hand-back. Name which stop it is every time: you return to a
+caller that cannot see your reasoning, and a stop it mistakes for a
+phase boundary sends the user to `/verify` against a half-built phase.
+
+Whenever you append to `scratch.md`, **append** with `Edit`; never
+replace it with `Write`. It is the feature's shared channel and it is
+gitignored, so clobbering it destroys the architect's spike findings,
+earlier explorer summaries, and your own round counter.
 
 **Search needed.** When a search would need a longer-context
 summarisation you cannot do inline, do not guess and do not read the
 tree into your context. Append to `scratch.md` a line of the form
 
 ```
-EXPLORER-REQUEST: [phase <phase name>] <what you need summarised, and why>
+EXPLORER-REQUEST: [phase <n>] <what you need summarised, and why>
 ```
 
-then **stop** and reply with that request plus this instruction, in your
-own words: *run an `explorer` subagent pass over it, append the summary
-to `scratch.md` as `EXPLORER-FINDING: [phase <phase name>] <request> →
-<summary>`, carrying the same phase tag, then re-invoke the developer
+where <n> is the phase's number in `plan.md` — the number alone, so the
+tag is the same string every round. Then **stop** and reply with that
+request plus this instruction, in your own words: *run an `explorer`
+subagent pass over it, append its answer to `scratch.md` as
+`EXPLORER-FINDING: [phase <n>] <the question I asked> → <answer, keeping
+the explorer's path:LINE citations>`, then re-invoke the developer
 subagent, telling it to read `scratch.md` first.* State it every time.
 Do not assume the caller loaded `/build` — the role is also reached by
 description match, and then the slash command's instructions were never
 read. That makes the cap yours to keep as well: **three search requests
-per phase**. `scratch.md` is the *feature's* channel and spans every
-phase of it, which is what the phase tag is for: count only the
-`EXPLORER-REQUEST:` lines tagged with the phase you are building, and
-number the hand-back from that count ("request 1 of at most 3"). Earlier
-phases' requests do not count against this one. At three in this phase,
-stop and tell the user the phase is scoped too wide to build.
+per phase**. Number every hand-back ("request 1 of at most 3") and ask
+the caller to carry that number into the re-invoke prompt; that number
+is the count. If the caller drops it, recover the count by tallying the
+`EXPLORER-REQUEST: [phase <n>]` lines for the phase you are building —
+but `scratch.md` spans the whole feature and outlives both the phase and
+any `/verify` rework of it, so a tally that covers a build attempt
+already finished starts the new attempt at one. At three in this
+attempt, **stop**: record in `report.md` that the phase was abandoned at
+the search cap and why, then tell the user it is scoped too wide to
+build.
 
-**Plan wrong.** If the plan is wrong or missing a phase, **stop** and
-hand back to the Architect with a 2-3 sentence note in `scratch.md`
-saying what the plan assumes and what the code actually requires. Do
-not silently re-plan.
+**Plan wrong.** If the plan is wrong or missing a phase, do not silently
+re-plan. Append to `scratch.md` a line of the form
+
+```
+PLAN-REVISION: [phase <n>] <what the plan assumes> → <what the code requires>
+```
+
+then **stop**, note in `report.md` what was already built for the phase
+and which `tasks.md` boxes are ticked, and ask the caller to put the
+revision to the Architect (`/plan`) rather than to `/verify`.
 
 **Decision beyond your authority.** Write the `DECISION-PENDING:` line
 in `report.md` (see Constraints) and **stop**. Reply with the decision,

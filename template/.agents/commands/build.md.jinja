@@ -32,19 +32,33 @@ You are carrying out the implementation phase of a feature.
    - Stop at the end of each phase and hand off to `/verify`
      (Reviewer) before starting the next.
 5. If the developer hands back a **search request** — an
-   `EXPLORER-REQUEST: [phase <phase name>] …` line in `scratch.md`
-   naming what it needs summarised (it cannot spawn the `explorer`
-   subagent itself, see step 3) — run the `explorer` pass, append its
-   summary to `scratch.md` on an `EXPLORER-FINDING:` line carrying the
-   same phase tag, then re-invoke the developer, telling it to read
-   `scratch.md` first; it starts with fresh context and picks the
-   summary up there. Cap this at **three rounds per phase**: `scratch.md`
-   spans the whole feature, so count only the requests tagged with the
-   phase being built. A fourth in one phase means it is scoped too wide
-   — stop and put it to the user. If instead the developer hands back a
-   `DECISION-PENDING:` line in `report.md`, put that question to the
-   user.
-6. When the developer reports a phase complete, **stop** and ask the
+   `EXPLORER-REQUEST: [phase <n>] …` line in `scratch.md` naming what it
+   needs summarised (it cannot spawn the `explorer` subagent itself, see
+   step 3) — run the `explorer` pass and append its answer to
+   `scratch.md` on an `EXPLORER-FINDING:` line carrying the same phase
+   tag, **keeping the explorer's `path:LINE` citations**: the developer
+   handed the search back because it could not do it inline, and an
+   uncited sentence makes it redo the search. If the explorer replies
+   with a clarifying question instead of an answer, narrow the request
+   from the developer's own words and re-run it — do not append a
+   question as a finding, and do not spend a round on a non-answer.
+   Then re-invoke the developer, telling it to read `scratch.md` first
+   and passing the round number it gave you; it starts with fresh
+   context and picks the summary up there. Cap this at **three rounds
+   per phase**: `scratch.md` spans the whole feature, so count only the
+   requests tagged with the phase being built, and only those from the
+   current build attempt. A fourth in one attempt means the phase is
+   scoped too wide — stop and put it to the user.
+6. Two other hand-backs stop the developer mid-phase, and neither is a
+   phase boundary:
+   - a `DECISION-PENDING:` line in `report.md` — put that question to
+     the user, then re-invoke the developer with the answer so it can
+     finish the phase, and add the decision's row to the register
+     (`development/adr/README.md`).
+   - a `PLAN-REVISION:` line in `scratch.md` — the plan itself is
+     wrong, so hand back to `/plan` (Architect) with that line, not to
+     `/verify`. Once the plan is revised, re-run `/build`.
+7. When the developer reports a phase complete, **stop** and ask the
    user to run `/verify` before proceeding. Do not auto-start the
    next phase.
 

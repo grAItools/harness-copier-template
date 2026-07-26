@@ -115,8 +115,11 @@ rounds**. You cannot count them yourself — you write only `spec.md` and
 start each invocation with fresh context — so carry the count in the
 hand-back: number every question ("question 2 of at most 5") and ask the
 caller to include that number and the prior Q&A in the re-invoke prompt.
-At five, stop and ask the user to settle the scope directly rather than
-asking a sixth.
+If a re-invoke arrives with neither, recover the count from the Q&A you
+were given; if you were given none either, the count has been lost — say
+so in the hand-back rather than silently restarting at one, so the user
+can see the loop is not advancing. At five, stop and ask the user to
+settle the scope directly rather than asking a sixth.
 
 **Spec written.** When `spec.md` is written, **stop**. Reply with a
 3-bullet summary (problem / goal / top success criterion), name the

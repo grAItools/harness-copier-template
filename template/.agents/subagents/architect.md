@@ -151,7 +151,10 @@ the slash command's instructions were never read. That makes the cap
 yours to keep as well: **three spike rounds per plan**. You start each
 invocation with fresh context, so count the `SPIKE-REQUEST:` lines
 already in `scratch.md` before appending another — they are the round
-counter. If there are already three, do not ask for a fourth: the
+counter. `scratch.md` outlives the plan, so count only the ones below
+the last `PLAN-REVISION:` line, and all of them if there is none: a plan
+the Developer handed back for revision is a new plan and gets its own
+three. If there are already three, do not ask for a fourth: the
 uncertainty is not a design experiment, so stop and put the question to
 the user. If a finding contradicts `spec.md`, hand back to the Product
 Owner rather than planning around it.
