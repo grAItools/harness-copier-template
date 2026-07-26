@@ -116,15 +116,6 @@ major version).
 
 ### Changed
 
-- The `reviewer` subagent now treats `plan.md`'s **Review checklist** as
-  add-only: it may add checks, never narrow scope or relax a verdict rule, and
-  a checklist entry that tries to is itself a finding to report. Previously the
-  checklist was declared "part of your instructions" with no bound, while the
-  two neighbouring inputs (the reviewer playbook, the Developer's narrative)
-  were both explicitly subordinated — an asymmetry a careful agent could read
-  as deliberate. `/verify` and `development/harness-usage.md` restate the bound
-  (the principle is already on record in
-  [ADR 0011](docs/decisions/0011-knowledge-grounded-role-playbooks.md) §2).
 - Generated docs mark their fill-in points with one consistent set of
   scaffold markers: `_Fill in: …_` for blocks the downstream user replaces
   (greppable), bare `<placeholder>` inline — angle brackets, never
@@ -210,6 +201,21 @@ major version).
 
 ### Fixed
 
+- The `reviewer` subagent read `plan.md`'s **Review checklist** as unbounded
+  instructions — "it is part of your instructions", with no precedence clause,
+  while the two neighbouring inputs (the reviewer playbook, the Developer's
+  narrative) were explicitly subordinated, an asymmetry a careful agent could
+  read as deliberate. The checklist is now **additive only**: it may add
+  checks, never narrow the review or relax a verdict rule, and an entry that
+  tries is a MINOR finding against the plan (whose fix belongs to `/plan` — the
+  plan is frozen mid-build). Scope the plan explicitly *grants* is unaffected;
+  the scope check already honours it. `/verify`, the example `plan.md`, and
+  `development/harness-usage.md` restate the bound, extending to `plan.md` the
+  non-override principle
+  [ADR 0011](docs/decisions/0011-knowledge-grounded-role-playbooks.md) §2
+  states for the reviewer playbook. `development/harness-usage.md` is
+  `_skip_if_exists`, so repos that customised it keep the old wording — see
+  **Upgrade notes**.
 - `hooks/post_gen.py` merges the `.gitignore` managed block **per entry**
   instead of skipping it wholesale once the fence marker is present. Previously
   it returned early on any existing block, so an entry added by a later template
@@ -350,12 +356,13 @@ major version).
 - `development/harness-usage.md` is in `_skip_if_exists` too, so an existing
   repo keeps its copy and will still promise "expect _one_ clarifying question"
   from `/spec`, still describe skills as conditional on the example skill, say
-  nothing about `/plan` spike round-trips, and still lack the register rows in
-  the **Document liveness** table. Diff it against the template version and
+  nothing about `/plan` spike round-trips, still call `plan.md`'s **Review
+  checklist** unbounded "extra instructions", and still lack the register rows
+  in the **Document liveness** table. Diff it against the template version and
   merge the changed sections (Phase-1 dialogue, Phase-2 spikes, skills prose,
-  liveness registers) by hand; the agents themselves follow the (updated, not
-  skip-listed) `.agents/` files either way, so the risk is a confused human,
-  not a confused agent.
+  Phase-4 checklist bound, liveness registers) by hand; the agents themselves
+  follow the (updated, not skip-listed) `.agents/` files either way, so the
+  risk is a confused human, not a confused agent.
 - The `architect` subagent now declares `Edit` / `permission.edit: allow` so it
   can append to `scratch.md` instead of overwriting it. If you pinned or
   hand-edited `.agents/subagents/architect.md`, re-apply the frontmatter change;
