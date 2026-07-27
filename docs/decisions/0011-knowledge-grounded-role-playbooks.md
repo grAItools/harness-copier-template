@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted (2026-07-25).
+Accepted (2026-07-25). Partially superseded by ADR 0012: the four role
+playbook skills are merged into their subagent files; the method content,
+`design-principles`, and the glossary remain.
 
 ## Context
 

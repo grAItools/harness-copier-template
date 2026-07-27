@@ -3,7 +3,7 @@
 
 ## What the agent runs
 
-- **Pre-claim-done gate**: `{{ cmd('verify') }}`{% if generate_scripts and verify_command == './scripts/verify.sh' %} (= `scripts/verify.sh`){% endif %}.
+- **Pre-claim-done gate**: `{{ cmd('verify') }}`{% if generate_scripts and task_runner != 'none' %} (= `scripts/verify.sh`){% endif %}.
 - **Fast loop**: `{{ cmd('test') }}` — must finish in <60s.{% if has_cmd('test-all') %} Add slow suites under
   `{{ cmd('test-all') }}`.{% else %} Add slow suites to a separate command
   (e.g. integration / e2e) defined in your project manager, and update this

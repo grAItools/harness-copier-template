@@ -14,14 +14,12 @@ Entry format — term, domain meaning, code name only if it must differ:
 ```
 
 This file is a **register**, like the decision register in
-[`adr/README.md`](adr/README.md): it accretes mid-feature through one
-channel only. New terms arrive through a feature spec's **Glossary**
-section (`/spec`, Product Owner): the spec proposes, the user reviews
-the spec, and the reviewed entries are promoted here verbatim at
-`/spec` wrap-up — the Reviewer checks each new entry against the spec
-that proposed it. Renames and meaning changes are not register
-traffic: those are a dedicated PR, trunk-gated like the rest of
-`development/` (see [`README.md`](README.md)).
+[`adr/README.md`](adr/README.md), and this is the one full statement
+of its rule: new terms enter via a reviewed spec's **Glossary**
+section, promoted here verbatim at `/spec` wrap-up (the Reviewer
+checks each new entry against the spec that proposed it). Renaming or
+redefining an existing term is its own PR, trunk-gated like the rest
+of `development/` (see [`README.md`](README.md)).
 
 ## Terms
 

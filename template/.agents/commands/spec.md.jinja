@@ -33,11 +33,7 @@ review. Once the user confirms the spec, the next step is `/plan`
 (Architect role). Do not start implementing yet.
 
 If the reviewed spec's **Glossary** section pins down new domain terms,
-promote them to `development/glossary.md` as part of the review wrap-up
-(the product-owner subagent cannot write outside the feature
-directory). The glossary is a **register**: promotion from a reviewed
-spec is its one sanctioned mid-feature channel (see Document liveness
-in `development/harness-usage.md`), and the Reviewer checks each
-promoted entry against the spec's Glossary section — so promote the
-reviewed terms verbatim, and don't fold in renames or meaning changes
-of existing entries (those are trunk-gated, a dedicated PR).
+promote them verbatim to `development/glossary.md` as part of the
+review wrap-up (the product-owner subagent cannot write outside the
+feature directory; the promotion rule lives in
+`development/glossary.md`).

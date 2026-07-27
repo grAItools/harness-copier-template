@@ -4,8 +4,8 @@ A [Copier](https://copier.readthedocs.io/) template that scaffolds an
 **agent-agnostic harness** based on standard practices from multiple
 respected sources as of mid-2026. The harness is an `AGENTS.md`-rooted
 repository layout with a thin Claude Code + OpenCode overlay enabled by
-default, and everything else (Cursor, GitHub Copilot, MCP, example
-ADR/skill, Claude hooks) opt-in.
+default; GitHub Copilot code review is opt-in, and the PR template and
+Claude Code hooks are opt-out.
 
 The harness ships a four-phase, role-based workflow — **Product Owner**
 (`/spec`) → **Architect** (`/plan`) → **Developer** (`/build`) →
@@ -26,18 +26,17 @@ follows the role-handoff conventions used by MetaGPT, BMAD Method,
 GitHub Spec Kit, and CrewAI, normalised to the `AGENTS.md` + `.agents/`
 layout this template already uses.
 
-Each role reads a **playbook skill** before acting
-(`.agents/skills/<role>-playbook/`), all grounded in a shared
-`design-principles` skill — a distillation of Ousterhout's *A Philosophy
-of Software Design*, Hunt & Thomas's *The Pragmatic Programmer*, Evans's
-*Domain-Driven Design*, and Brooks's *The Design of Design*: the Product
-Owner interrogates one question at a time with recommended answers and
-grows a project glossary (`development/glossary.md`); the Architect
-designs twice, spikes risky assumptions (via a main-agent hand-back),
-and plans a tracer-bullet first phase; the Developer writes contracts
-and interface comments first and self-checks against a red-flag list;
-the Reviewer probes change amplification and hunts absent artifacts. See
-ADR 0011.
+Each role file carries its **method** inline, grounded in a shared
+`design-principles` skill (`.agents/skills/design-principles/`) — a
+distillation of Ousterhout's *A Philosophy of Software Design*, Hunt &
+Thomas's *The Pragmatic Programmer*, Evans's *Domain-Driven Design*, and
+Brooks's *The Design of Design*: the Product Owner interrogates one
+question at a time with recommended answers and grows a project glossary
+(`development/glossary.md`); the Architect designs twice, spikes risky
+assumptions (via a main-agent hand-back), and plans a tracer-bullet
+first phase; the Developer writes contracts and interface comments first
+and self-checks against a red-flag list; the Reviewer probes change
+amplification and hunts absent artifacts. See ADRs 0011 and 0012.
 
 The loop leaves a durable audit trail: each feature directory ends with a
 `report.md` (what was built, declared deviations, negative results,
@@ -69,25 +68,19 @@ your-repo/
 │  ├─ tool-bootstrap.md               # per-package-manager install instructions
 │  ├─ harness-usage.md                # unified Claude Code + OpenCode driving guide
 │  ├─ adr/                            # ADRs + decision register (README.md)
-│  │  └─ 0001-record-architecture-decisions.md    # if include_example_adr
-│  └─ work/                           # per-feature spec/plan/tasks/report[/scratch];
-│                                     # YYYY-MM-example/ if opted in
-├─ scripts/                          # shell entry points (if generate_scripts)
+│  │  └─ 0001-record-architecture-decisions.md    # seed ADR (always)
+│  └─ work/                           # per-feature spec/plan/tasks/report[/scratch]
+├─ scripts/                          # generated iff verify_command mentions scripts/verify.sh
 │  ├─ verify.sh                      # default implementation of verify_command (canonical lint+test gate)
 │  └─ fmt-file.sh                    # per-file formatter slot for the PostToolUse hook
 ├─ .agents/                          # vendor-neutral shared assets
-│  ├─ README.md                      # supported-agents matrix + single-source-of-truth rule
+│  ├─ README.md                      # supported-agents matrix, single-source rule, layout docs
 │  ├─ hooks/
 │  │  ├─ block-destructive.sh        # canonical deny-list (Claude PreToolUse pipes to it)
 │  │  └─ ensure-toolchain.sh         # idempotent build-tool bootstrap; if package_manager in {uv, pixi}
 │  ├─ skills/
-│  │  ├─ design-principles/SKILL.md  # shared design ground rules + red-flag checklist
-│  │  ├─ product-owner-playbook/     # role playbooks (one SKILL.md each): the
-│  │  ├─ architect-playbook/         #   method each role reads before acting,
-│  │  ├─ developer-playbook/         #   grounded in PoSD / Pragmatic Programmer /
-│  │  ├─ reviewer-playbook/          #   DDD / Design of Design
-│  │  └─ verify/SKILL.md             # if include_example_skill
-│  ├─ subagents/
+│  │  └─ design-principles/SKILL.md  # shared design ground rules + red-flag checklist
+│  ├─ subagents/                     # each role file carries its method inline
 │  │  ├─ product-owner.md            # paired with /spec
 │  │  ├─ architect.md                # paired with /plan
 │  │  ├─ developer.md                # paired with /build
@@ -105,15 +98,13 @@ your-repo/
 │  ├─ commands/  -> ../.agents/commands       (symlink, post-gen)
 │  ├─ skills/    -> ../.agents/skills         (symlink, post-gen)
 │  └─ agents/    -> ../.agents/subagents      (symlink, post-gen)
-├─ .cursor/rules/project-context.mdc # if cursor
-├─ .github/                          # if pr_template / copilot_code_review / copilot_code_review_skill
-│  ├─ PULL_REQUEST_TEMPLATE.md       # definition-of-done checklist (if pr_template)
-│  ├─ copilot-instructions.md        # populated review rules (if copilot_code_review)
-│  ├─ instructions/                  # path-scoped review rules (if copilot_code_review)
-│  │  ├─ language.instructions.md    #   applyTo: language sources
-│  │  └─ security.instructions.md    #   applyTo: ** (excludes coding agent)
-│  └─ skills/code-review/SKILL.md    # if copilot_code_review_skill
-└─ .mcp.json + .mcp.example.jsonc    # if mcp
+└─ .github/                          # if pr_template / copilot_code_review
+   ├─ PULL_REQUEST_TEMPLATE.md       # definition-of-done checklist (if pr_template)
+   ├─ copilot-instructions.md        # populated review rules (if copilot_code_review)
+   ├─ instructions/                  # path-scoped review rules (if copilot_code_review)
+   │  ├─ language.instructions.md    #   applyTo: language sources
+   │  └─ security.instructions.md    #   applyTo: ** (excludes coding agent)
+   └─ skills/code-review/SKILL.md    # Copilot review skill (if copilot_code_review)
 ```
 
 ## Usage
@@ -126,13 +117,11 @@ cd my-new-repo
 git init && git add -A && git commit -m "Initial harness from copier template"
 ```
 
-The template asks you:
+The template asks you (13 questions):
 
 | Question                  | Notes                                                    |
 | ------------------------- | -------------------------------------------------------- |
-| `mode`                    | `greenfield` here. Informational only — does not change what is generated (brown-field safety is automatic via `_skip_if_exists`) |
 | `project_name`            | Human-readable name                                      |
-| `project_slug`            | Lowercase-dashed slug                                    |
 | `project_description`     | One sentence                                             |
 | `primary_language`        | Drives sensible defaults for commands                    |
 | `package_manager`         | `uv` \| `pixi` \| `cmake` \| `other`; default picked from `primary_language` (python → `uv`, cpp → `cmake`, else → `other`) |
@@ -140,20 +129,11 @@ The template asks you:
 | `lint_command`            | Wired into the task runner's `lint` target               |
 | `fmt_command`             | Wired into the task runner's `fmt` target                |
 | `task_runner`             | `make` (default) \| `just` \| `none`                     |
-| `verify_command`          | What hooks and `/verify` run; default `./scripts/verify.sh` |
-| `generate_scripts`        | Generate `scripts/` placeholders (`verify.sh`, `fmt-file.sh`); default `true` |
-| `license`                 | SPDX id                                                  |
+| `verify_command`          | What hooks and `/verify` run; default `./scripts/verify.sh`. `scripts/` (`verify.sh` + `fmt-file.sh`) is generated exactly when this answer mentions `scripts/verify.sh` — no separate question |
 | `commit_convention`       | `conventional` (default) \| `freeform`; drives the commit-message bullet in `AGENTS.md` (always updated) and the matching section in `development/style.md` (greenfield-only — `_skip_if_exists`) |
-| `pr_merge_strategy`       | `squash` (default) \| `merge` \| `rebase` \| `unknown`; tailors where the convention applies |
-| `cursor`                  | Off by default                                           |
-| `copilot_code_review`     | Off by default; populated Copilot code-review config under `.github/` (instructions + path-scoped rules). Copilot code review does **not** read `AGENTS.md`, so rules are restated directly |
-| `copilot_code_review_skill` | Off by default; adds `.github/skills/code-review/SKILL.md` (GitHub agent-skills public preview) |
+| `copilot_code_review`     | Off by default; populated Copilot code-review config under `.github/` (instructions + path-scoped rules + the code-review agent skill). Copilot code review does **not** read `AGENTS.md`, so rules are restated directly |
 | `pr_template`             | On by default; adds `.github/PULL_REQUEST_TEMPLATE.md`, a definition-of-done checklist tied to the harness (gate, spec evidence, `report.md`, decision register). Inert for non-GitHub remotes |
-| `mcp`                     | Off by default                                           |
-| `include_example_adr`     | On                                                       |
-| `include_example_skill`   | On                                                       |
 | `include_claude_hooks`    | On                                                       |
-| `include_example_spec`    | Off by default                                           |
 
 ### Brown-field (existing repo)
 
@@ -162,13 +142,11 @@ cd existing-repo
 copier copy gh:your-org/harness-copier-template .
 ```
 
-Answer `brownfield` for the `mode` question if you like — it's informational and
-doesn't change what's generated. Brown-field safety is automatic regardless of
-the answer, because it comes from `_skip_if_exists`. Run into the existing repo
-and the template:
+Brown-field safety is automatic, because it comes from `_skip_if_exists`. Run
+into the existing repo and the template:
 
 - **Never silently overwrites** `README.md`, `Makefile`, `justfile`,
-  `.gitignore`, `.mcp.json`, `.github/PULL_REQUEST_TEMPLATE.md`,
+  `.gitignore`, `.github/PULL_REQUEST_TEMPLATE.md`,
   `development/adr/README.md` (it accumulates decision-register rows), or the
   populated `development/` files (`architecture`, `style`, `testing`,
   `tool-bootstrap`, `harness-usage`, `glossary`). They're listed in
@@ -222,15 +200,12 @@ harness-copier-template/
 │  ├─ {% if task_runner == 'just' %}justfile{% endif %}.jinja
 │  ├─ .gitignore.jinja
 │  ├─ development/    # incl. adr/ and work/ (the per-feature lifecycle)
-│  ├─ scripts/
+│  ├─ scripts/        # gated on the derived generate_scripts value
 │  ├─ .agents/
 │  ├─ .claude/
 │  ├─ .opencode/
-│  ├─ {% if cursor %}.cursor{% endif %}/
 │  ├─ {% if pr_template %}.github{% endif %}/   # PULL_REQUEST_TEMPLATE.md
-│  ├─ {% if copilot_code_review %}.github{% endif %}/   # copilot-instructions.md + instructions/
-│  ├─ {% if copilot_code_review_skill %}.github{% endif %}/  # skills/code-review/SKILL.md
-│  └─ {% if mcp %}.mcp.json{% endif %}
+│  └─ {% if copilot_code_review %}.github{% endif %}/   # copilot-instructions.md + instructions/ + skills/code-review/
 └─ README.md          # this file
 ```
 
@@ -281,8 +256,11 @@ The `verify_command` answer (default `./scripts/verify.sh`) is what the
 Claude Code Stop hook and the `/verify` slash command invoke. The
 `scripts/` folder itself — including the default `verify.sh` and the
 `fmt-file.sh` slot that the PostToolUse hook discovers — is generated
-only when `generate_scripts=true`. If you disable it, make sure
-`verify_command` points at a gate that does exist (e.g. `pixi run verify`).
+exactly when the answer mentions `scripts/verify.sh` (a substring test,
+so spellings like `bash ./scripts/verify.sh` still work; internally a
+derived, never-asked `generate_scripts` value in `copier.yml`). Point
+`verify_command` at a project-native gate (e.g. `pixi run verify`) and
+no `scripts/` is generated — an inconsistent pairing is unrepresentable.
 
 ## Provenance
 
@@ -303,8 +281,8 @@ which synthesises practice as of mid-2026 from:
 
 [MIT](LICENSE).
 
-Note: this license covers the template repository itself. The `license`
-question in `copier.yml` (default `Apache-2.0`) only sets an SPDX
-identifier inside the rendered docs — it does **not** generate a LICENSE
-file in downstream repos. Projects scaffolded from this template should
-add their own LICENSE file separately.
+Note: this license covers the template repository itself. The template
+does **not** generate a LICENSE file in downstream repos (the rendered
+docs carry a `_Fill in: SPDX identifier_` marker instead). Projects
+scaffolded from this template should add their own LICENSE file
+separately.

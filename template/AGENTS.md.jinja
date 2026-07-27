@@ -9,7 +9,7 @@
 
 - Language: **{{ primary_language }}**
 - Package / build manager: **{{ package_manager }}**
-- License: {{ license }}
+- License: _Fill in: SPDX identifier_
 - Tool versions, install steps, and new-machine setup:
   see [`development/tool-bootstrap.md`](development/tool-bootstrap.md).
 
@@ -49,7 +49,8 @@ this file.
   → `/verify` (Reviewer). Each phase stops for review before the next
   begins. See `.agents/commands/` and `.agents/subagents/`.
 - Subagent hand-back loops are bounded: honour the cap the role states in its
-  hand-back and carry its round number into each re-invoke.
+  hand-back (a fixed number of hand-backs of the same kind on the same
+  artifact, then the question goes to the user).
 - On any conflict between documents, the authority order is
   [`development/architecture.md`](development/architecture.md) > `spec.md` > `plan.md` >
   `tasks.md`. Never silently resolve a contradiction — record it in the
@@ -87,11 +88,9 @@ this file.
   [`development/style.md`](development/style.md#comments).
 - Tests are the spec. If you change behaviour, change a test first.
 {%- if commit_convention == 'conventional' %}
-- Commit messages: **Conventional Commits 1.0.0**
-{%- if pr_merge_strategy == 'squash' %} — apply the format to the **PR title** (squash-merge){% endif %}
-{%- if pr_merge_strategy == 'merge' %} — apply the format to every branch commit *and* the merge commit{% endif %}
-{%- if pr_merge_strategy == 'rebase' %} — apply the format to every branch commit (rebase-merge){% endif %}
-{%- if pr_merge_strategy not in ('squash', 'merge', 'rebase') %} — where it applies depends on the repo's merge strategy (squash → PR title; merge or rebase → every branch commit){% endif %}.
+- Commit messages: **Conventional Commits 1.0.0** — where it applies depends
+  on the repo's merge strategy (squash → PR title; merge or rebase → every
+  branch commit).
   See [`development/style.md`](development/style.md#commit-messages) for the format,
   type list, breaking-change syntax, examples, and full merge-strategy
   guidance.

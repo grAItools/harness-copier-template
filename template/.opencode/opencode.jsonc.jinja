@@ -87,14 +87,14 @@
     "{{ fmt_disable[primary_language] }}": { "disabled": true },
     {% endif -%}
     {% if primary_language in fmt_ext -%}
-    "{{ project_slug }}-fmt": {
+    "project-fmt": {
       "command": ["sh", "scripts/fmt-file.sh", "$FILE"],
       "extensions": {{ fmt_ext[primary_language] | tojson }}
     }
     {%- else -%}
     // TODO: set the file extensions for {{ primary_language }} so OpenCode routes
     // edits through scripts/fmt-file.sh, e.g.:
-    // "{{ project_slug }}-fmt": {
+    // "project-fmt": {
     //   "command": ["sh", "scripts/fmt-file.sh", "$FILE"],
     //   "extensions": [".ext"]
     // }

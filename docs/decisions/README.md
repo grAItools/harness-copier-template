@@ -11,13 +11,14 @@ first and graduate to ADRs here on acceptance.
 | [0002](0002-canonicalize-commands-under-agents.md) | Canonicalize commands under `.agents/` | accepted |
 | [0003](0003-role-based-subagents-and-build-command.md) | Role-based subagents and `/build` command | accepted |
 | [0004](0004-canonical-agent-hooks-and-toolchain-bootstrap.md) | Canonical agent hooks and toolchain bootstrap | accepted |
-| [0005](0005-copilot-code-review-gate.md) | Copilot code-review gate | accepted |
+| [0005](0005-copilot-code-review-gate.md) | Copilot code-review gate | accepted; partially superseded by 0012 |
 | [0006](0006-comment-hygiene-policy.md) | Comment-hygiene policy, enforcement downstream | accepted |
 | [0007](0007-feature-report-and-document-liveness.md) | Feature `report.md`, authority order, document liveness | accepted |
 | [0008](0008-decision-register-and-escalation-marker.md) | Decision register and `DECISION-PENDING:` marker | accepted |
 | [0009](0009-pr-template-question.md) | `pr_template` question (definition-of-done PR template) | accepted |
 | [0010](0010-development-tree-and-work-folder.md) | Generated `development/` tree, `work/` folder, no `policies/` | accepted |
-| [0011](0011-knowledge-grounded-role-playbooks.md) | Knowledge-grounded role playbooks, design-principles skill, and glossary | accepted |
+| [0011](0011-knowledge-grounded-role-playbooks.md) | Knowledge-grounded role playbooks, design-principles skill, and glossary | accepted; partially superseded by 0012 |
+| [0012](0012-template-simplification-wave.md) | Template simplification wave (fewer questions, merged role files, one hand-back convention) | accepted |
 
 **ADR or register row?** If the decision shapes structure — of the template,
 its questions, or the generated layout — and someone will later ask *why*,
