@@ -31,8 +31,8 @@ description: |
    off-by-one and grid/halo boundary conditions; data races in
    threaded/OpenMP/MPI/async code; behaviour changes without a matching test.
 4. **Security** — untrusted input or unsafe deserialization
-   (`pickle`/`torch.load`/`yaml.load`); committed secrets.{% if copilot_code_review %} See
-   [`../../instructions/security.instructions.md`](../../instructions/security.instructions.md).{% endif %}
+   (`pickle`/`torch.load`/`yaml.load`); committed secrets. See
+   [`../../instructions/security.instructions.md`](../../instructions/security.instructions.md).
 5. **Maintainability** — functions over ~50 lines or nested beyond 4 levels;
    a new dependency or datastore that meets the ADR criteria (`development/adr/README.md`) but lacks one.
 

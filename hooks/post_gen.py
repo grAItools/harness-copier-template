@@ -29,52 +29,6 @@ from typing import Iterable
 
 CWD = Path.cwd()
 
-
-def _read_answer(key: str, default: str) -> str:
-    """Read a single string value from .copier-answers.yml.
-
-    Uses PyYAML (already a Copier dependency, so always available when this
-    script is invoked by the Copier engine) so quoted strings, inline
-    comments, and block scalars all parse correctly. Returns ``default``
-    if the file is missing, malformed, or the key resolves to anything
-    other than a string. We deliberately reject bool/int/float here
-    because YAML's implicit typing happily turns ``yes``/``no``/``on``/
-    ``off`` into booleans — and the only keys this helper is called on
-    (``task_runner``, ``verify_command``) are always strings, so any
-    other type indicates malformed answers and printing ``True`` as an
-    invocation would mislead. Each newline character (including those
-    produced by YAML block scalars) is replaced with a space so the
-    result fits on one line when printed inside backticks; other
-    internal whitespace (multiple spaces, tabs) is preserved because
-    it can be intentional inside a quoted argument. Note that adjacent
-    newlines therefore produce adjacent spaces — the result may contain
-    runs of spaces, but it will always be a single line.
-    """
-    answers = CWD / ".copier-answers.yml"
-    if not answers.exists():
-        return default
-    try:
-        import yaml
-    except ImportError:
-        return default
-    try:
-        raw = answers.read_text(encoding="utf-8")
-        data = yaml.safe_load(raw)
-    except (OSError, UnicodeError, yaml.YAMLError):
-        return default
-    if not isinstance(data, dict):
-        return default
-    value = data.get(key)
-    if not isinstance(value, str):
-        return default
-    # Normalize newlines (block-scalar YAML values can contain them) to
-    # a single space so the result fits inside backticks in stdout.
-    # Preserve other whitespace — internal multiple spaces or tabs may
-    # be intentional inside a quoted verify_command argument.
-    text = value.replace("\r\n", " ").replace("\n", " ").replace("\r", " ").strip()
-    return text or default
-
-
 GITIGNORE_BEGIN = "# >>> ai-agent-harness (managed by copier) >>>"
 GITIGNORE_END = "# <<< ai-agent-harness (managed by copier) <<<"
 
@@ -300,22 +254,12 @@ def main() -> int:
     for m in messages:
         print(f"  - {m}")
     print()
-    # Print the user-facing invocation, not just the raw verify_command,
-    # so the suggestion also exercises the generated Makefile/justfile
-    # wiring (and only falls back to verify_command for task_runner=none).
-    # Default matches copier.yml's default for the same answer.
-    task_runner = _read_answer("task_runner", "make")
-    if task_runner in ("make", "just"):
-        verify_invocation = f"{task_runner} verify"
-    elif task_runner == "none":
-        verify_invocation = _read_answer("verify_command", "./scripts/verify.sh")
-    else:
-        # Unknown task_runner value (e.g. manual edit with wrong casing): fall
-        # back to the template default rather than printing verify_command raw.
-        verify_invocation = "make verify"
     print("Next steps:")
     print("  1. Open AGENTS.md and tighten it for your project (target ≤200 lines).")
-    print(f"  2. Run `{verify_invocation}` to confirm the toolchain wiring.")
+    print(
+        "  2. Run your verify target — `make verify` / `just verify` / your "
+        "configured verify command — to confirm the toolchain wiring."
+    )
     print("  3. Commit and push; subsequent runs use `copier update`.")
     print()
     return 0

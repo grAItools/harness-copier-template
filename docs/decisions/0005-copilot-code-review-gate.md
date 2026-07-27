@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted (2026-06-05).
+Accepted (2026-06-05). Partially superseded by ADR 0012: the separate
+`copilot_code_review_skill` question is folded into `copilot_code_review`.
 
 ## Context
 

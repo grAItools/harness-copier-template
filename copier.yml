@@ -1,22 +1,22 @@
 # Copier template: AI coding agent harness (Proposal A)
 #
 # Renders an agent-agnostic, AGENTS.md-rooted repository harness with a thin
-# Claude Code + OpenCode overlay enabled by default. Everything else (Cursor,
-# GitHub Copilot, MCP, example ADR/skill/subagent, Claude Code hooks) is
-# opt-in via the questions below.
+# Claude Code + OpenCode overlay enabled by default. GitHub Copilot code
+# review and the PR template are opt-in/out via the questions below.
 #
 # Usage:
 #   Greenfield: copier copy gh:your-org/harness-copier-template ./my-new-repo
 #   Brownfield: cd existing-repo && copier copy gh:your-org/harness-copier-template .
 #   Update:     cd repo && copier update
 #
-# Brown-field safety: README.md, Makefile, justfile, .gitignore, .mcp.json,
+# Brown-field safety: README.md, Makefile, justfile, .gitignore,
 # .github/PULL_REQUEST_TEMPLATE.md, development/adr/README.md (it accumulates
-# decision-register rows downstream), and the populated development/ files
-# (architecture, style, testing, tool-bootstrap, harness-usage, glossary) are
-# protected via _skip_if_exists. Copier leaves the existing file in place and you
-# can diff/merge the template version manually if needed. docs/ is never
-# generated: it stays reserved for the project's own user documentation.
+# decision-register rows downstream), scripts/verify.sh, scripts/fmt-file.sh,
+# and the populated development/ files (architecture, style, testing,
+# tool-bootstrap, harness-usage, glossary) are protected via _skip_if_exists.
+# Copier leaves the existing file in place and you can diff/merge the template
+# version manually if needed. docs/ is never generated: it stays reserved for
+# the project's own user documentation.
 
 # ---------------------------------------------------------------------------
 # Copier engine settings
@@ -34,7 +34,8 @@ _skip_if_exists:
   - "Makefile"
   - "justfile"
   - ".gitignore"
-  - ".mcp.json"
+  - "scripts/verify.sh"
+  - "scripts/fmt-file.sh"
   - ".github/PULL_REQUEST_TEMPLATE.md"
   - "development/adr/README.md"
   - "development/glossary.md"
@@ -71,36 +72,12 @@ _exclude:
 # Questions (minimum set)
 # ---------------------------------------------------------------------------
 
-mode:
-  type: str
-  help: |
-    Project mode, for your own orientation — this answer does NOT change what
-    is generated. Brown-field safety is automatic either way: sensitive files
-    (README.md, Makefile, justfile, .gitignore, .mcp.json, the populated
-    development/ files) are listed in _skip_if_exists, so Copier preserves any that already
-    exist at the destination and creates the rest. Pick greenfield for a new
-    repo or brownfield for an existing one; the harness files are added
-    alongside whatever is already there.
-  default: greenfield
-  choices:
-    - greenfield
-    - brownfield
-
 project_name:
   type: str
   help: "Human-readable project name (e.g. 'Acme Billing Service')"
   placeholder: "My Project"
   validator: >-
     {% if not project_name %}Project name cannot be empty.{% endif %}
-
-project_slug:
-  type: str
-  help: "Short slug (lowercase, dashes, no spaces; used in headings)"
-  default: "{{ project_name | lower | replace(' ', '-') | replace('_', '-') }}"
-  validator: >-
-    {% if not (project_slug | regex_search('^[a-z0-9][a-z0-9-]*$')) %}
-    Slug must be lowercase letters, digits, and dashes only.
-    {% endif %}
 
 project_description:
   type: str
@@ -221,9 +198,14 @@ verify_command:
       - task_runner=none: there is no recipe layer; the Stop hook and the
         '/verify' slash command invoke verify_command directly.
     Default is './scripts/verify.sh' (the canonical lint+test runner).
-    For projects whose task manager already defines a verify task with
-    task_runner=none, set this to e.g. 'pixi run verify' or
-    'hatch run verify'.
+    The scripts/ folder (verify.sh, the canonical gate, plus fmt-file.sh,
+    the per-file formatter slot the format hooks discover) is generated
+    exactly when this answer names scripts/verify.sh as a path (so
+    'bash ./scripts/verify.sh' counts; './build-scripts/verify.sh' does
+    not); point the answer at a project-native pipeline (e.g.
+    'pixi run verify' or 'hatch run verify') and no scripts/ is
+    generated. Existing scripts/verify.sh and scripts/fmt-file.sh files
+    are never overwritten (_skip_if_exists).
   default: "./scripts/verify.sh"
   validator: >-
     {%- if not verify_command.strip() -%}
@@ -237,35 +219,22 @@ verify_command:
     scripts/verify.sh instead.
     {%- endif -%}
 
+# Derived, never asked (`when: false`): scripts/ ships exactly when the
+# verify gate lives there. The match is path-aware, not equality or bare
+# substring: spellings like 'bash ./scripts/verify.sh' or
+# './scripts/verify.sh --fast' still generate the scripts they point at,
+# while an unrelated path that merely ends in the same characters
+# ('./build-scripts/verify.sh', 'myscripts/verify.sh') does not. Stated
+# once here; template files and the gated directory name reference
+# `generate_scripts` (a Jinja path segment cannot hold the test itself —
+# '/' would split the file name). A stale generate_scripts value passed
+# as data still overrides this default; _message_after_copy warns when
+# that leaves the gate pointing at a missing script.
 generate_scripts:
   type: bool
-  help: |
-    Generate the scripts/ folder with placeholders for the shell entry
-    points the harness expects to be able to invoke:
-      - scripts/verify.sh    canonical lint+test gate; what verify_command
-                             points at by default and what `make verify` /
-                             `just verify` invoke.
-      - scripts/fmt-file.sh  per-file formatter discovered by the Claude
-                             Code PostToolUse hook (already wired with a
-                             `test -x` guard, so an absent file no-ops).
-    Independent of task_runner: keep these scripts even with
-    task_runner=none if you want a single shell-script entry point, or
-    skip them when task_runner=make/just but verify_command points at a
-    project-native pipeline (e.g. `pixi run verify`).
-  default: true
-
-license:
-  type: str
-  help: "License identifier (SPDX); used only in the rendered docs"
-  default: "Apache-2.0"
-  choices:
-    - Apache-2.0
-    - MIT
-    - BSD-3-Clause
-    - GPL-3.0-only
-    - MPL-2.0
-    - Proprietary
-    - Other
+  when: false
+  default: >-
+    {{ true if (verify_command | regex_search('(^|[^-\w])scripts/verify\.sh')) else false }}
 
 # ---------------------------------------------------------------------------
 # Workflow conventions
@@ -288,67 +257,29 @@ commit_convention:
                       changesets, ...).
       - freeform:     imperative mood, ≤72-char first line, no trailing
                       period (the historic harness default).
-    Where the convention applies depends on `pr_merge_strategy`.
+    Where the convention applies depends on the repo's merge strategy
+    (squash-merge → the PR title; merge/rebase → every branch commit);
+    the generated `development/style.md` explains the split.
   default: conventional
   choices:
     - conventional
     - freeform
 
-pr_merge_strategy:
-  type: str
-  help: |
-    How pull requests land on the default branch. Changes which commits
-    actually end up in history, and therefore where the commit-message
-    guidance applies:
-      - squash:  the PR's squash commit (usually the PR title) is the
-                 only commit that lands. Branch commits during work
-                 are freeform working notes.
-      - merge:   a merge commit + every branch commit lands verbatim.
-                 Each branch commit must follow the convention, AND the
-                 merge commit's message must too — GitHub's default
-                 ("Merge pull request #N from …") is not Conventional,
-                 so configure the merge to use the PR title (Settings
-                 → Pull Requests → "Default commit message" → "Pull
-                 request title") or write the merge message by hand.
-      - rebase:  every branch commit lands verbatim, no merge commit.
-                 Each branch commit must follow the convention.
-      - unknown: don't tailor guidance; show all three modes.
-  default: squash
-  choices:
-    - squash
-    - merge
-    - rebase
-    - unknown
-
 # ---------------------------------------------------------------------------
 # Optional modules (gated; everything off-by-default except Claude + OpenCode)
 # ---------------------------------------------------------------------------
-
-cursor:
-  type: bool
-  help: "Generate .cursor/rules/project-context.mdc for Cursor users?"
-  default: false
 
 copilot_code_review:
   type: bool
   help: |
     Generate GitHub Copilot code-review configuration under `.github/`?
     Writes a populated `.github/copilot-instructions.md` (review rules,
-    not a redirect) plus a `.github/instructions/` directory with
-    path-scoped `language.instructions.md` and `security.instructions.md`
-    files. Copilot code review reads these from the PR's base branch,
-    capped at 4,000 characters per file; it does NOT read `AGENTS.md`, so
-    the review-relevant rules have to live here directly.
-  default: false
-
-copilot_code_review_skill:
-  type: bool
-  help: |
-    Also generate a Copilot agent skill at
-    `.github/skills/code-review/SKILL.md`? Agent skills for code review
-    are a GitHub public preview (since June 2026), so this is off by
-    default. Independent of `copilot_code_review`, but most useful with
-    it on.
+    not a redirect), a `.github/instructions/` directory with path-scoped
+    `language.instructions.md` and `security.instructions.md` files, and
+    a Copilot agent skill at `.github/skills/code-review/SKILL.md`.
+    Copilot code review reads these from the PR's base branch, capped at
+    4,000 characters per file; it does NOT read `AGENTS.md`, so the
+    review-relevant rules have to live here directly.
   default: false
 
 pr_template:
@@ -358,22 +289,7 @@ pr_template:
     checklist tied to the harness: gate green, success criteria evidenced,
     `report.md` written with deviations declared, no weakened tests, and
     every `DECISION-PENDING:` line registered. Inert for non-GitHub
-    remotes. Independent of the copilot_* questions.
-  default: true
-
-mcp:
-  type: bool
-  help: "Generate a starter .mcp.json (with example commented-out servers)?"
-  default: false
-
-include_example_adr:
-  type: bool
-  help: "Include the seed ADR 0001-record-architecture-decisions.md?"
-  default: true
-
-include_example_skill:
-  type: bool
-  help: "Include the example 'verify' skill under .agents/skills/verify/?"
+    remotes. Independent of copilot_code_review.
   default: true
 
 include_claude_hooks:
@@ -387,20 +303,16 @@ include_claude_hooks:
     the agent loop. Requires `jq` on PATH.
   default: true
 
-include_example_spec:
-  type: bool
-  help: "Include a stub development/work/<date>-example/ directory with spec/plan/tasks/report templates?"
-  default: false
-
 # ---------------------------------------------------------------------------
-# Post-generation message — warn about inconsistent answer combinations.
+# Post-generation message — note answer combinations worth knowing about.
 # ---------------------------------------------------------------------------
 _message_after_copy: |
-  {% if not generate_scripts and verify_command == './scripts/verify.sh' -%}
-  WARNING: generate_scripts=false but verify_command still points at
-  './scripts/verify.sh', which will not exist. Either re-run with
-  generate_scripts=true, or set verify_command to your project's
-  own gate (e.g. 'pixi run verify', 'hatch run verify').
+  {% if not generate_scripts and (verify_command | regex_search('(^|[^-\w])scripts/verify\.sh')) -%}
+  WARNING: verify_command points at scripts/verify.sh, but scripts/ was
+  not generated because a provided generate_scripts value overrode the
+  derived default (the question was removed; the value is now derived
+  from verify_command). Drop the stale generate_scripts data or answers
+  entry and re-run, or point verify_command at your real gate.
   {%- endif %}
   {% if task_runner == 'none' -%}
   Note: task_runner=none — no Makefile or justfile was generated. Agents
@@ -410,12 +322,4 @@ _message_after_copy: |
   the agent loop runs without prompts. To also allow related commands
   (e.g. other pixi/hatch tasks), add a broader wildcard entry to both
   config files manually.
-  {%- endif %}
-  {% if copilot_code_review_skill and not copilot_code_review -%}
-  Note: copilot_code_review_skill=true but copilot_code_review=false — the
-  Copilot agent skill at .github/skills/code-review/SKILL.md was generated
-  without the accompanying .github/copilot-instructions.md review rules and
-  .github/instructions/ path-scoped files. The skill works standalone, but
-  enabling copilot_code_review gives Copilot the repo-wide and path-scoped
-  rules too.
   {%- endif %}

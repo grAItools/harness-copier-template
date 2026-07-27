@@ -8,6 +8,13 @@ major version).
 
 ## [Unreleased]
 
+> A simplification wave ([ADR 0012](docs/decisions/0012-template-simplification-wave.md),
+> implementing an audited complexity review) lands late in this cycle; where
+> an entry below describes a mechanism the wave then changed (role playbook
+> skills, the `SPIKE-`/`EXPLORER-`/`PLAN-REVISION` markers, the
+> `copilot_code_review_skill` and `generate_scripts` questions), the wave's
+> entries under **Changed** / **Removed (breaking)** state the final shape.
+
 ### Added
 
 - Role playbook skills: `.agents/skills/{product-owner,architect,developer,reviewer}-playbook/`
@@ -123,6 +130,61 @@ major version).
 
 ### Changed
 
+- Role method playbooks are merged into their subagent files: each of
+  `product-owner` / `architect` / `developer` / `reviewer` now carries its
+  **Method** inline (deduplicated against its own constraints), so a role
+  invocation loads one file plus the shared `design-principles` skill instead
+  of two files plus the skill. `.agents/skills/` ships only
+  `design-principles/`
+  ([ADR 0012](docs/decisions/0012-template-simplification-wave.md)).
+- Hand-back markers collapse to one convention: roles append
+  `HANDBACK(<spike|explore|replan>): …` to the feature's `scratch.md` and
+  results come back as `RESULT(<kind>): …` lines, with flat per-kind caps —
+  three spike hand-backs per plan, three explore hand-backs per phase, three
+  replan hand-backs per feature — after which the question goes to the user.
+  Round-number carrying and the spike-count reset arithmetic are gone. `DECISION-PENDING:` and its register contract are untouched, and
+  the Product Owner's clarifying-question loop stays reply-based (its
+  `edit: deny` grant cannot append to an existing `scratch.md`) with a flat
+  five-round cap (ADR 0012).
+- `development/harness-usage.md` shrinks by ~140 rendered lines: the
+  per-phase prompting sections, the "conventions the agents already know"
+  recap, and the capability-triggering taxonomy are deleted; the
+  **Document liveness** table is now the harness's only full liveness
+  statement, linked from the other files (ADR 0012).
+- `scripts/` generation is derived from `verify_command` instead of asked:
+  the folder generates exactly when the answer names `scripts/verify.sh` as
+  a path (`bash ./scripts/verify.sh` counts; `./build-scripts/verify.sh`
+  does not), via a never-asked computed `generate_scripts` value in
+  `copier.yml`. `scripts/verify.sh` and `scripts/fmt-file.sh` join
+  `_skip_if_exists`, so existing (brownfield or customised) copies are never
+  overwritten, and a `_message_after_copy` warning fires when a stale
+  `generate_scripts` value supplied as data leaves the gate pointing at a
+  missing script (ADR 0012).
+- The glossary-promotion rule is stated once, in `development/glossary.md`;
+  `/spec`, the `product-owner` subagent, the reviewer's scope check,
+  `development/README.md`, and `harness-usage.md` shrink to one-line
+  references. The reviewer still requires glossary edits to trace to the
+  reviewed spec's Glossary section (ADR 0012).
+- The four `.agents/` READMEs (`README.md`, `subagents/README.md`,
+  `commands/README.md`, `skills/README.md`) merge into one
+  `.agents/README.md`, fixing two doc defects: the authoring tip telling
+  downstream users to import `_macros.jinja` (never shipped downstream, so
+  unusable) and the Copilot matrix row naming a nonexistent `copilot`
+  question while calling `copilot-instructions.md` a redirect stub — it is
+  a populated review-rules file gated by `copilot_code_review` (ADR 0012).
+- `development/tool-bootstrap.md`'s generic mise/asdf tutorial (~48 lines)
+  becomes a few lines linking both tools' install docs, with a `_Fill in:`
+  for the chosen pin file; the per-package-manager install sections are
+  unchanged (ADR 0012).
+- `hooks/post_gen.py` prints a tool-agnostic next-steps line ("run your
+  verify target — `make verify` / `just verify` / your configured verify
+  command") and drops the `_read_answer` PyYAML helper; the `.gitignore`
+  fence merge is unchanged (ADR 0012).
+- `.opencode/opencode.jsonc`'s formatter key is hardcoded to `project-fmt`
+  (it was the only consumer of the deleted `project_slug` question).
+- `copilot_code_review` now generates all four `.github/` review files,
+  including the code-review agent skill previously gated by the separate
+  `copilot_code_review_skill` question (ADR 0012).
 - Generated docs mark their fill-in points with one consistent set of
   scaffold markers: `_Fill in: …_` for blocks the downstream user replaces
   (greppable), bare `<placeholder>` inline — angle brackets, never
@@ -306,6 +368,33 @@ major version).
 
 ### Removed (breaking)
 
+- **Eleven questions deleted, leaving 13** (ADR 0012): `mode` (consumed by
+  nothing), `project_slug` (formatter key hardcoded), `license` (the two doc
+  lines become `_Fill in: SPDX identifier_` markers), `pr_merge_strategy`
+  (`AGENTS.md`/`development/style.md` carry the strategy-generic guidance:
+  squash → PR title; merge/rebase → every branch commit),
+  `include_example_adr` (seed ADR 0001 now always ships),
+  `include_example_skill`, `include_example_spec`, `cursor`, `mcp`,
+  `copilot_code_review_skill`, `generate_scripts` (derived — see Changed).
+- **The `verify` skill is deleted** (`.agents/skills/verify/`): its content
+  duplicated `AGENTS.md`'s gate rule, the Stop hook, `testing.md`, and the
+  reviewer; the harness-usage section disambiguating it from `/verify` goes
+  with it (ADR 0012).
+- **The example work unit is deleted**
+  (`development/work/YYYY-MM-example/`, 4 files): it mirrored the role
+  subagents' output formats, which are the enforced source.
+  `development/work/` now ships empty (a `.gitkeep` keeps the directory).
+- **The `cursor` and `mcp` modules are deleted**
+  (`.cursor/rules/project-context.mdc`, `.mcp.json`, `.mcp.example.jsonc`);
+  `.mcp.json` also leaves `_skip_if_exists`. Cursor reads root `AGENTS.md`
+  natively; an empty `.mcp.json` takes seconds to create when needed.
+- **The role playbook skills are deleted**
+  (`.agents/skills/{product-owner,architect,developer,reviewer}-playbook/`),
+  merged into their subagent files (see Changed).
+- **Marker tokens `SPIKE-REQUEST:` / `SPIKE-FINDING:`,
+  `EXPLORER-REQUEST:` / `EXPLORER-FINDING:`, `PLAN-REVISION:` are removed**
+  from every generated surface, replaced by the `HANDBACK(<kind>)` /
+  `RESULT(<kind>)` convention (see Changed).
 - **The generated harness's process memory moves into a single top-level
   `development/` tree, and `docs/` is no longer generated.** Every generated
   `docs/` file moves: `docs/{architecture,style,testing,tool-bootstrap,harness-usage}.md`
@@ -331,6 +420,41 @@ major version).
 
 ### Upgrade notes
 
+- **Simplification wave (ADR 0012):** `copier update` re-prompts nothing —
+  the eleven deleted questions simply drop out of `.copier-answers.yml`.
+  The following need a look:
+  - `generate_scripts` is now derived from `verify_command`. If you had
+    `generate_scripts=true` with a `verify_command` that does not name
+    `scripts/verify.sh` (or `false` with one that does), the derived rule
+    changes what is generated — adjust `verify_command` to match your
+    intent before updating. **If you keep customised `scripts/` files while
+    `verify_command` points elsewhere, `copier update` deletes them from
+    the working tree** (they are no longer generated; recover from git
+    history and re-add by hand). Existing `scripts/verify.sh` /
+    `scripts/fmt-file.sh` files are now in `_skip_if_exists`, so an
+    adopting or updating run never overwrites them.
+  - `copilot_code_review_skill` is folded into `copilot_code_review`: with
+    the latter `true` you now also get
+    `.github/skills/code-review/SKILL.md`; if you enabled only the skill,
+    re-answer `copilot_code_review=true` and delete the instruction files
+    you don't want.
+  - The `license` answer no longer renders: `AGENTS.md` and `README.md`
+    show a `_Fill in: SPDX identifier_` marker (both are, or can be,
+    preserved files — fill the line in by hand).
+  - Previously generated files the template no longer produces (the four
+    playbook directories, `.agents/skills/verify/`, the three sub-READMEs
+    under `.agents/`, `.cursor/rules/project-context.mdc`, `.mcp.json`,
+    `.mcp.example.jsonc`, `development/work/YYYY-MM-example/`): `copier
+    update` removes unmodified ones; check for and delete any that linger.
+  - In-flight features whose `scratch.md` carries old marker tokens need no
+    migration — scratch files are gitignored and die at completion; freshly
+    invoked roles emit and look for `HANDBACK(...)`/`RESULT(...)` lines.
+  - `development/harness-usage.md`, `tool-bootstrap.md`, `style.md`, and
+    `glossary.md` are `_skip_if_exists`-preserved, so existing repos keep
+    the pre-wave prose (playbook triggers, old marker names, mise/asdf
+    tutorial, four-branch merge-strategy text) — diff against the template
+    versions and merge by hand; the agents follow the updated `.agents/`
+    files either way.
 - **`docs/` → `development/` migration (existing generated repos):** before
   running `copier update`, move the harness files so Copier tracks them at
   their new paths instead of re-creating them alongside the old ones:

@@ -43,13 +43,15 @@ for the full design and provenance.
 Render the template into a throwaway dir and inspect it:
 
 ```sh
-# project_name and project_description are required (no defaults):
-uvx copier copy --trust --defaults \
+# project_name and project_description are required (no defaults).
+# Commit first and pass --vcs-ref HEAD — copier renders the latest tag
+# otherwise, silently ignoring uncommitted and untagged changes:
+uvx copier copy --trust --defaults --vcs-ref HEAD \
   --data project_name=Demo --data project_description="A demo" . /tmp/render-check
 # vary answers to exercise gates:
-uvx copier copy --trust --defaults \
+uvx copier copy --trust --defaults --vcs-ref HEAD \
   --data project_name=Demo --data project_description="A demo" \
-  --data task_runner=just --data cursor=true . /tmp/render-just
+  --data task_runner=just --data copilot_code_review=true . /tmp/render-just
 ```
 
 `--trust` is required because `hooks/post_gen.py` runs after generation.
