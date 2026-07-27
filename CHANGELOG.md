@@ -127,6 +127,11 @@ major version).
   `DECISION-PENDING:` (answer, register row, re-invoke) and a new
   `PLAN-REVISION:` (route to `/plan`, not `/verify`) — mirroring the
   `SPIKE-REQUEST:`/`SPIKE-FINDING:` protocol `/plan` already had.
+- `.agents/hooks/hook-input.sh` — canonical reader for the Claude Code hooks'
+  JSON payloads: parses with `jq`, falls back to `python3`, and exits 3 with a
+  message when neither is on PATH, so each hook can pick its own failure
+  posture. Ships unconditionally, like `block-destructive.sh`. See
+  [ADR 0013](docs/decisions/0013-hook-payload-parsing-and-failure-postures.md).
 
 ### Changed
 
@@ -365,6 +370,24 @@ major version).
   — `product-owner` five questions per spec, `architect` three spikes per plan,
   `developer` three searches per phase — and restates it in every hand-back;
   `AGENTS.md` tells the caller to honour it and carry the round number.
+- `jq` is no longer an undocumented, unchecked hard requirement of the Claude
+  Code hooks (issue #31): without it the PreToolUse guard denied **every** Bash
+  call — including the `apt-get install jq` that would fix it — with no
+  message, the Stop hook's `stop_hook_active` loop-guard was silently defeated
+  (a red verify gate could re-trigger itself indefinitely), and the PostToolUse
+  formatter silently no-opped. All three hooks now read their payloads via
+  `.agents/hooks/hook-input.sh` (`jq`, then `python3`; see **Added**); with
+  neither parser on PATH the guard still fails closed but names the cause and
+  remedy, the Stop hook skips the gate with a `verify skipped:` note instead of
+  looping, the formatter says `fmt skipped:`, and a SessionStart warning —
+  now rendered for every `include_claude_hooks` project, not only uv/pixi —
+  fires before the first denial. `block-destructive.sh` names the pattern it
+  matched on deny, so a legitimate block is distinguishable from an
+  infrastructure failure. The requirement is documented in
+  `development/tool-bootstrap.md` (`_skip_if_exists` — existing repos don't
+  receive the bullet on `copier update`; the hook fixes themselves do land)
+  and the `include_claude_hooks` question help. See
+  [ADR 0013](docs/decisions/0013-hook-payload-parsing-and-failure-postures.md).
 
 ### Removed (breaking)
 

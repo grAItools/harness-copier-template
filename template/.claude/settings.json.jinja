@@ -31,25 +31,29 @@
     ]
   }{% if include_claude_hooks %},
   "hooks": {
-    {% if bootstrap -%}
     "SessionStart": [
       {
         "hooks": [
+          {% if bootstrap -%}
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/ensure-toolchain.sh\" || true"
+          },
+          {% endif -%}
+          {
+            "type": "command",
+            "command": "command -v jq >/dev/null 2>&1 || command -v python3 >/dev/null 2>&1 || echo 'warning: neither jq nor python3 is on PATH - the PreToolUse guard will deny every Bash call until one is installed (apt-get install jq / brew install jq)' >&2"
           }
         ]
       }
     ],
-    {% endif -%}
     "PostToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "f=$(jq -r '.tool_input.file_path // empty'); S=\"${CLAUDE_PROJECT_DIR:-.}/scripts/fmt-file.sh\"; [ -n \"$f\" ] && [ -x \"$S\" ] && \"$S\" \"$f\" || true"
+            "command": "f=$(sh \"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/hook-input.sh\" .tool_input.file_path) || { echo 'fmt skipped: cannot read the hook input (jq and python3 both missing; install jq)' >&2; exit 0; }; S=\"${CLAUDE_PROJECT_DIR:-.}/scripts/fmt-file.sh\"; [ -n \"$f\" ] && [ -x \"$S\" ] && \"$S\" \"$f\" || true"
           }
         ]
       }
@@ -60,7 +64,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "S=\"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/block-destructive.sh\"; [ -r \"$S\" ] || exit 2; c=$(jq -r '.tool_input.command // empty') || exit 2; [ -n \"$c\" ] || exit 2; printf '%s' \"$c\" | sh \"$S\""
+            "command": "H=\"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks\"; [ -r \"$H/block-destructive.sh\" ] || { echo 'PreToolUse: block-destructive.sh is missing - denying Bash. Restore .agents/hooks, then retry.' >&2; exit 2; }; c=$(sh \"$H/hook-input.sh\" .tool_input.command) || { echo 'PreToolUse: cannot read the tool input (jq and python3 both missing), so the destructive-command guard cannot run - denying Bash. Install jq (apt-get install jq / brew install jq) from a shell outside the agent, then retry.' >&2; exit 2; }; [ -n \"$c\" ] || { echo 'PreToolUse: no command found in the tool input - denying Bash.' >&2; exit 2; }; printf '%s' \"$c\" | sh \"$H/block-destructive.sh\""
           }
         ]
       }
@@ -71,9 +75,9 @@
           {
             "type": "command",
             {% if bootstrap -%}
-            "command": {{ ("INPUT=$(cat); [ \"$(printf '%s' \"$INPUT\" | jq -r '.stop_hook_active // false')\" = 'true' ] && exit 0; export PATH=\"" ~ bin_dir ~ ":$PATH\"; command -v " ~ package_manager ~ " >/dev/null 2>&1 || { echo 'verify skipped: " ~ package_manager ~ " unavailable (run .agents/hooks/ensure-toolchain.sh; see development/tool-bootstrap.md)' >&2; exit 0; }; " ~ cmd('verify') ~ " || exit 2") | tojson }}
+            "command": {{ ("flag=$(sh \"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/hook-input.sh\" .stop_hook_active) || { echo 'verify skipped: cannot read the hook input (jq and python3 both missing; install jq)' >&2; exit 0; }; [ \"$flag\" = 'true' ] && exit 0; export PATH=\"" ~ bin_dir ~ ":$PATH\"; command -v " ~ package_manager ~ " >/dev/null 2>&1 || { echo 'verify skipped: " ~ package_manager ~ " unavailable (run .agents/hooks/ensure-toolchain.sh; see development/tool-bootstrap.md)' >&2; exit 0; }; " ~ cmd('verify') ~ " || exit 2") | tojson }}
             {% else -%}
-            "command": {{ ("INPUT=$(cat); [ \"$(printf '%s' \"$INPUT\" | jq -r '.stop_hook_active // false')\" = 'true' ] && exit 0; " ~ cmd('verify') ~ " || exit 2") | tojson }}
+            "command": {{ ("flag=$(sh \"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/hook-input.sh\" .stop_hook_active) || { echo 'verify skipped: cannot read the hook input (jq and python3 both missing; install jq)' >&2; exit 0; }; [ \"$flag\" = 'true' ] && exit 0; " ~ cmd('verify') ~ " || exit 2") | tojson }}
             {% endif -%}
           }
         ]

@@ -116,3 +116,8 @@ and include synonyms.
 - **Destructive-command deny-list** is canonical in
   [`hooks/block-destructive.sh`](hooks/block-destructive.sh); OpenCode's deny globs
   are a hand-kept mirror (it cannot call a script).
+- **Hook payload parsing** is canonical in
+  [`hooks/hook-input.sh`](hooks/hook-input.sh): the Claude Code hooks in
+  `.claude/settings.json` read their JSON input through it (`jq`, with a
+  `python3` fallback). With neither parser on PATH, the PreToolUse guard fails
+  closed with an explanatory message and SessionStart prints a warning.

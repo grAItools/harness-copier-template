@@ -77,6 +77,7 @@ your-repo/
 │  ├─ README.md                      # supported-agents matrix, single-source rule, layout docs
 │  ├─ hooks/
 │  │  ├─ block-destructive.sh        # canonical deny-list (Claude PreToolUse pipes to it)
+│  │  ├─ hook-input.sh               # hook payload reader: jq, python3 fallback
 │  │  └─ ensure-toolchain.sh         # idempotent build-tool bootstrap; if package_manager in {uv, pixi}
 │  ├─ skills/
 │  │  └─ design-principles/SKILL.md  # shared design ground rules + red-flag checklist
@@ -133,7 +134,7 @@ The template asks you (13 questions):
 | `commit_convention`       | `conventional` (default) \| `freeform`; drives the commit-message bullet in `AGENTS.md` (always updated) and the matching section in `development/style.md` (greenfield-only — `_skip_if_exists`) |
 | `copilot_code_review`     | Off by default; populated Copilot code-review config under `.github/` (instructions + path-scoped rules + the code-review agent skill). Copilot code review does **not** read `AGENTS.md`, so rules are restated directly |
 | `pr_template`             | On by default; adds `.github/PULL_REQUEST_TEMPLATE.md`, a definition-of-done checklist tied to the harness (gate, spec evidence, `report.md`, decision register). Inert for non-GitHub remotes |
-| `include_claude_hooks`    | On                                                       |
+| `include_claude_hooks`    | On by default. Hooks read their JSON payloads via `.agents/hooks/hook-input.sh` (`jq`, `python3` fallback); with neither on PATH, SessionStart warns and the Bash guard fails closed with an explanatory message |
 
 ### Brown-field (existing repo)
 
