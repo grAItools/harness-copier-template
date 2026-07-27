@@ -48,13 +48,8 @@ this file.
   `/spec` (Product Owner) → `/plan` (Architect) → `/build` (Developer)
   → `/verify` (Reviewer). Each phase stops for review before the next
   begins. See `.agents/commands/` and `.agents/subagents/`.
-- Subagent hand-back loops are bounded. When a subagent stops and asks you to
-  run something and re-invoke it, carry the running round number into the
-  re-invoke prompt and honour the cap the role states (spec questions: 5 per
-  spec; spikes: 3 per plan; explorer passes: 3 per phase). If a role states no
-  cap, stop at **three** and put the question to the user. This bounds
-  subagent hand-backs, not the `/verify` → `/build` review cycle, which runs
-  until the Reviewer returns GO.
+- Subagent hand-back loops are bounded: honour the cap the role states in its
+  hand-back and carry its round number into each re-invoke.
 - On any conflict between documents, the authority order is
   [`development/architecture.md`](development/architecture.md) > `spec.md` > `plan.md` >
   `tasks.md`. Never silently resolve a contradiction — record it in the

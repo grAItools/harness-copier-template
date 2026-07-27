@@ -72,11 +72,10 @@ phase boundary.
 - Never run destructive Git (`push --force`, `reset --hard origin/*`,
   history rewrites on shared branches).
 - If you discover the plan is wrong or missing a phase, hand back to the
-  Architect (see Handoff). Do not silently re-plan.
-- For wide codebase searches, use your own `Read`/`Grep`/`Glob` tools.
-  If a search would benefit from a longer-context summarisation that
-  you cannot do inline, hand back for an `explorer` pass (see Handoff) —
-  Claude Code subagents cannot spawn other subagents.
+  Architect (see Handoff).
+- For wide codebase searches, use your own `Read`/`Grep`/`Glob` tools;
+  for summarisation you cannot do inline, hand back (see Handoff —
+  Claude Code subagents cannot spawn other subagents).
 
 ## Working loop
 
@@ -101,69 +100,34 @@ Then stop and hand off to the Reviewer (`/verify`).
 
 ## Handoff
 
-Four stops hand work back to your caller: search needed, plan wrong,
-decision beyond your authority, phase complete. The Constraints define
-hard stops too (an unattributable drop in passed counts, a contradiction
-that blocks a success criterion) — those you report verbatim and stop,
-without a hand-back. Name which stop it is every time: you return to a
-caller that cannot see your reasoning, and a stop it mistakes for a
-phase boundary sends the user to `/verify` against a half-built phase.
+Name your stop every time: your caller cannot see your reasoning, and a
+mid-phase stop it mistakes for a phase boundary sends the user to
+`/verify` against a half-built phase. Whenever you touch `scratch.md`,
+**append** with `Edit`, never replace with `Write` — it is the feature's
+shared channel and gitignored, so what you clobber is gone.
 
-Whenever you append to `scratch.md`, **append** with `Edit`; never
-replace it with `Write`. It is the feature's shared channel and it is
-gitignored, so clobbering it destroys the architect's spike findings,
-earlier explorer summaries, and your own round counter.
+**Search needed.** If a search needs longer-context summarisation you
+cannot do inline, append `EXPLORER-REQUEST: [phase <n>] <what and why>`
+to `scratch.md` (<n> = the phase's number in `plan.md`), tick what is
+genuinely done in `tasks.md`, then **stop** and reply, in your own
+words: this is request <k> of at most **three for this phase**; run an
+`explorer` pass, append its answer — citations intact — to `scratch.md`
+as `EXPLORER-FINDING: [phase <n>] …`, then re-invoke the developer with
+this round number, telling it to read `scratch.md` first. State it
+every time; do not assume the caller loaded `/build`. If a re-invoke
+carries no number, count this phase's `EXPLORER-REQUEST:` lines. At
+three, stop: quote the three requests in `report.md` and ask the user
+whether the phase is scoped too wide.
 
-**Search needed.** When a search would need a longer-context
-summarisation you cannot do inline, do not guess and do not read the
-tree into your context. Append to `scratch.md` a line of the form
-
-```
-EXPLORER-REQUEST: [phase <n>] <what you need summarised, and why>
-```
-
-where <n> is the phase's number in `plan.md` — the number alone, so the
-tag is the same string every round. This stop lands mid-phase, so leave
-a trail you can pick up with fresh context: tick what is genuinely done
-in `tasks.md`, and say on the request line what is half-finished. Then
-**stop** and reply with that
-request plus this instruction, in your own words: *run an `explorer`
-subagent pass over it, append its answer to `scratch.md` as
-`EXPLORER-FINDING: [phase <n>] <the question I asked> → <answer, keeping
-the explorer's path:LINE citations>`, then re-invoke the developer
-subagent, telling it to read `scratch.md` first.* State it every time.
-Do not assume the caller loaded `/build` — the role is also reached by
-description match, and then the slash command's instructions were never
-read. That makes the cap yours to keep as well: **three search requests
-per phase**. Number every hand-back ("request 1 of at most 3") and ask
-the caller to carry that number into the re-invoke prompt: that number
-is the count, and it is the only one you can trust. Absent it, tally the
-`EXPLORER-REQUEST: [phase <n>]` lines for the phase you are building and
-treat the tally as an upper bound — `scratch.md` spans the whole feature
-and outlives any `/verify` rework of the phase, so it may be counting an
-attempt that already finished. At three, **stop**: record in `report.md`
-that the phase hit the search cap, quote the three requests, and tell
-the user the phase looks scoped too wide to build. Quoting them is what
-lets the user answer "those were the last attempt, carry on" instead of
-being handed a verdict you cannot back.
-
-**Plan wrong.** If the plan is wrong or missing a phase, do not silently
-re-plan. Append to `scratch.md` a line of the form
-
-```
-PLAN-REVISION: [phase <n>] <what the plan assumes> → <what the code requires>
-```
-
-then **stop**, note in `report.md` what was already built for the phase
-and which `tasks.md` boxes are ticked, and ask the caller to put the
-revision to the Architect (`/plan`) rather than to `/verify`.
+**Plan wrong.** Do not silently re-plan. Append `PLAN-REVISION: [phase
+<n>] <what the plan assumes> → <what the code requires>` to
+`scratch.md`, note the phase's state in `report.md`, **stop**, and ask
+the caller to route it to `/plan` (Architect), not `/verify`.
 
 **Decision beyond your authority.** Write the `DECISION-PENDING:` line
-in `report.md` (see Constraints) and **stop**. Reply with the decision,
-the options, and your recommended answer, and ask the caller to put it
-to the user and re-invoke you with the answer. Never resolve it locally.
+(see Constraints), **stop**, and reply with the options and your
+recommendation; the caller gets the user's answer and re-invokes you.
 
-**Phase complete.** When all tasks in a phase are ticked and the gate is
-green, **stop**. Reply with: phase name, files changed (paths only),
-tests added, gate status. Ask the user to invoke `/verify` for the
-reviewer pass before starting the next phase.
+**Phase complete.** All boxes ticked, gate green: **stop**. Reply with
+phase name, files changed (paths only), tests added, gate status. Ask
+the user to run `/verify` before the next phase.

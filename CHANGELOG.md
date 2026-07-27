@@ -114,16 +114,12 @@ major version).
   source-glob map, previously inline in `language.instructions.md.jinja`),
   now shared by that file and `.claude/rules/comments.md`.
 - The Developer's mid-build hand-backs are now serviced, not just emitted.
-  `/build` gains a step 5 that runs the `explorer` pass an
-  `EXPLORER-REQUEST: [phase <n>]` line asks for, appends the answer (citations
-  intact) as `EXPLORER-FINDING:` and re-invokes the developer — three rounds
-  per phase, mirroring the `SPIKE-REQUEST:`/`SPIKE-FINDING:` protocol `/plan`
-  already had — and a step 6 for the two mid-phase stops it never handled: a
-  `DECISION-PENDING:` escalation (answer, re-invoke, register row) and a new
-  `PLAN-REVISION:` marker routing a wrong plan back to `/plan`, not `/verify`.
-  The `developer` subagent's Handoff names all four hand-back stops with their
-  markers, and `development/harness-usage.md`'s Phase-3 section sets the
-  expectation for the human driving it.
+  `/build` step 5 dispatches on the marker the developer leaves —
+  `EXPLORER-REQUEST:` (run the `explorer`, append its answer on an
+  `EXPLORER-FINDING:` line, re-invoke; three rounds per phase),
+  `DECISION-PENDING:` (answer, register row, re-invoke) and a new
+  `PLAN-REVISION:` (route to `/plan`, not `/verify`) — mirroring the
+  `SPIKE-REQUEST:`/`SPIKE-FINDING:` protocol `/plan` already had.
 
 ### Changed
 
@@ -301,16 +297,12 @@ major version).
   `git reset --hard`) silently no-opping. The `PreToolUse` guard fails closed
   (exit 2) when `jq` errors or the extracted command is empty. `copier update`
   propagates the fix (not in `_skip_if_exists`).
-- Hand-back loops are now bounded where they run, not only in the slash
-  command that starts them. The `/spec` five-round and `/plan` three-round caps
-  were the loops' only termination condition, in the one file both subagents
-  say may never have been read ("do not assume the caller loaded `/spec`"). The
-  `architect` subagent now states its own three-spike cap and counts the
-  `SPIKE-REQUEST:` lines already in `scratch.md`; the `product-owner`, which
-  cannot write `scratch.md`, numbers each question ("question 2 of at most 5")
-  and asks the caller to carry the count; and `AGENTS.md` — the one file loaded
-  on every path, including description match — gains a "hand-back loops are
-  bounded" rule with a default cap of three for any role that states none.
+- Hand-back loops are bounded where they run, not only in the slash command
+  that starts them, which the subagents themselves say may never have been read
+  ("do not assume the caller loaded `/spec`"). Each role now states its own cap
+  — `product-owner` five questions per spec, `architect` three spikes per plan,
+  `developer` three searches per phase — and restates it in every hand-back;
+  `AGENTS.md` tells the caller to honour it and carry the round number.
 
 ### Removed (breaking)
 

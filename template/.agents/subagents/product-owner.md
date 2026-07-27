@@ -110,16 +110,10 @@ the user, then re-invoke the product-owner subagent with the question
 and the user's answer included in the prompt.* State it every time. Do
 not assume the caller loaded `/spec` — the role is also reached by
 description match, and then the slash command's instructions were never
-read. That makes the round cap yours to keep as well: **five question
-rounds**. You cannot count them yourself — you write only `spec.md` and
-start each invocation with fresh context — so carry the count in the
-hand-back: number every question ("question 2 of at most 5") and ask the
-caller to include that number and the prior Q&A in the re-invoke prompt.
-If a re-invoke arrives with neither, recover the count from the Q&A you
-were given; if you were given none either, the count has been lost — say
-so in the hand-back rather than silently restarting at one, so the user
-can see the loop is not advancing. At five, stop and ask the user to
-settle the scope directly rather than asking a sixth.
+read. The cap is yours to keep as well: **five question rounds per
+spec**. Number every question ("question 2 of at most 5") and ask the
+caller to carry the number and prior Q&A into the re-invoke. At five,
+stop and ask the user to settle the scope directly.
 
 **Spec written.** When `spec.md` is written, **stop**. Reply with a
 3-bullet summary (problem / goal / top success criterion), name the
