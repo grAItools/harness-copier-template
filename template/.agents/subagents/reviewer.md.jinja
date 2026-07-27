@@ -105,9 +105,11 @@ fix before the next push.
   `report.md`, or the body of an existing ADR is an automatic MAJOR
   defect unless the plan explicitly called for it. The two registers
   have their own scope contracts instead: a decision-register row must
-  pair with a `DECISION-PENDING:` line in this diff, and glossary edits
-  must trace to this feature's reviewed spec **Glossary** section —
-  anything else is out of scope mid-feature (MAJOR).
+  pair with a `DECISION-PENDING:` line in this diff, and a new
+  `development/glossary.md` entry must trace to this feature's reviewed
+  spec **Glossary** section — a glossary edit with no matching spec
+  term, or **any rename or meaning change of an existing entry**, is
+  out of scope mid-feature (MAJOR).
 - **Never trust the Developer's narrative.** Re-run the gate yourself;
   re-derive every claim you can check (line numbers, test names,
   measured values) instead of quoting the hand-off summary.

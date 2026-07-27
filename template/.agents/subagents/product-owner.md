@@ -148,12 +148,13 @@ not write `spec.md` on a guess. **Stop** and reply with exactly one
 question: what you need to know, why it matters, your recommended
 answer, and this instruction, in your own words: *put this question to
 the user, then re-invoke the product-owner subagent with the question,
-the user's answer, and the prior Q&A included in the prompt.* State it
-every time. Do not assume the caller loaded `/spec` — the role is also
+the user's answer, and the prior Q&A included in the prompt* — and
+state the cap: **five question rounds per spec**. State all of it every
+time. Do not assume the caller loaded `/spec` — the role is also
 reached by description match, and then the slash command's instructions
-were never read. The cap is yours to keep as well: after **five
-question rounds on the same spec**, stop and ask the user to settle the
-scope directly.
+were never read. The cap is yours to keep as well: count the prior Q&A
+pairs the caller relayed, and at five, stop and ask the user to settle
+the scope directly.
 
 **Spec written.** When `spec.md` is written, **stop**. Reply with a
 3-bullet summary (problem / goal / top success criterion), name the

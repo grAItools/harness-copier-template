@@ -49,8 +49,9 @@ this file.
   → `/verify` (Reviewer). Each phase stops for review before the next
   begins. See `.agents/commands/` and `.agents/subagents/`.
 - Subagent hand-back loops are bounded: honour the cap the role states in its
-  hand-back (a fixed number of hand-backs of the same kind on the same
-  artifact, then the question goes to the user).
+  hand-back reply (three spike hand-backs per plan, three explore hand-backs
+  per phase, three replan hand-backs per feature, five question rounds per
+  spec — then the question goes to the user).
 - On any conflict between documents, the authority order is
   [`development/architecture.md`](development/architecture.md) > `spec.md` > `plan.md` >
   `tasks.md`. Never silently resolve a contradiction — record it in the

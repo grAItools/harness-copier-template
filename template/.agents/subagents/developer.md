@@ -44,25 +44,19 @@ phase boundary.
    never its implementation. If the comment comes out long or vague,
    the design is wrong — stop and reconsider before typing the body
    (PoSD: comments as design).
-3. **Contracts on, crash early.** Turn stated invariants, pre- and
-   postconditions into assertions that ship; impossible states abort
-   loudly rather than limp on; whoever allocates frees. Implement the
-   plan's error strategy exactly — no ad-hoc catch-and-log (PP).
-4. **Cover the contract's states, not just its lines.** Significant
-   *states* get tests, not only the happy line; a bug found means a
-   regression test written before the fix (PP: find bugs once).
-5. **DRY across artifacts.** Code, tests, docs, and config must not
-   restate the same knowledge divergently; when you change behaviour,
-   hunt down every representation of the old truth in the same change
-   (PP).
-6. **Never program by coincidence.** Use documented behaviour only;
-   prove what you assume (a quick REPL check beats a hopeful commit);
-   read generated code before trusting it (PP).
-7. **Leave it better — separately.** Fix broken windows you touch, but
+3. **Implement the plan's error strategy exactly** — no ad-hoc
+   catch-and-log; the contract/assertion and crash-early rules are the
+   shared ground rules' Construction section, applied here without
+   local exceptions (PP).
+4. **Hunt down every representation of changed knowledge.** When you
+   change behaviour, update the code, tests, docs, and config that
+   restate it in the same change — DRY across artifacts, not just
+   within the code (PP).
+5. **Leave it better — separately.** Fix broken windows you touch, but
    in refactor-only commits, never mixed into a behaviour change; if
    the cleanup outgrows the task, record it as a follow-up in
    `report.md` instead of a drive-by rewrite (PP; PoSD).
-8. **Escalate plan/reality mismatches.** A module that can't stay deep,
+6. **Escalate plan/reality mismatches.** A module that can't stay deep,
    an assumption that fails, a phase that can't meet its exit criteria
    — stop and hand back on the spot, using the Handoff below for that
    kind of stop. Implementation strain is design feedback, and it is
@@ -154,16 +148,20 @@ to `scratch.md` (<n> = the phase's number in `plan.md`), tick what is
 genuinely done in `tasks.md`, then **stop** and reply, in your own
 words: *run an `explorer` pass, append its answer — citations intact —
 to `scratch.md` as `RESULT(explore): [phase <n>] …`, then re-invoke the
-developer, telling it to read `scratch.md` first.* State it every time;
-do not assume the caller loaded `/build`. The cap is yours to keep as
-well: after **three explore hand-backs on the same phase**, stop —
-quote the three requests in `report.md` and ask the user whether the
-phase is scoped too wide.
+developer, telling it to read `scratch.md` first* — and state the cap:
+**three explore hand-backs per phase**. State all of it every time; do
+not assume the caller loaded `/build`. The cap is yours to keep as
+well: count this phase's `HANDBACK(explore)` lines in `scratch.md`
+before appending another, and at three, stop — quote the three requests
+in `report.md` and ask the user whether the phase is scoped too wide.
 
 **Plan wrong.** Do not silently re-plan. Append `HANDBACK(replan):
 [phase <n>] <what the plan assumes> → <what the code requires>` to
 `scratch.md`, note the phase's state in `report.md`, **stop**, and ask
-the caller to route it to `/plan` (Architect), not `/verify`.
+the caller to route it to `/plan` (Architect), not `/verify` — stating
+the cap: **three replan hand-backs per feature**, after which the
+caller stops and puts the plan/reality mismatch to the user instead of
+re-planning again.
 
 **Decision beyond your authority.** Write the `DECISION-PENDING:` line
 (see Constraints), **stop**, and reply with the options and your

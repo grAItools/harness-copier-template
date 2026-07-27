@@ -52,12 +52,20 @@ Implement audit findings 1–14 as amended by the review:
    ships empty with a `.gitkeep`), `pr_merge_strategy` (docs carry the
    strategy-generic guidance), `cursor`, `mcp`, `copilot_code_review_skill`
    (folded into `copilot_code_review`), and `generate_scripts` — now
-   **derived**: `scripts/` generates exactly when `verify_command`
-   contains the substring `scripts/verify.sh`. The substring test (not
-   equality) is the review's amendment — equality would silently drop the
-   scripts for spellings like `bash ./scripts/verify.sh`. It lives as a
-   never-asked (`when: false`) computed value in `copier.yml` because a
-   Jinja path segment cannot contain `/`.
+   **derived**: `scripts/` generates exactly when `verify_command` names
+   `scripts/verify.sh` as a path. The non-equality match is the review's
+   amendment — equality would silently drop the scripts for spellings
+   like `bash ./scripts/verify.sh`; the implemented test is path-aware
+   rather than bare substring, so `./build-scripts/verify.sh` does not
+   false-positive. It lives as a never-asked (`when: false`) computed
+   value in `copier.yml` because a Jinja path segment cannot contain
+   `/`. Guard rails around the derivation: `scripts/verify.sh` and
+   `scripts/fmt-file.sh` join `_skip_if_exists` (restoring the
+   brownfield protection the deleted opt-out provided — the review's
+   noted secondary loss), and a post-copy warning fires when a stale
+   `generate_scripts` value supplied as data leaves the gate pointing at
+   a missing script (`when: false` skips the prompt but does not reject
+   provided data).
 2. **Role playbooks merged into their subagent files.** Each role file
    carries its Method inline, deduplicated against its own constraints;
    `design-principles/` remains the only `.agents/skills/` entry and the
@@ -68,10 +76,12 @@ Implement audit findings 1–14 as amended by the review:
 3. **One hand-back convention.** `SPIKE-REQUEST:`/`SPIKE-FINDING:`,
    `EXPLORER-REQUEST:`/`EXPLORER-FINDING:`, and `PLAN-REVISION:` are
    replaced by `HANDBACK(<spike|explore|replan>): …` appended to
-   `scratch.md`, results appended as `RESULT(<kind>): …`, with one flat
-   cap: after three hand-backs of the same kind on the same artifact, the
-   question goes to the user. Round-number carrying and the reset
-   arithmetic are gone. `DECISION-PENDING:` and its register contract are
+   `scratch.md`, results appended as `RESULT(<kind>): …`, with flat
+   per-kind caps: three spike hand-backs per plan, three explore
+   hand-backs per phase, three replan hand-backs per feature — then the
+   question goes to the user. Each role states its cap in the hand-back
+   reply itself, so the bound survives description-match invocation.
+   Round-number carrying and the reset arithmetic are gone. `DECISION-PENDING:` and its register contract are
    untouched. **Exception (review-caught):** the Product Owner has
    `edit: deny` and cannot append to an existing `scratch.md`; its
    clarifying-question loop stays reply-based, with a flat five-round cap.

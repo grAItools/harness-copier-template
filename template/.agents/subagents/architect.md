@@ -200,13 +200,14 @@ then **stop** and reply with that question plus this instruction, in
 your own words: *run the smallest throwaway experiment that answers it,
 append the result to `scratch.md` as `RESULT(spike): <question> →
 <answer>. Method: <what was run>. Evidence: <output>`, then re-invoke
-the architect subagent.* State it every time. Do not assume the caller
-loaded `/plan` — the role is also reached by description match, and then
-the slash command's instructions were never read. That makes the cap
-yours to keep as well: after **three spike hand-backs on the same
-plan**, stop and put the question to the user instead. If a finding
-contradicts `spec.md`, hand back to the Product Owner rather than
-planning around it.
+the architect subagent* — and state the cap: **three spike hand-backs
+per plan**. State all of it every time. Do not assume the caller loaded
+`/plan` — the role is also reached by description match, and then the
+slash command's instructions were never read. That makes the cap yours
+to keep as well: count the `HANDBACK(spike)` lines already in
+`scratch.md` before appending another, and at three, stop and put the
+question to the user instead. If a finding contradicts `spec.md`, hand
+back to the Product Owner rather than planning around it.
 
 **Plan written.** When `plan.md` and `tasks.md` are written, **stop**.
 Reply with a 1-line summary per phase and the list of architecture

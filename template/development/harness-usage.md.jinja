@@ -55,11 +55,11 @@ replies with one clarifying question at a time (you answer, the caller
 re-invokes it), and the Architect / Developer append a
 `HANDBACK(<spike|explore|replan>): …` line to the feature's `scratch.md`,
 with the servicing instruction carried in their reply; results are
-appended as `RESULT(<kind>): …` lines. The loops are bounded — after
-three hand-backs of the same kind on the same artifact (five question
-rounds for `/spec`), the question comes to you. A mid-phase stop is
-**not** a phase boundary: read which stop it is before reaching for
-`/verify`.
+appended as `RESULT(<kind>): …` lines. The loops are bounded — three
+spike hand-backs per plan, three explore hand-backs per phase, three
+replan hand-backs per feature, five question rounds per spec — then
+the question comes to you. A mid-phase stop is **not** a phase
+boundary: read which stop it is before reaching for `/verify`.
 
 ## Claude Code specifics
 
@@ -201,6 +201,7 @@ Three habits that make the harness work for you:
    agent and output format are auto-selected.
 2. Respect the stop boundaries — review each artifact before triggering the next
    phase.
-3. Trust the deterministic behaviour{% if generate_scripts %} — both tools auto-format on edit, so don't
-   ask for formatting{% endif %}.{% if include_claude_hooks %} The gate runs automatically on Stop in Claude Code;
+3. Trust the deterministic behaviour{% if generate_scripts and include_claude_hooks %} — both tools auto-format on edit, so don't
+   ask for formatting{% elif generate_scripts %} — OpenCode auto-formats on edit; in Claude Code run
+   `{{ cmd('fmt') }}` yourself (hooks were not generated){% endif %}.{% if include_claude_hooks %} The gate runs automatically on Stop in Claude Code;
    under OpenCode run `/verify` yourself before wrapping up (CI is the backstop).{% endif %}

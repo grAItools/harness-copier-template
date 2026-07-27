@@ -129,7 +129,7 @@ The template asks you (13 questions):
 | `lint_command`            | Wired into the task runner's `lint` target               |
 | `fmt_command`             | Wired into the task runner's `fmt` target                |
 | `task_runner`             | `make` (default) \| `just` \| `none`                     |
-| `verify_command`          | What hooks and `/verify` run; default `./scripts/verify.sh`. `scripts/` (`verify.sh` + `fmt-file.sh`) is generated exactly when this answer mentions `scripts/verify.sh` — no separate question |
+| `verify_command`          | What hooks and `/verify` run; default `./scripts/verify.sh`. `scripts/` (`verify.sh` + `fmt-file.sh`) is generated exactly when this answer names `scripts/verify.sh` as a path — no separate question; existing copies are `_skip_if_exists`-protected |
 | `commit_convention`       | `conventional` (default) \| `freeform`; drives the commit-message bullet in `AGENTS.md` (always updated) and the matching section in `development/style.md` (greenfield-only — `_skip_if_exists`) |
 | `copilot_code_review`     | Off by default; populated Copilot code-review config under `.github/` (instructions + path-scoped rules + the code-review agent skill). Copilot code review does **not** read `AGENTS.md`, so rules are restated directly |
 | `pr_template`             | On by default; adds `.github/PULL_REQUEST_TEMPLATE.md`, a definition-of-done checklist tied to the harness (gate, spec evidence, `report.md`, decision register). Inert for non-GitHub remotes |
@@ -146,7 +146,8 @@ Brown-field safety is automatic, because it comes from `_skip_if_exists`. Run
 into the existing repo and the template:
 
 - **Never silently overwrites** `README.md`, `Makefile`, `justfile`,
-  `.gitignore`, `.github/PULL_REQUEST_TEMPLATE.md`,
+  `.gitignore`, `scripts/verify.sh`, `scripts/fmt-file.sh`,
+  `.github/PULL_REQUEST_TEMPLATE.md`,
   `development/adr/README.md` (it accumulates decision-register rows), or the
   populated `development/` files (`architecture`, `style`, `testing`,
   `tool-bootstrap`, `harness-usage`, `glossary`). They're listed in
@@ -200,7 +201,7 @@ harness-copier-template/
 │  ├─ {% if task_runner == 'just' %}justfile{% endif %}.jinja
 │  ├─ .gitignore.jinja
 │  ├─ development/    # incl. adr/ and work/ (the per-feature lifecycle)
-│  ├─ scripts/        # gated on the derived generate_scripts value
+│  ├─ {% if generate_scripts %}scripts{% endif %}/   # gated on the derived generate_scripts value
 │  ├─ .agents/
 │  ├─ .claude/
 │  ├─ .opencode/
@@ -256,11 +257,14 @@ The `verify_command` answer (default `./scripts/verify.sh`) is what the
 Claude Code Stop hook and the `/verify` slash command invoke. The
 `scripts/` folder itself — including the default `verify.sh` and the
 `fmt-file.sh` slot that the PostToolUse hook discovers — is generated
-exactly when the answer mentions `scripts/verify.sh` (a substring test,
-so spellings like `bash ./scripts/verify.sh` still work; internally a
-derived, never-asked `generate_scripts` value in `copier.yml`). Point
-`verify_command` at a project-native gate (e.g. `pixi run verify`) and
-no `scripts/` is generated — an inconsistent pairing is unrepresentable.
+exactly when the answer names `scripts/verify.sh` as a path (so
+`bash ./scripts/verify.sh` still counts while `./build-scripts/verify.sh`
+does not; internally a derived, never-asked `generate_scripts` value in
+`copier.yml`). Point `verify_command` at a project-native gate (e.g.
+`pixi run verify`) and no `scripts/` is generated. Existing
+`scripts/verify.sh` / `fmt-file.sh` files are never overwritten
+(`_skip_if_exists`), and a stale `generate_scripts` value supplied as
+data triggers a post-copy warning instead of a silently broken gate.
 
 ## Provenance
 

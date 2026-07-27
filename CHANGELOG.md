@@ -139,10 +139,10 @@ major version).
   ([ADR 0012](docs/decisions/0012-template-simplification-wave.md)).
 - Hand-back markers collapse to one convention: roles append
   `HANDBACK(<spike|explore|replan>): …` to the feature's `scratch.md` and
-  results come back as `RESULT(<kind>): …` lines, with one flat cap — after
-  three hand-backs of the same kind on the same artifact, the question goes
-  to the user. Round-number carrying and the spike-count reset arithmetic
-  are gone. `DECISION-PENDING:` and its register contract are untouched, and
+  results come back as `RESULT(<kind>): …` lines, with flat per-kind caps —
+  three spike hand-backs per plan, three explore hand-backs per phase, three
+  replan hand-backs per feature — after which the question goes to the user.
+  Round-number carrying and the spike-count reset arithmetic are gone. `DECISION-PENDING:` and its register contract are untouched, and
   the Product Owner's clarifying-question loop stays reply-based (its
   `edit: deny` grant cannot append to an existing `scratch.md`) with a flat
   five-round cap (ADR 0012).
@@ -152,11 +152,14 @@ major version).
   **Document liveness** table is now the harness's only full liveness
   statement, linked from the other files (ADR 0012).
 - `scripts/` generation is derived from `verify_command` instead of asked:
-  the folder generates exactly when the answer contains `scripts/verify.sh`
-  (substring test, so `bash ./scripts/verify.sh` still counts), via a
-  never-asked computed `generate_scripts` value in `copier.yml`. The
-  inconsistent-answers `_message_after_copy` warning became unreachable and
-  is removed (ADR 0012).
+  the folder generates exactly when the answer names `scripts/verify.sh` as
+  a path (`bash ./scripts/verify.sh` counts; `./build-scripts/verify.sh`
+  does not), via a never-asked computed `generate_scripts` value in
+  `copier.yml`. `scripts/verify.sh` and `scripts/fmt-file.sh` join
+  `_skip_if_exists`, so existing (brownfield or customised) copies are never
+  overwritten, and a `_message_after_copy` warning fires when a stale
+  `generate_scripts` value supplied as data leaves the gate pointing at a
+  missing script (ADR 0012).
 - The glossary-promotion rule is stated once, in `development/glossary.md`;
   `/spec`, the `product-owner` subagent, the reviewer's scope check,
   `development/README.md`, and `harness-usage.md` shrink to one-line
@@ -419,15 +422,17 @@ major version).
 
 - **Simplification wave (ADR 0012):** `copier update` re-prompts nothing —
   the eleven deleted questions simply drop out of `.copier-answers.yml`.
-  Three combinations need a look:
+  The following need a look:
   - `generate_scripts` is now derived from `verify_command`. If you had
-    `generate_scripts=true` with a `verify_command` that does not mention
+    `generate_scripts=true` with a `verify_command` that does not name
     `scripts/verify.sh` (or `false` with one that does), the derived rule
     changes what is generated — adjust `verify_command` to match your
-    intent before updating. A brownfield repo with its *own*
-    `scripts/verify.sh` is no longer protected by an opt-out answer;
-    Copier's per-file overwrite prompt is the guard (`scripts/` is not in
-    `_skip_if_exists`).
+    intent before updating. **If you keep customised `scripts/` files while
+    `verify_command` points elsewhere, `copier update` deletes them from
+    the working tree** (they are no longer generated; recover from git
+    history and re-add by hand). Existing `scripts/verify.sh` /
+    `scripts/fmt-file.sh` files are now in `_skip_if_exists`, so an
+    adopting or updating run never overwrites them.
   - `copilot_code_review_skill` is folded into `copilot_code_review`: with
     the latter `true` you now also get
     `.github/skills/code-review/SKILL.md`; if you enabled only the skill,

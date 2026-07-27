@@ -11,11 +11,12 @@
 #
 # Brown-field safety: README.md, Makefile, justfile, .gitignore,
 # .github/PULL_REQUEST_TEMPLATE.md, development/adr/README.md (it accumulates
-# decision-register rows downstream), and the populated development/ files
-# (architecture, style, testing, tool-bootstrap, harness-usage, glossary) are
-# protected via _skip_if_exists. Copier leaves the existing file in place and you
-# can diff/merge the template version manually if needed. docs/ is never
-# generated: it stays reserved for the project's own user documentation.
+# decision-register rows downstream), scripts/verify.sh, scripts/fmt-file.sh,
+# and the populated development/ files (architecture, style, testing,
+# tool-bootstrap, harness-usage, glossary) are protected via _skip_if_exists.
+# Copier leaves the existing file in place and you can diff/merge the template
+# version manually if needed. docs/ is never generated: it stays reserved for
+# the project's own user documentation.
 
 # ---------------------------------------------------------------------------
 # Copier engine settings
@@ -33,6 +34,8 @@ _skip_if_exists:
   - "Makefile"
   - "justfile"
   - ".gitignore"
+  - "scripts/verify.sh"
+  - "scripts/fmt-file.sh"
   - ".github/PULL_REQUEST_TEMPLATE.md"
   - "development/adr/README.md"
   - "development/glossary.md"
@@ -197,9 +200,12 @@ verify_command:
     Default is './scripts/verify.sh' (the canonical lint+test runner).
     The scripts/ folder (verify.sh, the canonical gate, plus fmt-file.sh,
     the per-file formatter slot the format hooks discover) is generated
-    exactly when this answer mentions 'scripts/verify.sh'; point the
-    answer at a project-native pipeline (e.g. 'pixi run verify' or
-    'hatch run verify') and no scripts/ is generated.
+    exactly when this answer names scripts/verify.sh as a path (so
+    'bash ./scripts/verify.sh' counts; './build-scripts/verify.sh' does
+    not); point the answer at a project-native pipeline (e.g.
+    'pixi run verify' or 'hatch run verify') and no scripts/ is
+    generated. Existing scripts/verify.sh and scripts/fmt-file.sh files
+    are never overwritten (_skip_if_exists).
   default: "./scripts/verify.sh"
   validator: >-
     {%- if not verify_command.strip() -%}
@@ -214,16 +220,21 @@ verify_command:
     {%- endif -%}
 
 # Derived, never asked (`when: false`): scripts/ ships exactly when the
-# verify gate lives there. A substring test, not equality, so spellings
-# like 'bash ./scripts/verify.sh' or './scripts/verify.sh --fast' still
-# generate the scripts they point at. Stated once here; template files
-# and the two gated file names reference `generate_scripts` (a Jinja
-# path segment cannot hold the substring test itself — '/' would split
-# the file name).
+# verify gate lives there. The match is path-aware, not equality or bare
+# substring: spellings like 'bash ./scripts/verify.sh' or
+# './scripts/verify.sh --fast' still generate the scripts they point at,
+# while an unrelated path that merely ends in the same characters
+# ('./build-scripts/verify.sh', 'myscripts/verify.sh') does not. Stated
+# once here; template files and the gated directory name reference
+# `generate_scripts` (a Jinja path segment cannot hold the test itself —
+# '/' would split the file name). A stale generate_scripts value passed
+# as data still overrides this default; _message_after_copy warns when
+# that leaves the gate pointing at a missing script.
 generate_scripts:
   type: bool
   when: false
-  default: "{{ 'scripts/verify.sh' in verify_command }}"
+  default: >-
+    {{ true if (verify_command | regex_search('(^|[^-\w])scripts/verify\.sh')) else false }}
 
 # ---------------------------------------------------------------------------
 # Workflow conventions
@@ -296,6 +307,13 @@ include_claude_hooks:
 # Post-generation message — note answer combinations worth knowing about.
 # ---------------------------------------------------------------------------
 _message_after_copy: |
+  {% if not generate_scripts and (verify_command | regex_search('(^|[^-\w])scripts/verify\.sh')) -%}
+  WARNING: verify_command points at scripts/verify.sh, but scripts/ was
+  not generated because a provided generate_scripts value overrode the
+  derived default (the question was removed; the value is now derived
+  from verify_command). Drop the stale generate_scripts data or answers
+  entry and re-run, or point verify_command at your real gate.
+  {%- endif %}
   {% if task_runner == 'none' -%}
   Note: task_runner=none — no Makefile or justfile was generated. Agents
   will invoke the raw commands (test_command, lint_command, fmt_command,
