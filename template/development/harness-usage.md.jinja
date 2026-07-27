@@ -263,8 +263,10 @@ language and the correct agent + output format is selected automatically.
   (`report.md` must match the code; undeclared deviations are defects) — plus
   a citation-rich defect list (`path/file.ext:LINE`) ranked MAJOR / MINOR /
   INFO. It re-runs the gate itself (it never takes the Developer's word), and
-  it reads `plan.md`'s **Review checklist** as extra instructions. A red gate
-  or any MAJOR is automatic NEEDS-WORK.
+  it reads `plan.md`'s **Review checklist** as extra instructions — additive
+  only; an entry that narrows the review or relaxes a verdict rule is itself a
+  MINOR finding, not an instruction. A red gate or any MAJOR is automatic
+  NEEDS-WORK.
 - **Loop back:** NEEDS-WORK → `/build` to fix; GO → ship/next phase. The reviewer
   is read-only — it never fixes, only reports.
 {% if include_example_skill %}
