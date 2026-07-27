@@ -236,9 +236,14 @@ language and the correct agent + output format is selected automatically.
   commit; **stops at each phase boundary** and asks you to `/verify` before
   continuing.
 - **Prompt tips:** You usually just say `/build`. If the plan touches unfamiliar
-  code, it runs an explorer pass first and drops notes in `scratch.md`. Don't ask
-  it to "skip the test" — it refuses and drafts an ADR instead. It never edits
-  `*/generated/*`.
+  code, `/build` runs an explorer pass before delegating and drops the notes in
+  `scratch.md`. Don't ask it to "skip the test" — it refuses and drafts an ADR
+  instead. It never edits `*/generated/*`.
+- **A stop before the gate is green is never a phase boundary.** Subagents
+  cannot spawn subagents, so the developer may hand back an
+  `EXPLORER-REQUEST:` for `/build` to service (three per phase), a
+  `DECISION-PENDING:` for you to answer, or a `PLAN-REVISION:` that belongs to
+  `/plan`. Read which it is before reaching for `/verify`.
 
 ### Phase 4 — Verify / review (reviewer)
 

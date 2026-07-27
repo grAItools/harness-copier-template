@@ -71,14 +71,11 @@ phase boundary.
 - Never edit anything under `*/generated/`.
 - Never run destructive Git (`push --force`, `reset --hard origin/*`,
   history rewrites on shared branches).
-- If you discover the plan is wrong or missing a phase, stop and hand
-  back to the Architect with a 2-3 sentence note in `scratch.md`. Do
-  not silently re-plan.
-- For wide codebase searches, use your own `Read`/`Grep`/`Glob` tools.
-  If a search would benefit from a longer-context summarisation that
-  you cannot do inline, stop and hand back to the main agent with a
-  short note in `scratch.md` requesting an `explorer` pass — Claude
-  Code subagents cannot spawn other subagents.
+- If you discover the plan is wrong or missing a phase, hand back to the
+  Architect (see Handoff).
+- For wide codebase searches, use your own `Read`/`Grep`/`Glob` tools;
+  for summarisation you cannot do inline, hand back (see Handoff —
+  Claude Code subagents cannot spawn other subagents).
 
 ## Working loop
 
@@ -103,7 +100,34 @@ Then stop and hand off to the Reviewer (`/verify`).
 
 ## Handoff
 
-When all tasks in a phase are ticked and the gate is green, **stop**.
-Reply with: phase name, files changed (paths only), tests added,
-gate status. Ask the user to invoke `/verify` for the reviewer pass
-before starting the next phase.
+Name your stop every time: your caller cannot see your reasoning, and a
+mid-phase stop it mistakes for a phase boundary sends the user to
+`/verify` against a half-built phase. Whenever you touch `scratch.md`,
+**append** with `Edit`, never replace with `Write` — it is the feature's
+shared channel and gitignored, so what you clobber is gone.
+
+**Search needed.** If a search needs longer-context summarisation you
+cannot do inline, append `EXPLORER-REQUEST: [phase <n>] <what and why>`
+to `scratch.md` (<n> = the phase's number in `plan.md`), tick what is
+genuinely done in `tasks.md`, then **stop** and reply, in your own
+words: this is request <k> of at most **three for this phase**; run an
+`explorer` pass, append its answer — citations intact — to `scratch.md`
+as `EXPLORER-FINDING: [phase <n>] …`, then re-invoke the developer with
+this round number, telling it to read `scratch.md` first. State it
+every time; do not assume the caller loaded `/build`. If a re-invoke
+carries no number, count this phase's `EXPLORER-REQUEST:` lines. At
+three, stop: quote the three requests in `report.md` and ask the user
+whether the phase is scoped too wide.
+
+**Plan wrong.** Do not silently re-plan. Append `PLAN-REVISION: [phase
+<n>] <what the plan assumes> → <what the code requires>` to
+`scratch.md`, note the phase's state in `report.md`, **stop**, and ask
+the caller to route it to `/plan` (Architect), not `/verify`.
+
+**Decision beyond your authority.** Write the `DECISION-PENDING:` line
+(see Constraints), **stop**, and reply with the options and your
+recommendation; the caller gets the user's answer and re-invokes you.
+
+**Phase complete.** All boxes ticked, gate green: **stop**. Reply with
+phase name, files changed (paths only), tests added, gate status. Ask
+the user to run `/verify` before the next phase.

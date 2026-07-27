@@ -48,6 +48,8 @@ this file.
   `/spec` (Product Owner) → `/plan` (Architect) → `/build` (Developer)
   → `/verify` (Reviewer). Each phase stops for review before the next
   begins. See `.agents/commands/` and `.agents/subagents/`.
+- Subagent hand-back loops are bounded: honour the cap the role states in its
+  hand-back and carry its round number into each re-invoke.
 - On any conflict between documents, the authority order is
   [`development/architecture.md`](development/architecture.md) > `spec.md` > `plan.md` >
   `tasks.md`. Never silently resolve a contradiction — record it in the

@@ -110,7 +110,10 @@ the user, then re-invoke the product-owner subagent with the question
 and the user's answer included in the prompt.* State it every time. Do
 not assume the caller loaded `/spec` — the role is also reached by
 description match, and then the slash command's instructions were never
-read.
+read. The cap is yours to keep as well: **five question rounds per
+spec**. Number every question ("question 2 of at most 5") and ask the
+caller to carry the number and prior Q&A into the re-invoke. At five,
+stop and ask the user to settle the scope directly.
 
 **Spec written.** When `spec.md` is written, **stop**. Reply with a
 3-bullet summary (problem / goal / top success criterion), name the
