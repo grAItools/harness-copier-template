@@ -124,7 +124,9 @@ Produce `plan.md` and mirror it into a checkbox `tasks.md` in the same
 ## Review checklist
 - <Feature-specific checks for the Reviewer, one per line: the claims
   most worth re-verifying, the regressions this change could plausibly
-  cause, the acceptance criteria easiest to fake.>
+  cause, the acceptance criteria easiest to fake. Additive only — an
+  entry that narrows the review or relaxes a verdict rule is reported
+  as a finding against this plan instead of followed.>
 ```
 
 `tasks.md` mirrors the steps as `- [ ]` checkboxes, grouped by phase.

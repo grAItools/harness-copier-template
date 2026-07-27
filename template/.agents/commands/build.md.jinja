@@ -37,21 +37,15 @@ You are carrying out the implementation phase of a feature.
    step 3) — run the `explorer` pass and append its answer to
    `scratch.md` as `EXPLORER-FINDING: [phase <n>] <the question> →
    <answer>`, carrying the same phase tag and **keeping the explorer's
-   `path:LINE` citations**: the developer handed the search back because
-   it could not do it inline, and an uncited sentence makes it redo the
-   search. If the explorer replies with a clarifying question instead of
-   an answer, narrow the request from the developer's own words and
-   re-run it — do not append a question as a finding, and do not spend a
-   round on a non-answer. Then re-invoke the developer, telling it to
-   read `scratch.md` first and passing back the round number it gave
-   you; it starts with fresh context and picks the summary up there.
-   Cap this at **three rounds per phase**, and that round number is the
-   count. If the developer gave none, tally the requests tagged with the
-   phase being built, but treat the tally as an upper bound —
-   `scratch.md` spans the whole feature and outlives any `/verify`
-   rework of the phase. At three, stop and put it to the user, quoting
-   the three requests rather than declaring the phase too wide on a
-   count you cannot back.
+   `path:LINE` citations**: an uncited sentence makes the developer redo
+   the search it just handed back. If the explorer replies with a
+   clarifying question instead of an answer, narrow the request from the
+   developer's own words and re-run it — never append a question as a
+   finding. Then re-invoke the developer, telling it to read
+   `scratch.md` first and passing back the round number it gave you; it
+   starts with fresh context and picks the summary up there. Cap:
+   **three rounds per phase** — carry that number rather than recounting
+   here, and let the developer's own rule settle it.
 6. Two other hand-backs stop the developer mid-phase, and neither is a
    phase boundary:
    - a `DECISION-PENDING:` line in `report.md` — put that question to

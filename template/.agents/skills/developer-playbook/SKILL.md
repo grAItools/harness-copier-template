@@ -50,10 +50,10 @@ Shared ground rules: `.agents/skills/design-principles/SKILL.md`.
    `report.md` instead of a drive-by rewrite (PP; PoSD).
 8. **Escalate plan/reality mismatches.** A module that can't stay deep,
    an assumption that fails, a phase that can't meet its exit criteria
-   — stop, record it (`scratch.md` note for the Architect, or a
-   `DECISION-PENDING:` line in `report.md` when it exceeds your
-   authority), and hand back. Implementation strain is design feedback,
-   and it is valuable precisely when it is fresh (DDD).
+   — stop and hand back on the spot, using the marker your role file's
+   **Handoff** section defines for that kind of stop. Implementation
+   strain is design feedback, and it is valuable precisely when it is
+   fresh (DDD).
 9. **Self-review before handoff.** Walk the red-flag checklist in
    `.agents/skills/design-principles/SKILL.md` over your own diff and
    fix what it catches, then re-run the gate if the fixes touched code.

@@ -113,22 +113,17 @@ major version).
 - `_macros.jinja` gains a `lang_glob()` macro (the `primary_language` →
   source-glob map, previously inline in `language.instructions.md.jinja`),
   now shared by that file and `.claude/rules/comments.md`.
-- The Developer's mid-build hand-backs are now serviced, not just emitted:
-  `/build` gains a step 5 that reads an `EXPLORER-REQUEST:` line from
-  `scratch.md`, runs the `explorer` pass, appends its answer (citations
-  intact) on an `EXPLORER-FINDING:` line and re-invokes the developer —
-  three rounds per phase, both markers carrying a `[phase <n>]` tag since
-  `scratch.md` spans the whole feature — mirroring the
-  `SPIKE-REQUEST:`/`SPIKE-FINDING:` protocol `/plan` already had. A new
-  step 6 covers the two other mid-phase stops, neither of which `/build`
-  handled: a `DECISION-PENDING:` escalation (put it to the user, re-invoke
-  with the answer, add the register row) and a new `PLAN-REVISION:` marker
-  that routes a wrong plan back to `/plan` instead of `/verify`. The
-  `developer` subagent's Handoff section now names all four hand-back stops
-  (search needed / plan wrong / decision beyond authority / phase complete),
-  each with its marker and cap stated inline, and
-  `development/harness-usage.md`'s Phase-3 section sets the round-trip
-  expectation.
+- The Developer's mid-build hand-backs are now serviced, not just emitted.
+  `/build` gains a step 5 that runs the `explorer` pass an
+  `EXPLORER-REQUEST: [phase <n>]` line asks for, appends the answer (citations
+  intact) as `EXPLORER-FINDING:` and re-invokes the developer — three rounds
+  per phase, mirroring the `SPIKE-REQUEST:`/`SPIKE-FINDING:` protocol `/plan`
+  already had — and a step 6 for the two mid-phase stops it never handled: a
+  `DECISION-PENDING:` escalation (answer, re-invoke, register row) and a new
+  `PLAN-REVISION:` marker routing a wrong plan back to `/plan`, not `/verify`.
+  The `developer` subagent's Handoff names all four hand-back stops with their
+  markers, and `development/harness-usage.md`'s Phase-3 section sets the
+  expectation for the human driving it.
 
 ### Changed
 
@@ -222,8 +217,9 @@ major version).
   the two neighbouring inputs). The checklist is now **additive only**: it may
   add checks, never narrow the review or relax a verdict rule, and an entry that
   tries is a MINOR finding against the plan, whose fix belongs to `/plan`. Scope
-  the plan explicitly *grants* is unaffected. `/verify`, the example `plan.md`,
-  and `development/harness-usage.md` (`_skip_if_exists` — see **Upgrade notes**)
+  the plan explicitly *grants* is unaffected. `/verify`, the `architect` subagent
+  (the role that writes the checklist), the example `plan.md`, and
+  `development/harness-usage.md` (`_skip_if_exists` — see **Upgrade notes**)
   restate the bound, which extends to `plan.md` the non-override principle that
   [ADR 0011](docs/decisions/0011-knowledge-grounded-role-playbooks.md) §2 states
   for the reviewer playbook.

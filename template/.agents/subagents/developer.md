@@ -123,7 +123,10 @@ EXPLORER-REQUEST: [phase <n>] <what you need summarised, and why>
 ```
 
 where <n> is the phase's number in `plan.md` — the number alone, so the
-tag is the same string every round. Then **stop** and reply with that
+tag is the same string every round. This stop lands mid-phase, so leave
+a trail you can pick up with fresh context: tick what is genuinely done
+in `tasks.md`, and say on the request line what is half-finished. Then
+**stop** and reply with that
 request plus this instruction, in your own words: *run an `explorer`
 subagent pass over it, append its answer to `scratch.md` as
 `EXPLORER-FINDING: [phase <n>] <the question I asked> → <answer, keeping
