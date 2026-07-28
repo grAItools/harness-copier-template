@@ -9,7 +9,7 @@
 #   Brownfield: cd existing-repo && copier copy gh:your-org/harness-copier-template .
 #   Update:     cd repo && copier update
 #
-# Brown-field safety: README.md, Makefile, justfile, .gitignore,
+# Brown-field safety: the root README.md, Makefile, justfile, .gitignore,
 # .github/PULL_REQUEST_TEMPLATE.md, development/adr/README.md (it accumulates
 # decision-register rows downstream), scripts/verify.sh, scripts/fmt-file.sh,
 # and the populated development/ files (architecture, style, testing,
@@ -29,21 +29,28 @@ _answers_file: ".copier-answers.yml"
 # Sensitive files that must never be silently overwritten in brown-field repos.
 # Copier compares the destination against this list; if a path matches and the
 # file already exists at the destination, it is skipped entirely (no prompt).
+#
+# Every entry is root-anchored with a leading "/" — keep it that way. Copier
+# matches these with gitignore semantics (pathspec), under which a bare name
+# like "README.md" matches at EVERY depth: it silently strands the template's
+# own nested READMEs (.agents/, .claude/rules/, development/) on every update,
+# with no conflict reported in either direction. A leading "./" anchors nothing
+# — it matches no path at all.
 _skip_if_exists:
-  - "README.md"
-  - "Makefile"
-  - "justfile"
-  - ".gitignore"
-  - "scripts/verify.sh"
-  - "scripts/fmt-file.sh"
-  - ".github/PULL_REQUEST_TEMPLATE.md"
-  - "development/adr/README.md"
-  - "development/glossary.md"
-  - "development/architecture.md"
-  - "development/style.md"
-  - "development/testing.md"
-  - "development/tool-bootstrap.md"
-  - "development/harness-usage.md"
+  - "/README.md"
+  - "/Makefile"
+  - "/justfile"
+  - "/.gitignore"
+  - "/scripts/verify.sh"
+  - "/scripts/fmt-file.sh"
+  - "/.github/PULL_REQUEST_TEMPLATE.md"
+  - "/development/adr/README.md"
+  - "/development/glossary.md"
+  - "/development/architecture.md"
+  - "/development/style.md"
+  - "/development/testing.md"
+  - "/development/tool-bootstrap.md"
+  - "/development/harness-usage.md"
 
 # Optional post-generation tasks. The brown-field merger hook (see hooks/) runs
 # unconditionally and appends gitignore entries idempotently when an existing
