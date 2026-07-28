@@ -467,9 +467,12 @@ major version).
   destructive — so the false positive read as unrecoverable, and the harness
   could not be inspected or documented from inside itself. `rm -rf`,
   `push --force` and `reset --hard` are now matched only where they are
-  reachable **without crossing a quote**, with an always-match fallback for
-  strings handed to a nested shell (`sh -c`, `ssh`, `eval`, `su`), where quoting
-  is not a mention; `DROP TABLE` still matches anywhere, quoted or not, because
+  reachable **without crossing a quote** (escape-aware, so a `\"` inside a
+  quoted argument cannot flip the classification for the rest of the line),
+  with an always-match fallback for strings a nested shell *runs* — as an
+  argument (`sh -c`, `ssh`, `eval`, `su`) or piped in as a script (`… | sh`) —
+  where quoting is not a mention;
+  `DROP TABLE` still matches anywhere, quoted or not, because
   SQL has no unquoted form to anchor to. Command-position anchoring (the shape
   the issue proposed) was measured and rejected: 17 of 23 destructive samples
   escape it, since only `rm -rf` is ever in command position. Each deny now

@@ -41,14 +41,23 @@ the deny-list along the axis that actually separates use from mention:
 
 1. **Operations** (`rm -rf`, `push --force`, `reset --hard`) are denied only
    where they are reachable **without crossing a quote**. The prefix
-   `^([^'"]|'[^']*'|"[^"]*")*` consumes complete `'…'` and `"…"` spans, so a
-   pattern only reachable *through* a quote is a mention and passes. Matching
-   stays line-anchored: `grep` is line-oriented, and each line of a multi-line
-   command starts a new command.
+   `^([^'"]|\\["']|'[^']*'|"([^"\\]|\\.)*")*` consumes complete `'…'` and `"…"`
+   spans, so a pattern only reachable *through* a quote is a mention and passes.
+   It is escape-aware, because to the shell a backslash-escaped quote is a
+   literal character, not a delimiter: reading `\"` as one would flip the
+   in/out-of-quote classification for the rest of the line, both letting
+   `git commit -m "8\" display" && git push --force` through and denying
+   `git commit -m "see \"rm -rf\" docs"` with a message asserting it was
+   unquoted. Outside quotes only an escaped *quote* is consumed as a unit, so a
+   bare backslash stays an ordinary character and the alias-bypass form
+   `\rm -rf` is still read as the operation it is. Matching stays line-anchored:
+   `grep` is line-oriented, and each line of a multi-line command starts a new
+   command.
 2. **Nested-shell fallback.** When the command hands a string to another shell
-   (`sh -c` — which covers `bash`/`zsh`/`dash -c` as a substring — plus `ssh`,
-   `eval`, `su`), the operations are matched anywhere again, since quoting is
-   not a mention there.
+   to run — as an argument (`sh -c`, which covers `bash`/`zsh`/`dash -c` as a
+   substring, plus `ssh`, `eval`, `su`) or piped in as a script (`… | sh`,
+   `| sudo bash`, `| /bin/sh`) — the operations are matched anywhere again,
+   since quoting is not a mention there.
 3. **Text patterns** (`DROP TABLE`) stay matched anywhere, quoted or not. SQL
    has no unquoted form to anchor to, so a mention is genuinely
    indistinguishable from a use; the deny message says so and shows how to
@@ -68,16 +77,20 @@ so adding a pattern is still a one-line edit that picks a rule.
   a commit message that names a pattern. A 40-assertion suite pins them
   alongside the true positives; the previous matcher fails 12 of them.
 - No true positive lost among the plain and chained forms: `cd x && rm -rf y`,
-  `sudo rm -rf`, `find -exec rm -rf`, `xargs rm -rf`, `git -C … push --force`,
-  a quoted commit message followed by a real operation, unquoted `$(…)` and
-  backtick substitution, `sh -c "…"`, `ssh host '…'`, `eval "…"`, and SQL in a
-  quoted argument are all still denied.
-- Accepted new blind spots, all in the "quoted, yet executed" class the rule-2
+  `sudo rm -rf`, `\rm -rf`, `find -exec rm -rf`, `xargs rm -rf`,
+  `git -C … push --force`, a quoted commit message followed by a real operation
+  (with or without escaped quotes inside it), unquoted `$(…)` and backtick
+  substitution, `sh -c "…"`, `ssh host '…'`, `eval "…"`, `echo '…' | sh`, and
+  SQL in a quoted argument are all still denied.
+- Accepted new blind spots, both in the "quoted, yet executed" class the rule-2
   list only partly covers: `"$(rm -rf x)"` (the substitution is inside a
   double-quoted span; the unquoted form is still caught), and an interpreter
   whose `-c` is not adjacent to a shell name (`bash -euo pipefail -c "…"`).
   Widening rule 2 to any `-c` flag was rejected: it would re-deny `grep -c
-  '<pattern>' file`, a read-only command in the exact class being fixed.
+  '<pattern>' file`, a read-only command in the exact class being fixed. The
+  other two forms found by review — an escaped quote flipping quote parity, and
+  a quoted operation piped into a shell — were closed rather than accepted
+  (decisions 1 and 2).
 - Surviving false positives, documented in the script and in
   `development/harness-usage.md`: a quoted mention of `DROP TABLE`, a heredoc
   body or multi-line quoted string whose lines read as commands, and a mention

@@ -13,7 +13,8 @@
 #
 #   1. an operation reached without passing through a quote  -> deny
 #   2. an operation anywhere, when the command hands a string
-#      to another shell (sh -c / ssh / eval / su), where
+#      to another shell to run — as an argument (sh -c / ssh /
+#      eval / su) or piped in as a script (… | sh) — where
 #      being quoted does not make it a mention               -> deny
 #   3. a text pattern anywhere, quoted or not — SQL only ever
 #      appears as a quoted argument, so its mention and its
@@ -21,8 +22,10 @@
 #
 # Blind spots, unchanged in kind from the earlier plain-substring form: `eval`
 # of a variable, "$(…)" command substitution, aliases, encoded payloads, a
-# heredoc body whose lines read as commands, and any interpreter (`python -c`)
-# doing the same work. This is a backstop against accidents, not a sandbox.
+# heredoc body whose lines read as commands, a shell run from a file it wrote,
+# an interpreter whose -c is not adjacent to a shell name (bash -euo … -c), and
+# any language (`python -c`) doing the same work. This is a backstop against
+# accidents, not a sandbox.
 #
 # The deny decision deliberately stays on POSIX `grep -qE`: extracting the
 # matched pattern with `grep -o` would make the decision depend on a non-POSIX
@@ -44,15 +47,25 @@
 operations='rm -rf|push --force|reset --hard'
 # Denied anywhere in the command text, quoted or not (rule 3).
 text_patterns='DROP TABLE'
-# Commands that execute a string argument, so quotes are no mention there.
+# Commands that run a string rather than read one: a quoted operation handed to
+# them (as an argument, or piped in as a script) is executed, not mentioned.
 nested_shell='sh[[:space:]]+-[[:alnum:]]*c|(^|[^[:alnum:]_.-])(ssh|eval|su)[[:space:]]'
+nested_shell="$nested_shell"'|\|[[:space:]]*(sudo[[:space:]]+)?[a-z/]*sh([[:space:]]|$)'
 # -----------------------------------------------------------------------------
 
-# Characters reachable without crossing a quote: complete '…' and "…" spans are
-# consumed whole, so anything only reachable *through* a quote is a mention.
-# Anchored per line — grep is line-oriented, and each line of a multi-line
-# command starts a new command.
-outside_quotes="^([^'\"]|'[^']*'|\"[^\"]*\")*"
+# Complete quoted spans, escape-aware: to the shell a backslash-escaped quote is
+# a literal character, not a delimiter, so consuming it as one would flip the
+# in/out-of-quote classification for the rest of the line.
+squoted="'[^']*'"                      # '…' — POSIX: no escapes inside
+dquoted="\"([^\"\\\\]|\\\\.)*\""       # "…" — \" does not end the span
+escaped="\\\\[\"']"                    # \" or \' outside quotes: a literal
+
+# Characters reachable without crossing a quote: complete spans are consumed
+# whole, so anything only reachable *through* a quote is a mention. Anchored per
+# line — grep is line-oriented, and each line of a multi-line command starts a
+# new command. A bare backslash stays an ordinary character here, so the
+# alias-bypass form (\rm -rf) is still read as the operation it is.
+outside_quotes="^([^'\"]|$escaped|$squoted|$dquoted)*"
 
 cmd=$(cat)
 
@@ -73,7 +86,8 @@ fi
 
 if matches "$nested_shell" && matches "$operations"; then
 	deny "the command passes a deny-listed destructive operation to a nested
-  shell (sh -c / ssh / eval / su), where being quoted is not a mention.
+  shell to run — as an argument (sh -c / ssh / eval / su) or piped in as a
+  script (… | sh) — where being quoted is not a mention.
   Deny-list: $operations. Blocked by design."
 fi
 

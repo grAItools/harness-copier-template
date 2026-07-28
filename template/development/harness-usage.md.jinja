@@ -82,8 +82,9 @@ Claude Code only). You cannot prompt around the hooks:
   `DROP TABLE` (exit 2) via [`.agents/hooks/block-destructive.sh`](../.agents/hooks/block-destructive.sh).
   The first three are denied only outside quotes — `grep -rn 'rm -rf' .` is a
   mention and passes, `cd x && rm -rf y` is not and does not — with an
-  always-match fallback for strings handed to a nested shell (`sh -c`, `ssh`,
-  `eval`, `su`). `DROP TABLE` matches anywhere, quoted or not: SQL has no
+  always-match fallback for strings a nested shell *runs*, whether as an
+  argument (`sh -c`, `ssh`, `eval`, `su`) or piped in as a script
+  (`… | sh`). `DROP TABLE` matches anywhere, quoted or not: SQL has no
   unquoted form, so a mention of it is denied too. Each deny says which rule
   fired; it is a text matcher and a backstop against accidents, not a sandbox.
 - **Stop** runs `{{ cmd('verify') }}` before the agent is allowed to stop;
