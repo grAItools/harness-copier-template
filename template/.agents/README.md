@@ -105,11 +105,19 @@ and include synonyms.
 ## Caveats
 
 - **Copier-managed.** This harness is generated from a Copier template
-  (`gh:grAItools/harness-copier-template`; see `.copier-answers.yml`). Edits to
-  template-owned files (`.claude/settings.json`, `.opencode/opencode.jsonc`,
-  `AGENTS.md`, the managed `.gitignore` block) can be reverted by `copier update`;
-  port durable changes upstream behind a per-agent toggle. Net-new files (this
-  README, `.agents/hooks/*`, `.gemini/settings.json`) are safe.
+  (`gh:grAItools/harness-copier-template`; see `.copier-answers.yml`).
+  Everything under `.agents/` is template-owned — this README, `hooks/*`,
+  `subagents/*`, `commands/*`, `skills/*` — as are `.claude/settings.json`,
+  `.opencode/opencode.jsonc`, `AGENTS.md`, and the managed `.gitignore` block.
+  Edits to any of them can be reverted by `copier update`; port durable changes
+  upstream behind a per-agent toggle. Safe to edit: files you add yourself
+  (e.g. `.gemini/settings.json` from the recipe above) and the files the
+  template hands over on first generation and never rewrites — the root
+  `README.md`, the task-runner file, `scripts/*.sh`,
+  `.github/PULL_REQUEST_TEMPLATE.md`, and the `development/` documents
+  (`architecture.md`, `style.md`, `testing.md`, `glossary.md`,
+  `tool-bootstrap.md`, `harness-usage.md`, `adr/README.md`). Note that
+  `development/README.md` is *not* in that set — it is template-owned.
 - **Symlinks need `core.symlinks=true`.** On Windows checkouts without it, Git
   materializes a symlink as a text file containing the target path; prefer a stub
   there. The repo already relies on symlinks for `.claude/` / `.opencode/`.

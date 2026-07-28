@@ -278,6 +278,28 @@ major version).
 
 ### Fixed
 
+- Every `_skip_if_exists` entry in `copier.yml` is now **root-anchored** with a
+  leading `/`. Copier matches that list with gitignore semantics, under which a
+  bare `README.md` matches at every depth — so the entry meant to protect a
+  brown-field root `README.md` also matched `.agents/README.md`,
+  `.claude/rules/README.md`, and `development/README.md`, freezing three
+  template-owned files at whatever version first generated them. The failure was
+  silent in both directions: `copier update` reported neither a conflict nor a
+  change, so a downstream repo had no signal that a rewritten file never
+  arrived — a repo generated before v0.6.0 carried a v0.5.0 `.agents/README.md`
+  through four updates. See **Upgrade notes**.
+- The **Caveats** section of `.agents/README.md` mis-stated file ownership: it
+  listed the README itself and `.agents/hooks/*` as net-new and safe to edit.
+  Both ship from the template and are rewritten by `copier update` (the README
+  only looked safe because the `_skip_if_exists` glob above was freezing it), so
+  a contributor following the caveat would have put a durable local change in a
+  hook script and lost it on the next update — the exact outcome the caveat
+  exists to prevent. The bullet now states that everything under `.agents/`
+  (README, `hooks/`, `subagents/`, `commands/`, `skills/`) is template-owned,
+  and names what *is* safe: files you add yourself plus the `_skip_if_exists`
+  hand-over files (root `README.md`, the task-runner file, `scripts/*.sh`,
+  `.github/PULL_REQUEST_TEMPLATE.md`, the `development/` documents), which the
+  template writes once and never rewrites.
 - The `reviewer` subagent read `plan.md`'s **Review checklist** as unbounded
   instructions ("it is part of your instructions", no precedence clause, unlike
   the two neighbouring inputs). The checklist is now **additive only**: it may
@@ -451,6 +473,39 @@ major version).
 
 ### Upgrade notes
 
+- **Stranded READMEs (every repo generated before this release):** the
+  unanchored `_skip_if_exists` entry (see **Fixed**) means `copier update` never
+  delivered any change the template made to `.agents/README.md`,
+  `.claude/rules/README.md`, or `development/README.md` — for whichever of the
+  three already existed in your repo when an update ran. Upgrading to this
+  release does **not** heal them: `copier update` applies the diff between your
+  previous template version's render and the new one, and the changes these
+  files missed were made in *earlier* versions, so they are not in that diff.
+  (Verified on a v0.5.0 repo taken through v0.7.0 to this release:
+  `.agents/README.md` kept its 60-line v0.5.0 body against the template's 120.)
+  This release is also the first update to patch these three files again, and it
+  patches a stale body — whether that applies cleanly or conflicts depends on how
+  far your copy drifted. In the runs above the patch applied silently and the
+  file stayed stale; a repo that had locally edited the region the patch touches
+  got inline `<<<<<<< before updating` markers instead (or `.rej` files under
+  `--conflict rej`). Resolve any markers first — the recipe below reads each file
+  as-is and would otherwise diff conflict markers against the fresh render. Then
+  diff each and merge the differences by hand:
+
+  ```sh
+  rm -rf /tmp/fresh-render
+  copier copy --trust --defaults --data-file .copier-answers.yml \
+    gh:grAItools/harness-copier-template /tmp/fresh-render
+  for f in .agents/README.md .claude/rules/README.md development/README.md; do
+    diff -u "$f" "/tmp/fresh-render/$f"
+  done
+  ```
+
+  Expect `.agents/README.md` to be the largest gap (the simplification wave
+  merged the four per-directory READMEs into it). After this one-time
+  reconciliation, `copier update` tracks all three normally. If you had
+  deliberately customised any of them, note that they are template-owned from
+  now on and will conflict on future updates — port durable changes upstream.
 - **Simplification wave (ADR 0012):** `copier update` re-prompts nothing —
   the eleven deleted questions simply drop out of `.copier-answers.yml`.
   The following need a look:

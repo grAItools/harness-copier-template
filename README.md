@@ -146,7 +146,7 @@ copier copy gh:your-org/harness-copier-template .
 Brown-field safety is automatic, because it comes from `_skip_if_exists`. Run
 into the existing repo and the template:
 
-- **Never silently overwrites** `README.md`, `Makefile`, `justfile`,
+- **Never silently overwrites** the root `README.md`, `Makefile`, `justfile`,
   `.gitignore`, `scripts/verify.sh`, `scripts/fmt-file.sh`,
   `.github/PULL_REQUEST_TEMPLATE.md`,
   `development/adr/README.md` (it accumulates decision-register rows), or the
@@ -154,7 +154,11 @@ into the existing repo and the template:
   `tool-bootstrap`, `harness-usage`, `glossary`). They're listed in
   `_skip_if_exists` — copier leaves the existing file in place. (This also
   means switching `task_runner` later does not delete the previous file;
-  remove it manually if you no longer want it.)
+  remove it manually if you no longer want it.) Every entry there is
+  **root-anchored** with a leading `/`: copier matches the list with gitignore
+  semantics, so a bare `README.md` would also match `.agents/README.md`,
+  `.claude/rules/README.md`, and `development/README.md` and freeze those
+  template-owned files forever.
 - **Appends** the harness's gitignore entries inside a fenced
   `# >>> ai-agent-harness >>>` … `# <<< ai-agent-harness <<<` block via the
   post-generation hook. It merges per entry, not per block: a re-run or a
