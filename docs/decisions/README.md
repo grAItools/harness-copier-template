@@ -19,6 +19,7 @@ first and graduate to ADRs here on acceptance.
 | [0010](0010-development-tree-and-work-folder.md) | Generated `development/` tree, `work/` folder, no `policies/` | accepted |
 | [0011](0011-knowledge-grounded-role-playbooks.md) | Knowledge-grounded role playbooks, design-principles skill, and glossary | accepted; partially superseded by 0012 |
 | [0012](0012-template-simplification-wave.md) | Template simplification wave (fewer questions, merged role files, one hand-back convention) | accepted |
+| [0013](0013-hook-payload-parsing-and-failure-postures.md) | Hook payload parsing via a fallback reader, explicit per-hook failure postures | accepted |
 
 **ADR or register row?** If the decision shapes structure — of the template,
 its questions, or the generated layout — and someone will later ask *why*,

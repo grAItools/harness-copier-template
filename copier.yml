@@ -300,7 +300,9 @@ include_claude_hooks:
     Stop hook invokes the user-facing runner command — `make verify` /
     `just verify` for task_runner=make/just, or verify_command directly
     when task_runner=none — so the generated runner wiring is part of
-    the agent loop. Requires `jq` on PATH.
+    the agent loop. Hooks read their JSON payloads with `jq`, falling
+    back to `python3`; with neither on PATH, a SessionStart warning
+    fires and the Bash guard fails closed with an explanatory message.
   default: true
 
 # ---------------------------------------------------------------------------
