@@ -419,7 +419,11 @@ major version).
   "$fail"`, where `fail` is 2 (block the stop) normally and 1 (non-blocking,
   stderr shown to the user) when the reader failed, because the
   `stop_hook_active` loop guard that makes blocking safe is exactly what a
-  failed read hides. PreToolUse keeps its fail-closed posture.
+  failed read hides. In the `fail=1` case the hook also states on **stderr**
+  that the gate failed and the stop was not blocked — a gate's own output
+  normally goes to stdout, which is not surfaced on a non-blocking exit, so
+  without that line the report would be invisible. PreToolUse keeps its
+  fail-closed posture.
 - `hook-input.sh`'s documented backend-parity contract is now true (issue
   #34). `jq -r` without `-c` pretty-printed objects and arrays where the
   `python3` fallback emitted `json.dumps` defaults; `jq -c` plus

@@ -74,13 +74,20 @@ of the downstream adoption in `grAItools/devmm` (devmm#4):
 3. **Stop runs the gate on any reader failure, and reports rather than
    blocks** (replaces ADR 0013 Decision 2's *Stop: fail open — skip the
    gate*). The hook sets `fail=2`, downgrades it to `fail=1` when the reader
-   returns non-zero, and ends with `<verify> || exit "$fail"`. The three
+   returns non-zero, and ends with `<verify> || { … exit "$fail"; }` — where
+   the `…` prints an explicit "the gate FAILED and the stop was not blocked"
+   line **on stderr** in the `fail=1` case, because a gate's own failure
+   output normally goes to stdout, which Claude Code does not put in front of
+   the user on a non-blocking exit. Without that line the "report" would be
+   invisible, which is the whole property this decision buys. The three
    options weighed in issue #35:
 
    - *Run the gate and keep `exit 2`* (the issue's option 1) — rejected. Its
-     premise, "rely on exit 2's own loop-protection", does not hold: Claude
-     Code has no built-in stop-loop cap; `stop_hook_active` **is** the
-     protection, and it is exactly what a failed read hides. The failure that
+     premise, "rely on exit 2's own loop-protection", does not hold:
+     `stop_hook_active` **is** the documented protection — Claude Code's hook
+     reference offers it as the way to keep a Stop hook from running
+     indefinitely, with no separate cap to fall back on — and it is exactly
+     what a failed read hides. The failure that
      hid it is a host condition (no parser, damaged reader), so it recurs on
      every subsequent Stop — an unbounded block/continue loop, on a host where
      the agent usually cannot run Bash to fix anything, because PreToolUse
@@ -94,8 +101,8 @@ of the downstream adoption in `grAItools/devmm` (devmm#4):
 
    Taking the gate run out of the loop-risk equation keeps both properties the
    issue asks for: the gate is computed and its result surfaced (exit 1 is a
-   non-blocking error, whose stderr Claude Code shows the user), and nothing
-   can loop. The docs change lands with it — `development/harness-usage.md`
+   non-blocking error, whose stderr Claude Code shows the user — hence the
+   explicit stderr line above), and nothing can loop. The docs change lands with it — `development/harness-usage.md`
    now says the gate reports rather than blocks on such a host, so "done means
    the gate is green" is not silently false there.
 
