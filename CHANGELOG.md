@@ -418,6 +418,48 @@ major version).
   documented in `development/tool-bootstrap.md` (see **Upgrade notes**) and
   the `include_claude_hooks` question help. See
   [ADR 0013](docs/decisions/0013-hook-payload-parsing-and-failure-postures.md).
+- A `jq` that resolves but cannot run no longer denies every Bash call for the
+  whole session (issue #35). `.agents/hooks/hook-input.sh` picked the `jq`
+  backend on `command -v jq` alone with no fall-through, so any later `jq`
+  failure was reported as an unparseable payload and `python3` was never
+  tried — an asdf/mise shim with no version selected, a half-removed package
+  or a broken wrapper reproduced issue #31's unusable session on a narrower
+  set of hosts, and blamed the payload for it. Both backends are now probed by
+  *running* them (`printf '{}' | jq -e .`, matching the existing `python3`
+  probe) and a `jq` that cannot run falls through; a `jq` that passed the
+  probe and then rejects the payload is still a genuine exit 4. The
+  SessionStart parser warning runs the reader itself rather than keeping its
+  own `command -v jq` copy, so it cannot disagree with what the hooks will do
+  — and it now fires for a broken `jq` with no `python3`, which the old check
+  missed.
+- The Stop hook **runs** the verify gate when it cannot read the hook input,
+  instead of skipping it (issue #35). It previously exited 1 on any reader
+  failure, so a host with no working parser ended sessions unverified while
+  `AGENTS.md` and `development/harness-usage.md` still said "done means the
+  gate is green" — weaker than the pre-`hook-input.sh` hook, which ran the
+  gate in that situation. The gate now runs and reports: `verify … || exit
+  "$fail"`, where `fail` is 2 (block the stop) normally and 1 (non-blocking,
+  stderr shown to the user) when the reader failed, because the
+  `stop_hook_active` loop guard that makes blocking safe is exactly what a
+  failed read hides. In the `fail=1` case the hook also states on **stderr**
+  that the gate failed and the stop was not blocked — a gate's own output
+  normally goes to stdout, which is not surfaced on a non-blocking exit, so
+  without that line the report would be invisible. PreToolUse keeps its
+  fail-closed posture.
+- `hook-input.sh`'s documented backend-parity contract is now true (issue
+  #34). `jq -r` without `-c` pretty-printed objects and arrays where the
+  `python3` fallback emitted `json.dumps` defaults; `jq -c` plus
+  `separators=(",", ":")` on the `python3` side make both compact and
+  byte-identical. Numbers cannot be reconciled — `jq` canonicalises number
+  literals (jq 1.6 prints `3.0` as `3`, bare or nested) where `python3`
+  preserves them — so the header now states that instead of overpromising:
+  the reader is contracted for strings, booleans and null/absent, and hooks
+  should read scalar fields. No shipped call site was affected (all three read
+  a string or a boolean).
+
+  The three fixes above amend Decisions 1 and 2 of ADR 0013; see
+  [ADR 0014](docs/decisions/0014-reader-scalar-contract-and-stop-gate-posture.md),
+  which also records why the Stop hook reports rather than blocking.
 
 ### Removed (breaking)
 
@@ -541,6 +583,14 @@ major version).
     tutorial, four-branch merge-strategy text) — diff against the template
     versions and merge by hand; the agents follow the updated `.agents/`
     files either way.
+- **Stop-gate posture (ADR 0014):** `.claude/settings.json` and
+  `.agents/hooks/hook-input.sh` are template-owned, so `copier update` delivers
+  the hook fixes; drop any local patches you carried for them. But
+  `development/harness-usage.md` is `_skip_if_exists`-preserved, so its
+  **Stop** bullet will keep saying only that a non-zero gate blocks the stop —
+  add the template's new sentence (the gate reports rather than blocks when the
+  payload reader fails) by hand, or the doc understates what happens on a host
+  with no working `jq`/`python3`.
 - **`docs/` → `development/` migration (existing generated repos):** before
   running `copier update`, move the harness files so Copier tracks them at
   their new paths instead of re-creating them alongside the old ones:

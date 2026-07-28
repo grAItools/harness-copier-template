@@ -82,6 +82,9 @@ Claude Code only). You cannot prompt around the hooks:
   `DROP TABLE` (exit 2) via [`.agents/hooks/block-destructive.sh`](../.agents/hooks/block-destructive.sh).
 - **Stop** runs `{{ cmd('verify') }}` before the agent is allowed to stop;
   non-zero blocks the stop. This is why "done" means "the gate is green".
+  On a host where the payload reader fails (no working `jq` or `python3`), the
+  gate still runs but can only *report* a red result — blocking needs the
+  stop-loop guard that same reader provides — so read the stop message.
 
 Permissions allowlist the build tool, read-only git (`status/diff/log/show`),
 and `rg/ls/cat/head/tail`; destructive operations are denied.

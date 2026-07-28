@@ -42,7 +42,7 @@
           {% endif -%}
           {
             "type": "command",
-            "command": "command -v jq >/dev/null 2>&1 || python3 -c '' >/dev/null 2>&1 || { echo 'warning: no working JSON parser (jq or python3) on PATH - the PreToolUse guard will deny every Bash call until one is installed (apt-get install jq / brew install jq)' >&2; exit 1; }"
+            "command": "printf '{}' | sh \"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/hook-input.sh\" .probe >/dev/null 2>&1 || { echo 'warning: the hook payload reader is not working - jq and python3 are both missing or unable to run, or .agents/hooks/hook-input.sh is damaged. The PreToolUse guard will deny every Bash call until this is fixed (apt-get install jq / brew install jq)' >&2; exit 1; }"
           }
         ]
       }
@@ -69,16 +69,20 @@
         ]
       }
     ],
-    {% set stop_guard = "flag=$(sh \"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/hook-input.sh\" .stop_hook_active); rc=$?; [ \"$rc\" -eq 3 ] && { echo 'verify skipped: no JSON parser on PATH (install jq: apt-get install jq / brew install jq)' >&2; exit 1; }; [ \"$rc\" -ne 0 ] && { echo \"verify skipped: could not read the hook input (hook-input.sh exit $rc)\" >&2; exit 1; }; [ \"$flag\" = 'true' ] && exit 0; " -%}
+    {% set stop_guard = "fail=2; flag=$(sh \"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/hook-input.sh\" .stop_hook_active); rc=$?; if [ \"$rc\" -ne 0 ]; then if [ \"$rc\" -eq 3 ]; then why='no JSON parser on PATH; install jq (apt-get install jq / brew install jq)'; else why=\"hook-input.sh exit $rc\"; fi; echo \"verify: cannot read the stop-loop guard ($why) - running the gate anyway, but a red gate can only be reported, not blocked, until this is fixed.\" >&2; fail=1; fi; [ \"$flag\" = 'true' ] && exit 0; " -%}
+    {# The gate's own failure output usually goes to stdout, which Claude Code
+       does not surface on a non-blocking exit - so say it on stderr too when
+       the stop is not being blocked, or the red result is invisible. #}
+    {% set gate_tail = " || { [ \"$fail\" -eq 1 ] && echo 'verify: the gate FAILED and the stop was not blocked (unreadable stop-loop guard) - this session is unverified; re-run the gate yourself.' >&2; exit \"$fail\"; }" -%}
     "Stop": [
       {
         "hooks": [
           {
             "type": "command",
             {% if bootstrap -%}
-            "command": {{ ("export PATH=\"" ~ bin_dir ~ ":$PATH\"; " ~ stop_guard ~ "command -v " ~ package_manager ~ " >/dev/null 2>&1 || { echo 'verify skipped: " ~ package_manager ~ " unavailable (run .agents/hooks/ensure-toolchain.sh; see development/tool-bootstrap.md)' >&2; exit 1; }; " ~ cmd('verify') ~ " || exit 2") | tojson }}
+            "command": {{ ("export PATH=\"" ~ bin_dir ~ ":$PATH\"; " ~ stop_guard ~ "command -v " ~ package_manager ~ " >/dev/null 2>&1 || { echo 'verify skipped: " ~ package_manager ~ " unavailable (run .agents/hooks/ensure-toolchain.sh; see development/tool-bootstrap.md)' >&2; exit 1; }; " ~ cmd('verify') ~ gate_tail) | tojson }}
             {% else -%}
-            "command": {{ (stop_guard ~ cmd('verify') ~ " || exit 2") | tojson }}
+            "command": {{ (stop_guard ~ cmd('verify') ~ gate_tail) | tojson }}
             {% endif -%}
           }
         ]

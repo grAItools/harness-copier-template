@@ -134,7 +134,7 @@ The template asks you (13 questions):
 | `commit_convention`       | `conventional` (default) \| `freeform`; drives the commit-message bullet in `AGENTS.md` (always updated) and the matching section in `development/style.md` (greenfield-only — `_skip_if_exists`) |
 | `copilot_code_review`     | Off by default; populated Copilot code-review config under `.github/` (instructions + path-scoped rules + the code-review agent skill). Copilot code review does **not** read `AGENTS.md`, so rules are restated directly |
 | `pr_template`             | On by default; adds `.github/PULL_REQUEST_TEMPLATE.md`, a definition-of-done checklist tied to the harness (gate, spec evidence, `report.md`, decision register). Inert for non-GitHub remotes |
-| `include_claude_hooks`    | On by default. Hooks read their JSON payloads via `.agents/hooks/hook-input.sh` (`jq`, `python3` fallback); with neither on PATH, SessionStart warns and the Bash guard fails closed with an explanatory message |
+| `include_claude_hooks`    | On by default. Hooks read their JSON payloads via `.agents/hooks/hook-input.sh` (`jq`, `python3` fallback, each probed by *running* it); with no working parser, SessionStart warns, the Bash guard fails closed with an explanatory message, and the Stop gate runs but only reports a red result |
 
 ### Brown-field (existing repo)
 
