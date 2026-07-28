@@ -482,7 +482,7 @@ major version).
   rule, so that surface stays stricter and still denies mentions — recorded in
   the script header, `.opencode/opencode.jsonc`, `.agents/README.md` and
   `development/harness-usage.md`. See
-  [ADR 0014](docs/decisions/0014-deny-list-matching-outside-quotes.md).
+  [ADR 0015](docs/decisions/0015-deny-list-matching-outside-quotes.md).
 
 ### Removed (breaking)
 
@@ -651,7 +651,7 @@ major version).
   python3 bullet in `development/tool-bootstrap.md`'s Required tools, which the
   same `_skip_if_exists` protection above keeps out of existing copies: add
   that bullet by hand.
-- The deny-list matching fix (issue #36, [ADR 0014](docs/decisions/0014-deny-list-matching-outside-quotes.md))
+- The deny-list matching fix (issue #36, [ADR 0015](docs/decisions/0015-deny-list-matching-outside-quotes.md))
   likewise reaches existing repos via `copier update`, since `.agents/hooks/`
   and `.opencode/opencode.jsonc` are not `_skip_if_exists`. Only
   `development/harness-usage.md`'s description of the guard stays stale (same

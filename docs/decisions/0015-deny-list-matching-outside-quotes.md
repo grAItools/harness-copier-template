@@ -1,9 +1,10 @@
-# 14. Deny-list matching outside quoted spans, with a nested-shell fallback
+# 15. Deny-list matching outside quoted spans, with a nested-shell fallback
 
 ## Status
 
 Accepted (2026-07-28). Refines ADR 0004 (canonical agent hooks) and ADR 0013
-decision 3 (the deny message); prompted by issue #36.
+decision 3 (the deny message); prompted by issue #36. Independent of ADR 0014,
+which amends the same ADR's decisions 1–2 for the payload reader.
 
 ## Context
 
