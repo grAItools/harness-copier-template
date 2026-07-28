@@ -21,6 +21,7 @@ first and graduate to ADRs here on acceptance.
 | [0012](0012-template-simplification-wave.md) | Template simplification wave (fewer questions, merged role files, one hand-back convention) | accepted |
 | [0013](0013-hook-payload-parsing-and-failure-postures.md) | Hook payload parsing via a fallback reader, explicit per-hook failure postures | accepted; Decisions 1–2 amended by 0014 |
 | [0014](0014-reader-scalar-contract-and-stop-gate-posture.md) | Scalar-only reader contract, run-probed backends, Stop gate reports instead of skipping | accepted |
+| [0014](0014-deny-list-matching-outside-quotes.md) | Deny-list matching outside quoted spans, with a nested-shell fallback | accepted |
 
 **ADR or register row?** If the decision shapes structure — of the template,
 its questions, or the generated layout — and someone will later ask *why*,
