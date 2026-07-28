@@ -74,7 +74,7 @@ so adding a pattern is still a one-line edit that picks a rule.
 
 - Every false positive reported in the issue passes: grepping for the deny-list
   (including this repo's own harness), `git log --grep`, `printf` of a fixture,
-  a commit message that names a pattern. A 40-assertion suite pins them
+  a commit message that names a pattern. A 50-assertion suite pins them
   alongside the true positives; the previous matcher fails 12 of them.
 - No true positive lost among the plain and chained forms: `cd x && rm -rf y`,
   `sudo rm -rf`, `\rm -rf`, `find -exec rm -rf`, `xargs rm -rf`,
