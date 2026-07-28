@@ -124,10 +124,11 @@ and include synonyms.
 - **Destructive-command deny-list** is canonical in
   [`hooks/block-destructive.sh`](hooks/block-destructive.sh); OpenCode's deny globs
   are a hand-kept mirror (it cannot call a script). The script denies an
-  operation only where it is not inside quotes, so a read-only *mention* of a
-  pattern (a search pattern, a fixture, a commit message) is allowed; OpenCode's
-  globs cannot express that and still deny the mention. Patterns match by hand
-  in both places — keep them in sync.
+  *operation* only where it is not inside quotes, so a read-only mention of one
+  (a search pattern, a fixture, a commit message) is allowed; SQL patterns still
+  match anywhere, quoted or not, since they have no unquoted form. OpenCode's
+  globs cannot express either distinction and deny every mention. Patterns match
+  by hand in both places — keep them in sync.
 - **Hook payload parsing** is canonical in
   [`hooks/hook-input.sh`](hooks/hook-input.sh): the Claude Code hooks in
   `.claude/settings.json` read their JSON input through it (`jq`, with a

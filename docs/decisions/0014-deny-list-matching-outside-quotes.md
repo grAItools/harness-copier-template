@@ -20,7 +20,7 @@ through the agent's own Bash tool, because its body quotes the deny-list.
 
 The issue proposed anchoring the match to command position (start-of-string or
 after `;`, `&`, `|`, `&&`, `||`). Measured against a suite of true positives,
-that shape removes the guard rather than sharpening it: **17 of 23 destructive
+that shape removes the guard rather than sharpening it: **23 of 31 destructive
 samples escape it**. Three of the four patterns never appear in command
 position — `push --force` and `reset --hard` follow `git` (and any global flag,
 as in `git -C /repo push --force`), and `DROP TABLE` is by nature a quoted
@@ -74,8 +74,8 @@ so adding a pattern is still a one-line edit that picks a rule.
 
 - Every false positive reported in the issue passes: grepping for the deny-list
   (including this repo's own harness), `git log --grep`, `printf` of a fixture,
-  a commit message that names a pattern. A 50-assertion suite pins them
-  alongside the true positives; the previous matcher fails 12 of them.
+  a commit message that names a pattern. A 52-assertion suite pins them
+  alongside the true positives; the previous matcher fails 15 of them.
 - No true positive lost among the plain and chained forms: `cd x && rm -rf y`,
   `sudo rm -rf`, `\rm -rf`, `find -exec rm -rf`, `xargs rm -rf`,
   `git -C … push --force`, a quoted commit message followed by a real operation
@@ -93,8 +93,15 @@ so adding a pattern is still a one-line edit that picks a rule.
   (decisions 1 and 2).
 - Surviving false positives, documented in the script and in
   `development/harness-usage.md`: a quoted mention of `DROP TABLE`, a heredoc
-  body or multi-line quoted string whose lines read as commands, and a mention
-  inside a nested-shell string (`bash -c "grep '<pattern>' ."`).
+  body or multi-line quoted string whose lines read as commands, a mention
+  inside a nested-shell string (`bash -c "grep '<pattern>' ."`), and a mention
+  inside the `'…'\''…'` idiom — there the empty `''` span the grammar must
+  allow gives the matcher a second parse in which the pattern is reachable.
+  Dropping empty spans (`'[^']+'`) would close it, but then any `''` argument
+  earlier in the line would blind the matcher to a real operation after it: a
+  false negative traded for a false positive, the wrong direction. Rule 1's
+  message therefore states what the *matcher* reached rather than asserting the
+  text was unquoted, so it stays true in these cases.
 - The OpenCode mirror **diverges by design**. `permission.bash` globs cannot
   express rule 1, so OpenCode keeps `*…*` substring denies and still refuses
   quoted mentions. ADR 0004's "hand-kept mirror" rule now means *the same
@@ -110,7 +117,7 @@ so adding a pattern is still a one-line edit that picks a rule.
 
 ## Alternatives considered
 
-- **Command-position anchoring, as proposed in the issue.** Rejected: 17 of 23
+- **Command-position anchoring, as proposed in the issue.** Rejected: 23 of 31
   true positives escape it (see Context). Trading false positives for false
   negatives in a guard is the wrong direction.
 - **Softening the message only** (the issue's option 2, which would have

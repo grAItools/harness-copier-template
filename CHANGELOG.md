@@ -471,11 +471,11 @@ major version).
   quoted argument cannot flip the classification for the rest of the line),
   with an always-match fallback for strings a nested shell *runs* — as an
   argument (`sh -c`, `ssh`, `eval`, `su`) or piped in as a script (`… | sh`) —
-  where quoting is not a mention;
-  `DROP TABLE` still matches anywhere, quoted or not, because
-  SQL has no unquoted form to anchor to. Command-position anchoring (the shape
-  the issue proposed) was measured and rejected: 17 of 23 destructive samples
-  escape it, since only `rm -rf` is ever in command position. Each deny now
+  where quoting is not a mention; `DROP TABLE` still matches anywhere, quoted
+  or not, because SQL has no unquoted form to anchor to. Command-position
+  anchoring (the shape the issue proposed) was measured and rejected: 23 of 31
+  destructive samples escape it, since only `rm -rf` is ever in command
+  position. Each deny now
   names the rule that fired and what would have passed, instead of asserting
   intent. The deny decision stays on POSIX `grep -qE` (ADR 0013). OpenCode's
   `permission.bash` globs keep the same patterns but cannot express the quoting

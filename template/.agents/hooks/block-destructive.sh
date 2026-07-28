@@ -20,6 +20,12 @@
 #      appears as a quoted argument, so its mention and its
 #      use are indistinguishable                             -> deny
 #
+# Surviving false positives, each explained by the deny message it triggers: a
+# quoted mention of a rule-3 pattern, a heredoc body, a mention inside a
+# nested-shell string, and one inside the '…'\''…' idiom (the empty '' span the
+# grammar has to allow makes the pattern look reachable). Recovery is a
+# rephrase, not a different task.
+#
 # Blind spots, unchanged in kind from the earlier plain-substring form: `eval`
 # of a variable, "$(…)" command substitution, aliases, encoded payloads, a
 # heredoc body whose lines read as commands, a shell run from a file it wrote,
@@ -72,16 +78,18 @@ cmd=$(cat)
 matches() { printf '%s\n' "$cmd" | grep -qE "$1"; }
 
 deny() {
-	echo "block-destructive: denied - $1" >&2
+	# printf, not echo: an XSI echo (dash, BusyBox) expands backslash escapes,
+	# so a deny-list pattern containing one would print mangled.
+	printf '%s\n' "block-destructive: denied - $1" >&2
 	exit 2
 }
 
 if matches "$outside_quotes($operations)"; then
 	deny "the command runs a deny-listed destructive operation.
   Deny-list: $operations.
-  Only unquoted occurrences are denied, so had this been a mention inside
-  quotes (a search pattern, a fixture, a commit message) it would have passed.
-  This one is not quoted, so it is blocked by design."
+  Only occurrences reachable without crossing a quote are denied, so a mention
+  inside quotes (a search pattern, a fixture, a commit message) passes. This
+  one was reachable, so it is blocked by design."
 fi
 
 if matches "$nested_shell" && matches "$operations"; then
