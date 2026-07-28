@@ -127,8 +127,8 @@ and include synonyms.
   *operation* only where it is not inside quotes, so a read-only mention of one
   (a search pattern, a fixture, a commit message) is allowed; SQL patterns still
   match anywhere, quoted or not, since they have no unquoted form. OpenCode's
-  globs cannot express either distinction and deny every mention. Patterns match
-  by hand in both places — keep them in sync.
+  globs cannot express either distinction and deny every mention. The patterns
+  themselves are kept in sync by hand in both places.
 - **Hook payload parsing** is canonical in
   [`hooks/hook-input.sh`](hooks/hook-input.sh): the Claude Code hooks in
   `.claude/settings.json` read their JSON input through it (`jq`, with a

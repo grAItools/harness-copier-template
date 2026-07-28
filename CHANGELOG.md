@@ -469,13 +469,16 @@ major version).
   `push --force` and `reset --hard` are now matched only where they are
   reachable **without crossing a quote** (escape-aware, so a `\"` inside a
   quoted argument cannot flip the classification for the rest of the line),
-  with an always-match fallback for strings a nested shell *runs* — as an
-  argument (`sh -c`, `ssh`, `eval`, `su`) or piped in as a script (`… | sh`) —
-  where quoting is not a mention; `DROP TABLE` still matches anywhere, quoted
-  or not, because SQL has no unquoted form to anchor to. Command-position
-  anchoring (the shape the issue proposed) was measured and rejected: 23 of 31
+  with a fallback for the string a nested shell actually *runs* — past the
+  quote a runner opens (`sh -c`, `ssh`, `eval`, `su`) or ahead of a pipe into a
+  shell — where quoting is not a mention; `DROP TABLE` still matches anywhere,
+  quoted or not, because SQL has no unquoted form to anchor to. Command-position
+  anchoring (the shape the issue proposed) was measured and rejected: 26 of 35
   destructive samples escape it, since only `rm -rf` is ever in command
-  position. Each deny now
+  position. Two forms the old matcher denied are now accepted blind spots:
+  `"$(rm -rf x)"` (the unquoted `$(…)` and backtick forms are still caught) and
+  an interpreter whose `-c` is not adjacent to a shell name
+  (`bash -euo pipefail -c "…"`). Each deny now
   names the rule that fired and what would have passed, instead of asserting
   intent. The deny decision stays on POSIX `grep -qE` (ADR 0013). OpenCode's
   `permission.bash` globs keep the same patterns but cannot express the quoting

@@ -12,10 +12,10 @@
 # commit message) are allowed. Three rules:
 #
 #   1. an operation reached without passing through a quote  -> deny
-#   2. an operation anywhere, when the command hands a string
-#      to another shell to run — as an argument (sh -c / ssh /
-#      eval / su) or piped in as a script (… | sh) — where
-#      being quoted does not make it a mention               -> deny
+#   2. an operation inside the string another shell will run —
+#      past the quote a runner opens (sh -c / ssh / eval / su)
+#      or ahead of a pipe into a shell — where being quoted
+#      does not make it a mention                            -> deny
 #   3. a text pattern anywhere, quoted or not — SQL only ever
 #      appears as a quoted argument, so its mention and its
 #      use are indistinguishable                             -> deny
@@ -53,11 +53,21 @@
 operations='rm -rf|push --force|reset --hard'
 # Denied anywhere in the command text, quoted or not (rule 3).
 text_patterns='DROP TABLE'
-# Commands that run a string rather than read one: a quoted operation handed to
-# them (as an argument, or piped in as a script) is executed, not mentioned.
-nested_shell='sh[[:space:]]+-[[:alnum:]]*c|(^|[^[:alnum:]_.-])(ssh|eval|su)[[:space:]]'
-nested_shell="$nested_shell"'|\|[[:space:]]*(sudo[[:space:]]+)?[a-z/]*sh([[:space:]]|$)'
+# Shell names are listed, never matched as an `sh` suffix: `push` and `refresh`
+# end in `sh` too, and a suffix match would deny `git push -c k=v` the moment
+# the line mentioned an operation anywhere.
+shells='(sh|bash|dash|zsh|ksh|ash)'
 # -----------------------------------------------------------------------------
+
+# Commands that run a string argument rather than read one, up to the quote that
+# argument opens. `[^;&|]*` keeps the runner and the quote in one simple command,
+# so `ssh host uptime && grep '<pattern>' .` is not read as handing the pattern
+# to ssh.
+runner="(^|[^[:alnum:]_./-])((/[a-z/]*)?${shells}[[:space:]]+-[[:alnum:]]*c|(ssh|eval|su)[[:space:]])[^;&|]*['\"]"
+# …and shells that take their script from stdin, which the operation reaches by
+# being piped into one. `ssh`/`eval`/`su` are absent here on purpose: they run an
+# argument, not stdin, so `grep '<pattern>' . | ssh host tee f` is a mention.
+piped="[^|]*\\|[[:space:]]*(sudo[[:space:]]+)?(/[a-z/]*)?${shells}([[:space:]]|\$)"
 
 # Complete quoted spans, escape-aware: to the shell a backslash-escaped quote is
 # a literal character, not a delimiter, so consuming it as one would flip the
@@ -92,7 +102,10 @@ if matches "$outside_quotes($operations)"; then
   one was reachable, so it is blocked by design."
 fi
 
-if matches "$nested_shell" && matches "$operations"; then
+# The operation has to sit inside what the shell will run — after the runner's
+# opening quote, or before the pipe into a shell — not merely somewhere on the
+# same line as one.
+if matches "${runner}[^'\"]*($operations)" || matches "($operations)$piped"; then
 	deny "the command passes a deny-listed destructive operation to a nested
   shell to run — as an argument (sh -c / ssh / eval / su) or piped in as a
   script (… | sh) — where being quoted is not a mention.

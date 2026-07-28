@@ -21,7 +21,7 @@ through the agent's own Bash tool, because its body quotes the deny-list.
 
 The issue proposed anchoring the match to command position (start-of-string or
 after `;`, `&`, `|`, `&&`, `||`). Measured against a suite of true positives,
-that shape removes the guard rather than sharpening it: **23 of 31 destructive
+that shape removes the guard rather than sharpening it: **26 of 35 destructive
 samples escape it**. Three of the four patterns never appear in command
 position — `push --force` and `reset --hard` follow `git` (and any global flag,
 as in `git -C /repo push --force`), and `DROP TABLE` is by nature a quoted
@@ -54,11 +54,21 @@ the deny-list along the axis that actually separates use from mention:
    `\rm -rf` is still read as the operation it is. Matching stays line-anchored:
    `grep` is line-oriented, and each line of a multi-line command starts a new
    command.
-2. **Nested-shell fallback.** When the command hands a string to another shell
-   to run — as an argument (`sh -c`, which covers `bash`/`zsh`/`dash -c` as a
-   substring, plus `ssh`, `eval`, `su`) or piped in as a script (`… | sh`,
-   `| sudo bash`, `| /bin/sh`) — the operations are matched anywhere again,
-   since quoting is not a mention there.
+2. **Nested-shell fallback**, scoped to the string the shell will actually run:
+   past the quote a runner opens (`sh -c`, `ssh`, `eval`, `su`) with no command
+   separator in between, or ahead of a pipe into a shell. Being quoted is not a
+   mention there. Two boundaries matter, and both were found by review of the
+   looser first draft:
+   - Shell names are **listed** (`sh|bash|dash|zsh|ksh|ash`), never matched as
+     an `sh` suffix — `push` and `refresh` end in `sh`, so a suffix match denied
+     `git push -c k=v && grep '<pattern>' .`.
+   - The runner and the operation must be **related**, not merely co-resident on
+     the line. A plain conjunction ("a runner appears" AND "an operation
+     appears") denied `ssh host uptime && grep '<pattern>' .`. `ssh`, `eval` and
+     `su` are also absent from the piped form: they run an argument, not stdin,
+     so `grep '<pattern>' . | ssh host tee f` is a mention.
+   Unquoted forms need no help from this rule — `ssh host rm -rf /tmp/x` is
+   already reachable without crossing a quote, so rule 1 denies it.
 3. **Text patterns** (`DROP TABLE`) stay matched anywhere, quoted or not. SQL
    has no unquoted form to anchor to, so a mention is genuinely
    indistinguishable from a use; the deny message says so and shows how to
@@ -75,14 +85,17 @@ so adding a pattern is still a one-line edit that picks a rule.
 
 - Every false positive reported in the issue passes: grepping for the deny-list
   (including this repo's own harness), `git log --grep`, `printf` of a fixture,
-  a commit message that names a pattern. A 52-assertion suite pins them
-  alongside the true positives; the previous matcher fails 15 of them.
+  a commit message that names a pattern. A 61-assertion suite pins them
+  alongside the true positives; the previous matcher fails 20 of them.
 - No true positive lost among the plain and chained forms: `cd x && rm -rf y`,
   `sudo rm -rf`, `\rm -rf`, `find -exec rm -rf`, `xargs rm -rf`,
   `git -C … push --force`, a quoted commit message followed by a real operation
   (with or without escaped quotes inside it), unquoted `$(…)` and backtick
-  substitution, `sh -c "…"`, `ssh host '…'`, `eval "…"`, `echo '…' | sh`, and
-  SQL in a quoted argument are all still denied.
+  substitution, `sh -c "…"` (including `sh -c 'cd x && rm -rf y'`, whose
+  separator sits inside the runner's argument), `ssh host '…'`,
+  `ssh host rm -rf …`, `xargs -I{} sh -c "…"`, `sudo -u x sh -c "…"`,
+  `eval "…"`, `echo '…' | sh`, and SQL in a quoted argument are all still
+  denied.
 - Accepted new blind spots, both in the "quoted, yet executed" class the rule-2
   list only partly covers: `"$(rm -rf x)"` (the substitution is inside a
   double-quoted span; the unquoted form is still caught), and an interpreter
@@ -118,7 +131,7 @@ so adding a pattern is still a one-line edit that picks a rule.
 
 ## Alternatives considered
 
-- **Command-position anchoring, as proposed in the issue.** Rejected: 23 of 31
+- **Command-position anchoring, as proposed in the issue.** Rejected: 26 of 35
   true positives escape it (see Context). Trading false positives for false
   negatives in a guard is the wrong direction.
 - **Softening the message only** (the issue's option 2, which would have
