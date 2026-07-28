@@ -3,7 +3,10 @@
 ## Status
 
 Accepted (2026-07-27). Extends ADR 0004 (canonical agent hooks); prompted by
-issue #31.
+issue #31. Decisions 1 and 2 amended by
+[ADR 0014](0014-reader-scalar-contract-and-stop-gate-posture.md) — see it for
+the reader's current (scalar-only) parity contract, the run-probe on both
+backends, and the Stop hook's report-don't-skip posture.
 
 ## Context
 

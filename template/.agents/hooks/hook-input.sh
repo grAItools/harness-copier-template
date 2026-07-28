@@ -4,18 +4,25 @@
 # Usage: hook-input.sh <dot.path>       (stdin: the hook's JSON payload)
 #   e.g. hook-input.sh .tool_input.command
 #
-# Prints the field's value on stdout, identically under either backend:
-# '' for null/absent (including a path through a non-object), 'true'/'false'
-# for booleans, raw text for strings and numbers, JSON for objects/arrays.
+# Prints the field's value on stdout. The two backends agree byte-for-byte on
+# what hooks are meant to read: '' for null/absent (including a path through a
+# non-object), 'true'/'false' for booleans, raw text for strings. Objects and
+# arrays print as compact JSON under both, but *numbers are not contracted* —
+# jq canonicalises number literals (jq 1.6 prints 3.0 as 3) where python3
+# preserves them, bare or nested inside an object or array. Read scalar string
+# or boolean fields; treat number spelling as backend-dependent.
 #
 # Exit codes: 0 read OK; 3 no working JSON parser on PATH; 4 empty or
 # unparseable payload. Callers branch on the distinction to pick their own
 # failure posture and message.
 #
-# Parses with jq when available, falling back to python3. The fallback is
-# probed by *running* python3, not `command -v` alone — stock macOS ships a
-# /usr/bin/python3 stub that passes `command -v` but fails until the Xcode
-# Command Line Tools are installed.
+# Parses with jq, falling back to python3. *Both* backends are probed by
+# running them, not by `command -v` alone: an asdf/mise shim with no version
+# selected, a half-removed package or a broken wrapper resolves and then
+# fails, and stock macOS ships a /usr/bin/python3 stub that passes
+# `command -v` but fails until the Xcode Command Line Tools are installed. A
+# jq that cannot run falls through to python3; a jq that passed the probe and
+# then rejects the payload is a real exit 4, not a reason to retry elsewhere.
 #
 # Consumers:
 #   - Claude Code: the PostToolUse, PreToolUse, and Stop hooks in
@@ -29,8 +36,8 @@ if [ -z "$payload" ]; then
 	exit 4
 fi
 
-if command -v jq >/dev/null 2>&1; then
-	out=$(printf '%s' "$payload" | jq -r --arg p "$1" '
+if command -v jq >/dev/null 2>&1 && printf '{}' | jq -e . >/dev/null 2>&1; then
+	out=$(printf '%s' "$payload" | jq -c -r --arg p "$1" '
 		($p | split(".") | map(select(length > 0))) as $parts
 		| (try getpath($parts) catch null)
 		| if . == null then "" elif type == "boolean" then tostring else . end
@@ -57,12 +64,12 @@ if v is None:
 elif v is True or v is False:
     print(str(v).lower())
 elif isinstance(v, (dict, list)):
-    print(json.dumps(v))
+    print(json.dumps(v, separators=(",", ":")))
 else:
     print(v)
 ' "$1"
 	exit $?
 fi
 
-echo 'hook-input.sh: no working JSON parser (jq or python3) on PATH; cannot read the hook input. Install jq (apt-get install jq / brew install jq).' >&2
+echo 'hook-input.sh: no working JSON parser on PATH - jq and python3 are both missing or unable to run; cannot read the hook input. Install jq (apt-get install jq / brew install jq).' >&2
 exit 3

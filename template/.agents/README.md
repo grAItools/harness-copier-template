@@ -119,5 +119,9 @@ and include synonyms.
 - **Hook payload parsing** is canonical in
   [`hooks/hook-input.sh`](hooks/hook-input.sh): the Claude Code hooks in
   `.claude/settings.json` read their JSON input through it (`jq`, with a
-  `python3` fallback). With neither parser on PATH, the PreToolUse guard fails
-  closed with an explanatory message and SessionStart prints a warning.
+  `python3` fallback; each backend is probed by *running* it, so a `jq` that
+  resolves but cannot run falls through instead of failing the read). With
+  neither parser working, the PreToolUse guard fails closed with an
+  explanatory message, SessionStart warns, and the Stop gate still runs but
+  can only report a red result. Read scalar string or boolean fields: the
+  backends agree on those, not on number spelling (see the script header).

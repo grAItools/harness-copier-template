@@ -16,9 +16,9 @@
 {% if include_claude_hooks -%}
 - **`jq`** — reads the Claude Code hook payloads in `.claude/settings.json`
   ([`hook-input.sh`](../.agents/hooks/hook-input.sh) falls back to `python3`
-  when `jq` is missing; with neither on PATH, the hooks warn at session start
-  and the destructive-command guard denies every Bash call until one is
-  installed). Install: `apt-get install jq` / `brew install jq`.
+  when `jq` is missing *or cannot run*; with neither working, the hooks warn at
+  session start and the destructive-command guard denies every Bash call until
+  one is installed). Install: `apt-get install jq` / `brew install jq`.
 {% endif %}
 _Fill in: any additional system-level tools the project needs
 (Docker, a database client, `protoc`, etc.) with a one-line role for each._
