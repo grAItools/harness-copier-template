@@ -24,8 +24,14 @@
       "Bash(head:*)",
       "Bash(tail:*)"
     ],
+    {#- Two entries, not `git push --force:*`: `:*` is a plain string-prefix
+        match, so that single pattern also denied the safe, lease-checked
+        `git push --force-with-lease` (issue #40). The exact form catches the
+        bare command, the trailing-space prefix catches it with arguments,
+        and neither is a prefix of `--force-with-lease`. -#}
     "deny": [
-      "Bash(git push --force:*)",
+      "Bash(git push --force)",
+      "Bash(git push --force :*)",
       "Bash(git reset --hard:*)",
       "Bash(rm -rf:*)"
     ]
@@ -43,6 +49,17 @@
           {
             "type": "command",
             "command": "printf '{}' | sh \"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/hook-input.sh\" .probe >/dev/null 2>&1 || { echo 'warning: the hook payload reader is not working - jq and python3 are both missing or unable to run, or .agents/hooks/hook-input.sh is damaged. The PreToolUse guard will deny every Bash call until this is fixed (apt-get install jq / brew install jq)' >&2; exit 1; }"
+          },
+          {# Guard self-test: run block-destructive.sh against a command on its
+             own deny-list and expect the deny (exit 2). The PreToolUse [ -r ]
+             check only proves the file is present - a guard truncated by an
+             interrupted copier update or a symlink-less checkout runs and
+             exits 0, silently allowing every destructive command (issue #41).
+             A weakened guard fails the same probe. Warn, don't block: exit 1
+             surfaces the message without ending the session. #}
+          {
+            "type": "command",
+            "command": "G=\"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/block-destructive.sh\"; printf '%s' 'rm -rf /' | sh \"$G\" >/dev/null 2>&1; rc=$?; [ \"$rc\" -eq 2 ] || { if [ -r \"$G\" ]; then echo \"warning: block-destructive.sh is present but failed its self-test - a deny-listed command was not denied (exit $rc, expected 2). The guard is damaged or weakened, so the PreToolUse hook will let destructive Bash commands through until .agents/hooks/block-destructive.sh is restored (git restore, or re-run copier update).\" >&2; else echo 'warning: block-destructive.sh is missing or unreadable - the PreToolUse guard will deny every Bash call until .agents/hooks is restored.' >&2; fi; exit 1; }"
           }
         ]
       }
@@ -70,6 +87,11 @@
       }
     ],
     {% set stop_guard = "fail=2; flag=$(sh \"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/hook-input.sh\" .stop_hook_active); rc=$?; if [ \"$rc\" -ne 0 ]; then if [ \"$rc\" -eq 3 ]; then why='no JSON parser on PATH; install jq (apt-get install jq / brew install jq)'; else why=\"hook-input.sh exit $rc\"; fi; echo \"verify: cannot read the stop-loop guard ($why) - running the gate anyway, but a red gate can only be reported, not blocked, until this is fixed.\" >&2; fail=1; fi; [ \"$flag\" = 'true' ] && exit 0; " -%}
+    {# A hook's cwd is the session's, not necessarily the repo root, and the
+       gate resolves its task file (Makefile / justfile / a raw command)
+       against the cwd - so anchor it where the payload read already is, or
+       the stop is blocked by "no makefile" instead of the code (issue #44). #}
+    {% set gate_cd = "cd \"${CLAUDE_PROJECT_DIR:-.}\" && " -%}
     {# The gate's own failure output usually goes to stdout, which Claude Code
        does not surface on a non-blocking exit - so say it on stderr too when
        the stop is not being blocked, or the red result is invisible. #}
@@ -80,9 +102,9 @@
           {
             "type": "command",
             {% if bootstrap -%}
-            "command": {{ ("export PATH=\"" ~ bin_dir ~ ":$PATH\"; " ~ stop_guard ~ "command -v " ~ package_manager ~ " >/dev/null 2>&1 || { echo 'verify skipped: " ~ package_manager ~ " unavailable (run .agents/hooks/ensure-toolchain.sh; see development/tool-bootstrap.md)' >&2; exit 1; }; " ~ cmd('verify') ~ gate_tail) | tojson }}
+            "command": {{ ("export PATH=\"" ~ bin_dir ~ ":$PATH\"; " ~ stop_guard ~ "command -v " ~ package_manager ~ " >/dev/null 2>&1 || { echo 'verify skipped: " ~ package_manager ~ " unavailable (run .agents/hooks/ensure-toolchain.sh; see development/tool-bootstrap.md)' >&2; exit 1; }; " ~ gate_cd ~ cmd('verify') ~ gate_tail) | tojson }}
             {% else -%}
-            "command": {{ (stop_guard ~ cmd('verify') ~ gate_tail) | tojson }}
+            "command": {{ (stop_guard ~ gate_cd ~ cmd('verify') ~ gate_tail) | tojson }}
             {% endif -%}
           }
         ]
