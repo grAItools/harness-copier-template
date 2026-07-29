@@ -20,8 +20,9 @@ major version).
 - `development/harness-notes.md` — a project-owned, `_skip_if_exists`-protected
   home for free-form local notes about the harness, generated once and never
   touched by `copier update`. Exists so the two template-owned harness docs
-  (see **Changed**) can stay pristine downstream and merge cleanly on every
-  update ([ADR 0018](docs/decisions/0018-update-propagation-and-ownership-split.md), #42).
+  (see **Removed (breaking)**) can stay pristine downstream and merge cleanly
+  on every update
+  ([ADR 0018](docs/decisions/0018-update-propagation-and-ownership-split.md), #42).
 - Legacy answers: a repo that recorded `license` or `pr_merge_strategy` before
   the simplification wave removed those questions keeps its policy — the
   `AGENTS.md` license line, the `README.md` License section, and the
@@ -153,15 +154,6 @@ major version).
 
 ### Changed
 
-- `development/harness-usage.md` and `development/tool-bootstrap.md` leave
-  `_skip_if_exists`: they document how the harness itself behaves — which
-  hooks run, what each exit code means, how the deny-list matches — so they
-  are template-owned, and `copier update` now delivers every fix to them
-  instead of silently skipping repos where they already exist. Local edits
-  merge, or surface as inline conflict markers; each file carries a
-  blockquote pointing free-form local notes at `development/harness-notes.md`
-  ([ADR 0018](docs/decisions/0018-update-propagation-and-ownership-split.md), #42).
-  See **Upgrade notes**.
 - `hooks/post_gen.py` **reconciles** the managed `.gitignore` block instead of
   only appending to it: inside the `>>> <<<` markers the current template's
   entry set is authoritative, so entries the template no longer manages (the
@@ -169,11 +161,11 @@ major version).
   entries you commented out preserved verbatim; the summary reports what
   changed. Nothing outside the markers is ever touched
   ([ADR 0018](docs/decisions/0018-update-propagation-and-ownership-split.md), #47).
-- `development/tool-bootstrap.md`'s Required tools and the
-  `include_claude_hooks` question help now state the guard's real dependency:
-  the deny-list matcher runs on `python3` and fails closed without it
-  (ADR 0017), while `jq` is only the preferred payload reader with a
-  `python3` fallback (ADR 0013).
+- The `include_claude_hooks` question help states the guard's real
+  dependency: the deny-list matcher runs on `python3` and fails closed
+  without it (ADR 0017), while `jq` remains the preferred payload reader
+  with a `python3` fallback (ADR 0013). (`development/tool-bootstrap.md`'s
+  matching Required-tools rewrite lands with the doc-contradictions PR.)
 - Role method playbooks are merged into their subagent files: each of
   `product-owner` / `architect` / `developer` / `reviewer` now carries its
   **Method** inline (deduplicated against its own constraints), so a role
@@ -634,6 +626,16 @@ SessionStart warning. The same ADR records why
 
 ### Removed (breaking)
 
+- **`/development/harness-usage.md` and `/development/tool-bootstrap.md` leave
+  `_skip_if_exists`**: they document how the harness itself behaves — which
+  hooks run, what each exit code means, how the deny-list matches — so they
+  are template-owned, and `copier update` now delivers every fix to them
+  instead of silently skipping repos where they already exist. Local edits
+  merge, or surface as inline conflict markers (that visibility is the
+  point); each file carries a blockquote pointing free-form local notes at
+  the new `development/harness-notes.md`
+  ([ADR 0018](docs/decisions/0018-update-propagation-and-ownership-split.md), #42).
+  See **Upgrade notes**.
 - **Eleven questions deleted, leaving 13** (ADR 0012): `mode` (consumed by
   nothing), `project_slug` (formatter key hardcoded), `license` (the two doc
   lines become `_Fill in: SPDX identifier_` markers), `pr_merge_strategy`
