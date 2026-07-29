@@ -76,7 +76,7 @@ your-repo/
 ├─ .agents/                          # vendor-neutral shared assets
 │  ├─ README.md                      # supported-agents matrix, single-source rule, layout docs
 │  ├─ hooks/
-│  │  ├─ block-destructive.sh        # canonical deny-list (Claude PreToolUse pipes to it)
+│  │  ├─ block-destructive.sh        # canonical deny-list; operations matched outside quotes (Claude PreToolUse pipes to it)
 │  │  ├─ hook-input.sh               # hook payload reader: jq, python3 fallback
 │  │  └─ ensure-toolchain.sh         # idempotent build-tool bootstrap; if package_manager in {uv, pixi}
 │  ├─ skills/

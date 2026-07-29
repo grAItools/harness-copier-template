@@ -460,6 +460,32 @@ major version).
   The three fixes above amend Decisions 1 and 2 of ADR 0013; see
   [ADR 0014](docs/decisions/0014-reader-scalar-contract-and-stop-gate-posture.md),
   which also records why the Stop hook reports rather than blocking.
+- `.agents/hooks/block-destructive.sh` no longer denies read-only commands that
+  merely *mention* a deny-list pattern (issue #36): `grep -rn 'rm -rf' .`,
+  `git log --grep=…`, a `printf`'d fixture, or a commit message naming a
+  pattern were all refused, with a message asserting the command was
+  destructive — so the false positive read as unrecoverable, and the harness
+  could not be inspected or documented from inside itself. `rm -rf`,
+  `push --force` and `reset --hard` are now matched only where they are
+  reachable **without crossing a quote** (escape-aware, so a `\"` inside a
+  quoted argument cannot flip the classification for the rest of the line),
+  with a fallback for the string a nested shell actually *runs* — past the
+  quote a runner opens (`sh -c`, `ssh`, `eval`, `su`) or ahead of a pipe into a
+  shell — where quoting is not a mention; `DROP TABLE` still matches anywhere,
+  quoted or not, because SQL has no unquoted form to anchor to. Command-position
+  anchoring (the shape the issue proposed) was measured and rejected: 26 of 35
+  destructive samples escape it, since only `rm -rf` is ever in command
+  position. Two forms the old matcher denied are now accepted blind spots:
+  `"$(rm -rf x)"` (the unquoted `$(…)` and backtick forms are still caught) and
+  an interpreter whose `-c` is not adjacent to a shell name
+  (`bash -euo pipefail -c "…"`). Each deny now
+  names the rule that fired and what would have passed, instead of asserting
+  intent. The deny decision stays on POSIX `grep -qE` (ADR 0013). OpenCode's
+  `permission.bash` globs keep the same patterns but cannot express the quoting
+  rule, so that surface stays stricter and still denies mentions — recorded in
+  the script header, `.opencode/opencode.jsonc`, `.agents/README.md` and
+  `development/harness-usage.md`. See
+  [ADR 0015](docs/decisions/0015-deny-list-matching-outside-quotes.md).
 
 ### Removed (breaking)
 
@@ -628,6 +654,13 @@ major version).
   python3 bullet in `development/tool-bootstrap.md`'s Required tools, which the
   same `_skip_if_exists` protection above keeps out of existing copies: add
   that bullet by hand.
+- The deny-list matching fix (issue #36, [ADR 0015](docs/decisions/0015-deny-list-matching-outside-quotes.md))
+  likewise reaches existing repos via `copier update`, since `.agents/hooks/`
+  and `.opencode/opencode.jsonc` are not `_skip_if_exists`. Only
+  `development/harness-usage.md`'s description of the guard stays stale (same
+  protection; see the bullet below) — the hook itself changes behaviour on
+  update, so if you had worked around the old matcher by avoiding the literals
+  in search commands, that workaround is no longer needed.
 - `development/harness-usage.md` is in `_skip_if_exists` too, so an existing
   repo keeps its copy and will still promise "expect _one_ clarifying question"
   from `/spec`, still describe skills as conditional on the example skill, say
