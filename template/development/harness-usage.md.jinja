@@ -88,23 +88,32 @@ Claude Code only). You cannot prompt around the hooks:
   a command from its own deny-list and expects the deny verdict — the deny
   exit code **and** the deny message, because the shell exits with that same
   code for a script it cannot even parse. Read these warnings: they mean the
-  PreToolUse guard is denying every Bash call (broken reader) or waving
-  destructive commands through (damaged guard) until `.agents/hooks/` is
-  restored.
+  PreToolUse guard is denying every Bash call (broken reader) or no longer
+  giving a trustworthy verdict on destructive commands (damaged guard) until
+  `.agents/hooks/` is restored.
 {% if generate_scripts -%}
 - **PostToolUse (`Write|Edit|MultiEdit`)** runs `scripts/fmt-file.sh` on the
   edited file after every write.
 {% endif -%}
 - **PreToolUse (`Bash`)** hard-blocks `rm -rf`, `push --force`, `reset --hard`,
-  `DROP TABLE` (exit 2) via [`.agents/hooks/block-destructive.sh`](../.agents/hooks/block-destructive.sh).
-  The first three are denied only outside quotes — `grep -rn 'rm -rf' .` is a
-  mention and passes, `cd x && rm -rf y` is not and does not — plus a fallback
-  for the string a nested shell *runs*: past the quote a runner opens
-  (`sh -c`, `ssh`, `eval`, `su`) or ahead of a pipe into a shell. A runner
-  elsewhere on the line does not count, so `ssh host uptime && grep -rn 'rm -rf' .`
-  still passes. `DROP TABLE` matches anywhere, quoted or not: SQL has no
-  unquoted form, so a mention of it is denied too. Each deny says which rule
-  fired; it is a text matcher and a backstop against accidents, not a sandbox.
+  `DROP TABLE` (exit 2) via [`.agents/hooks/block-destructive.sh`](../.agents/hooks/block-destructive.sh),
+  whose verdict is computed by an embedded `python3` tokenizer — `python3` is
+  a hard dependency of the guard: missing or non-running, every Bash call is
+  denied, fail-closed, with the install remedy in the message. The first
+  three are denied where they are reachable without crossing a quote (quote
+  state carried across lines) — `grep -rn 'rm -rf' .` is a mention and
+  passes, `cd x && rm -rf y` is not and does not — and the string a nested
+  shell *runs* (`sh … -c`, `ssh`, `eval`, `su`, or piped into a shell) is
+  held to the same rules one level down: a quoted mention inside it passes,
+  a reachable operation is denied. Two edges to know: a command that both
+  mentions an operation and runs a shell on a file is denied even when the
+  mention is quoted (split the write and the run into two calls), and a
+  `push --force` immediately followed by a dash is a longer, lease-checked
+  flag (`--force-with-lease`, `--force-if-includes`) and passes. `DROP TABLE`
+  matches anywhere, quoted or not: SQL has no unquoted form, so a mention of
+  it is denied too. Each deny names the rule that fired, the verdict is the
+  same in every locale, and it is a backstop against accidents, not a
+  sandbox.
 {% if package_manager in ['uv', 'pixi'] -%}
 - **Stop** runs `{{ cmd('verify') }}` before the agent is allowed to stop; a
   failing gate exits 2 and blocks the stop. This is why "done" means "the
@@ -174,14 +183,17 @@ OpenCode reads `.opencode/opencode.jsonc`, which sets:
 - **No session-end verification gate** on either tool here (Claude Code hooks
   were not generated) — run `/verify` during the session and rely on CI.
 {%- endif %}
-- **Destructive-bash blocking** uses `permission.bash` deny globs in `*…*`
-  (substring) form that mirror `block-destructive.sh`'s patterns (`rm -rf`,
-  `push --force`, `reset --hard`, `DROP TABLE`), so `cd x && rm -rf y` is caught.
-  It's glob-not-regex and can't run a custom script, so the two **diverge on
-  mentions**: a glob cannot tell a quoted pattern from a command, so OpenCode
-  also denies `grep -rn 'rm -rf' .`, which the script allows. It is the stricter
-  surface; for richer logic a `.opencode/plugin` with a `tool.execute.before`
-  hook is the optional hardening.
+- **Destructive-bash blocking** uses `permission.bash` deny globs that mirror
+  `block-destructive.sh`'s patterns (`rm -rf`, `push --force`, `reset --hard`,
+  `DROP TABLE`) in `*…*` substring form, so `cd x && rm -rf y` is caught —
+  except `push --force`, which is an end-anchored glob plus a
+  followed-by-space glob so the lease-checked `--force-with-lease` /
+  `--force-if-includes` pass here too. A glob cannot run the script's
+  tokenizer, so the two **diverge on mentions**: OpenCode cannot tell a
+  quoted pattern from a command and also denies `grep -rn 'rm -rf' .`, which
+  the script allows. It is the stricter surface; for richer logic a
+  `.opencode/plugin` with a `tool.execute.before` hook is the optional
+  hardening.
 
 | Capability             | Claude Code                              | OpenCode                                   |
 | ---------------------- | ---------------------------------------- | ------------------------------------------ |

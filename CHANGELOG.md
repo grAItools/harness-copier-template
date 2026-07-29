@@ -615,6 +615,16 @@ SessionStart warning. The same ADR records why
   `block-destructive.sh` self-test, which requires the deny exit code *and*
   the deny message): both warn without blocking, and each means a PreToolUse
   surface is degraded until `.agents/hooks/` is restored.
+- The guard prose in `development/harness-usage.md`, `.agents/README.md`, and
+  `development/tool-bootstrap.md` is resynced to the tokenizer rebuild of
+  `block-destructive.sh` ([ADR 0017](docs/decisions/0017-deny-list-tokenizer-in-python3.md)):
+  `python3` is named a hard, fail-closed dependency of the Bash guard (a host
+  running the hooks on `jq` alone now needs it), the nested-shell string is
+  documented as held to the same rules one level down (quoted mentions inside
+  it pass), same-command write-then-run and the two lease-checked
+  `push --force-*` flags are documented on both the script and the OpenCode
+  glob surface, and `tool-bootstrap.md`'s required-tools list promotes
+  `python3` from reader fallback to requirement, demoting `jq` to optional.
 - Three v0.7.0 instruction contradictions resolved (issue #45): the reviewer's
   register scope check now requires a new decision-register row to trace to
   its **Source** (a `DECISION-PENDING:` line in the diff, an ADR added by the
