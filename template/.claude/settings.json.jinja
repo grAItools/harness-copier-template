@@ -51,15 +51,18 @@
             "command": "printf '{}' | sh \"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/hook-input.sh\" .probe >/dev/null 2>&1 || { echo 'warning: the hook payload reader is not working - jq and python3 are both missing or unable to run, or .agents/hooks/hook-input.sh is damaged. The PreToolUse guard will deny every Bash call until this is fixed (apt-get install jq / brew install jq)' >&2; exit 1; }"
           },
           {# Guard self-test: run block-destructive.sh against a command on its
-             own deny-list and expect the deny (exit 2). The PreToolUse [ -r ]
+             own deny-list and expect the deny verdict. The PreToolUse [ -r ]
              check only proves the file is present - a guard truncated by an
              interrupted copier update or a symlink-less checkout runs and
              exits 0, silently allowing every destructive command (issue #41).
-             A weakened guard fails the same probe. Warn, don't block: exit 1
-             surfaces the message without ending the session. #}
+             A weakened guard fails the same probe. The verdict is exit 2 AND
+             the guard's own deny message: dash also exits 2 when it cannot
+             open or parse a script, and the message exists exactly to make a
+             deny distinguishable from an infrastructure failure. Warn, don't
+             block: exit 1 surfaces the message without ending the session. #}
           {
             "type": "command",
-            "command": "G=\"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/block-destructive.sh\"; printf '%s' 'rm -rf /' | sh \"$G\" >/dev/null 2>&1; rc=$?; [ \"$rc\" -eq 2 ] || { if [ -r \"$G\" ]; then echo \"warning: block-destructive.sh is present but failed its self-test - a deny-listed command was not denied (exit $rc, expected 2). The guard is damaged or weakened, so the PreToolUse hook will let destructive Bash commands through until .agents/hooks/block-destructive.sh is restored (git restore, or re-run copier update).\" >&2; else echo 'warning: block-destructive.sh is missing or unreadable - the PreToolUse guard will deny every Bash call until .agents/hooks is restored.' >&2; fi; exit 1; }"
+            "command": "G=\"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/block-destructive.sh\"; if [ -r \"$G\" ]; then err=$(printf '%s' 'rm -rf /' | sh \"$G\" 2>&1 >/dev/null); rc=$?; { [ \"$rc\" -eq 2 ] && printf '%s' \"$err\" | grep -q '^block-destructive: denied'; } || { echo \"warning: block-destructive.sh is present but failed its self-test - a deny-listed command was not denied (exit $rc, expected 2 with a deny message). The guard is damaged or weakened, so the PreToolUse hook will let destructive Bash commands through until .agents/hooks/block-destructive.sh is restored (git restore, or re-run copier update).\" >&2; exit 1; }; else echo 'warning: block-destructive.sh is missing or unreadable - the PreToolUse guard will deny every Bash call until .agents/hooks is restored.' >&2; exit 1; fi"
           }
         ]
       }
