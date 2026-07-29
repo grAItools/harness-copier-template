@@ -486,6 +486,52 @@ major version).
   the script header, `.opencode/opencode.jsonc`, `.agents/README.md` and
   `development/harness-usage.md`. See
   [ADR 0015](docs/decisions/0015-deny-list-matching-outside-quotes.md).
+- `hook-input.sh` probes `jq` with the exact filter it will run, held in one
+  shell variable, instead of a trivial `jq -e .` (issue #41). The filter needs
+  jq ≥ 1.5 (`try`/`catch`, `inputs`), so on a jq 1.4 host the old probe passed,
+  the filter then died on a syntax error that `2>/dev/null` swallowed, and
+  every read exited 4 — which PreToolUse maps to denying **every** Bash call,
+  blaming the payload while a working `python3` sat unused on the same PATH. A
+  jq too old for the filter now falls through to `python3` exactly as a broken
+  jq does; with no usable backend at all the reader exits 3, whose message
+  names the actual remedy.
+- `hook-input.sh` rejects concatenated JSON documents (`'{"a":"x"} {"a":"y"}'`)
+  with exit 4 under **both** backends (issue #44). jq runs its filter once per
+  document and exits 0 emitting one value per line, so the Stop hook could read
+  `true\nfalse` for `.stop_hook_active`, fail its `[ "$flag" = 'true' ]` test,
+  and defeat the loop guard that flag exists for — where `python3` rejected the
+  same payload. The filter now reads `-n` + `[inputs]` and errors unless there
+  is exactly one document; a whitespace-only payload (jq: zero documents,
+  exit 0) is likewise a uniform exit 4.
+- `.claude/settings.json`'s SessionStart now **self-tests
+  `block-destructive.sh`**: it pipes a deny-listed command through the guard
+  and warns (non-blocking exit 1, like the reader probe) unless the verdict is
+  exit 2 *plus* the guard's own deny message — dash also exits 2 when it
+  cannot open or parse a script, and the message exists to make a deny
+  distinguishable from an infrastructure failure. Previously a
+  present-but-damaged guard (interrupted `copier update`, partial checkout, a
+  Windows checkout without `core.symlinks=true`) passed PreToolUse's `[ -r ]`
+  check, ran, and exited 0, silently allowing every destructive command
+  (issue #41); a silently weakened guard fails the same probe. A *missing*
+  guard still fails closed at PreToolUse and now also warns at session start.
+- The Stop hook runs the verify gate from the repo root
+  (`cd "${CLAUDE_PROJECT_DIR:-.}" && …`), matching how it already anchored its
+  payload read (issue #44). `make`, `just`, and a raw `verify_command` all
+  resolve against the cwd, so a hook cwd outside the repo root blocked the
+  stop with "no makefile" — an error unrelated to the code. The exit-code
+  contract is unchanged: 2 blocks, 1 reports without blocking.
+- `permissions.deny` no longer denies `git push --force-with-lease`
+  (issue #40): `Bash(git push --force:*)` is a plain string-prefix rule, so it
+  hard-denied the safe, lease-checked variant the guard was already letting
+  through — with no rephrase available, dead-ending an agent updating a
+  rebased branch. Split into an exact `Bash(git push --force)` plus a
+  trailing-space prefix `Bash(git push --force :*)`, neither a prefix of
+  `--force-with-lease`. This deny list is the only layer when
+  `include_claude_hooks=false`, so it must not over-match either.
+
+  The five fixes above amend Decisions 1–2 of ADR 0014 and extend ADR 0013's
+  SessionStart warning; see
+  [ADR 0016](docs/decisions/0016-filter-shape-probe-guard-selftest-anchored-gate.md).
 
 ### Removed (breaking)
 

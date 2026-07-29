@@ -3,7 +3,9 @@
 ## Status
 
 Accepted (2026-07-28). Amends [ADR 0013](0013-hook-payload-parsing-and-failure-postures.md)
-Decisions 1 and 2; prompted by issues #34 and #35.
+Decisions 1 and 2; prompted by issues #34 and #35. Decisions 1 and 2 amended
+by [ADR 0016](0016-filter-shape-probe-guard-selftest-anchored-gate.md) — see
+it for the single-document payload contract and the filter-shape jq probe.
 
 ## Context
 
