@@ -546,6 +546,33 @@ SessionStart warning. The same ADR records why
 — `block-destructive.sh` and the OpenCode globs do). See
 [ADR 0016](docs/decisions/0016-filter-shape-probe-guard-selftest-anchored-gate.md).
 
+- `.agents/hooks/block-destructive.sh` no longer fails open on the eight
+  command shapes issue #40 measured against the quote-aware matcher #39
+  shipped: an operation past a quote nested inside a runner's script
+  (`bash -c '… echo "resetting" && git reset --hard …'`), a `-c` that is not
+  adjacent to the shell name (`bash -euo pipefail -c`, `bash --norc -c`), a
+  trailing operation after a multi-line quoted argument (a commit message
+  body), bash's `$'…'` quoting, pipes into a shell across more than one
+  segment or behind a wrapper (`| tee x | sh`, `| env sh`, `| timeout 5 sh`),
+  and write-then-run in one command (`printf 'rm -rf x' > s.sh; sh s.sh`) are
+  all denied again, and the verdict no longer flips with the locale on
+  high-byte input. The single-pass `grep -qE` grammar is replaced by a small
+  quoting-aware tokenizer embedded in the same script and run with `python3`
+  (already the hooks' fallback JSON parser, run-probed the same way; missing
+  python3 now denies fail-closed with the install remedy). Rule 2 is
+  recursive — the string a nested shell runs is held to the same rules — so
+  two ADR-0015 false positives (`bash -c "grep 'rm -rf' ."`, the `'…'\''…'`
+  idiom) are fixed too, and every mention #39 un-denied stays allowed. `git
+  push --force-with-lease` / `--force-if-includes` no longer prefix-match the
+  `push --force` deny, un-dead-ending rebased-branch updates — in the guard
+  and in `.opencode/opencode.jsonc`, whose force-push glob splits into
+  end-anchored and followed-by-space forms (the parallel `permissions.deny`
+  entry in `.claude/settings.json` is fixed separately, issues #41/#44). A
+  table-driven behaviour lock pins all of it at
+  `tests/test_block_destructive.py` (stdlib; `python3 -m unittest discover
+  tests`). See
+  [ADR 0017](docs/decisions/0017-deny-list-tokenizer-in-python3.md).
+
 ### Removed (breaking)
 
 - **Eleven questions deleted, leaving 13** (ADR 0012): `mode` (consumed by
@@ -720,6 +747,12 @@ SessionStart warning. The same ADR records why
   protection; see the bullet below) — the hook itself changes behaviour on
   update, so if you had worked around the old matcher by avoiding the literals
   in search commands, that workaround is no longer needed.
+- The deny-list tokenizer (issue #40, [ADR 0017](docs/decisions/0017-deny-list-tokenizer-in-python3.md))
+  also reaches existing repos via `copier update`, and it makes **`python3` a
+  hard dependency of the Bash guard**: a host that ran the hooks on `jq` alone
+  will now see every Bash call denied with an install-python3 message until
+  python3 is present (fail-closed by design, matching the guard's posture for
+  an unreadable payload). Install python3 before updating on such hosts.
 - `development/harness-usage.md` is in `_skip_if_exists` too, so an existing
   repo keeps its copy and will still promise "expect _one_ clarifying question"
   from `/spec`, still describe skills as conditional on the example skill, say

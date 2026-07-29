@@ -4,7 +4,10 @@
 
 Accepted (2026-07-28). Refines ADR 0004 (canonical agent hooks) and ADR 0013
 decision 3 (the deny message); prompted by issue #36. Independent of ADR 0014,
-which amends the same ADR's decisions 1–2 for the payload reader.
+which amends the same ADR's decisions 1–2 for the payload reader. The
+`grep -qE` matching engine is superseded by
+[ADR 0017](0017-deny-list-tokenizer-in-python3.md) (issue #40); the
+three-rule model itself is kept.
 
 ## Context
 

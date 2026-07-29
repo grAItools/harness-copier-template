@@ -45,7 +45,11 @@
   // script does. Same patterns, stricter matching: the script denies them only
   // outside quotes, so it allows a benign command that merely *mentions* one
   // (`grep -rn 'rm -rf' .`) while these globs still deny it — a glob cannot
-  // express the distinction. Keep the patterns in sync. The allow-list matches
+  // express the distinction. `push --force` is two globs (end-anchored and
+  // followed-by-space) instead of one `*…*` form, so the longer lease-checked
+  // flags — `--force-with-lease`, `--force-if-includes` — are not
+  // prefix-matched, mirroring the script's rule-1 exception (ADR 0017).
+  // Keep the patterns in sync. The allow-list matches
   // .claude/settings.json: the build tool, read-only git, plus read-only
   // inspection helpers (note: `find` is intentionally not allowed —
   // `find -delete`/`-exec rm` would bypass the deny-list).
@@ -71,7 +75,8 @@
       "head *": "allow",
       "tail *": "allow",
       "*rm -rf*": "deny",
-      "*push --force*": "deny",
+      "*push --force": "deny",
+      "*push --force *": "deny",
       "*reset --hard*": "deny",
       "*DROP TABLE*": "deny"
     }
