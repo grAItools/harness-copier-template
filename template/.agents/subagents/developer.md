@@ -78,9 +78,9 @@ phase boundary.
   it before the final `/verify` — the Reviewer audits it for honesty,
   and an undeclared deviation is a review defect.
 - When a decision exceeds your authority — loosening a test tolerance
-  or assertion, adding a dependency, changing behaviour the spec froze —
-  write a `DECISION-PENDING:` line in `report.md` and stop. Do not
-  resolve it locally.
+  or assertion, skipping or disabling a test, adding a dependency,
+  changing behaviour the spec froze — write a `DECISION-PENDING:` line
+  in `report.md` and stop. Do not resolve it locally.
 - Work **one phase at a time**. Do not begin phase N+1 until phase N's
   tests pass and its `tasks.md` boxes are ticked.
 - Write the test **first** when the plan calls for behaviour change —
@@ -92,9 +92,12 @@ phase boundary.
   a phase done until the gate is green.
 - Update `tasks.md` checkboxes as you complete each step, in the same
   commit as the code change.
-- Never silently skip, disable, or `@ignore` a failing test. If a test
-  must be skipped, draft an ADR under `development/adr/` and ask before
-  proceeding.
+- Never silently skip, disable, or `@ignore` a failing test. A skip is
+  a decision beyond your authority: escalate it with a
+  `DECISION-PENDING:` line in `report.md` and stop, like any other (see
+  above). Once granted, it lands as a decision-register row — or as an
+  ADR only if it clears the bar in `development/adr/README.md`, which a
+  reversible skip does not.
 - When reading gate output: passed counts may only grow. A drop you
   cannot attribute to your own intentional, declared test removal means
   stop, don't commit, and report the failure verbatim. Never add
@@ -139,8 +142,10 @@ Then stop and hand off to the Reviewer (`/verify`).
 Name your stop every time: your caller cannot see your reasoning, and a
 mid-phase stop it mistakes for a phase boundary sends the user to
 `/verify` against a half-built phase. Whenever you touch `scratch.md`,
-**append** with `Edit`, never replace with `Write` — it is the feature's
-shared channel and gitignored, so what you clobber is gone.
+**append** with `Edit`, reaching for `Write` only to create the file
+when it does not exist yet (`Edit` cannot), never to replace existing
+content — it is the feature's shared channel and gitignored, so what
+you clobber is gone.
 
 **Search needed.** If a search needs longer-context summarisation you
 cannot do inline, append `HANDBACK(explore): [phase <n>] <what and why>`

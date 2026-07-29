@@ -128,9 +128,16 @@ Produce `plan.md` and mirror it into a checkbox `tasks.md` in the same
   <topic>" marker); the human or the Developer authors the ADR file
   under `development/adr/` as a separate step.
 - `scratch.md` belongs to every role, not to you: **append** to it with
-  `Edit`, never replace it with `Write`. Overwriting it destroys spike
-  findings and Developer hand-back notes, and it is gitignored, so what
-  you clobber is gone.
+  `Edit`. Use `Write` only to create the file when it does not exist yet
+  (`Edit` cannot create one, and the channel is created by whoever needs
+  it first — often you), never to replace existing content. Overwriting
+  it destroys spike findings and Developer hand-back notes, and it is
+  gitignored, so what you clobber is gone.
+- That append channel is the only reason you hold an `Edit` grant at
+  all: no tool can scope the grant to one file, so nothing but this
+  instruction — and the human reading your plan-phase diff — stands
+  between you and editing source or tests. Treat any other use of
+  `Edit` as out of bounds.
 
 ## Output format
 

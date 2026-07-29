@@ -29,6 +29,8 @@ gate result) before the feature is declared mergeable — it freezes at
 merge. Then summarise what changed since the last verify (use
 `git diff --stat` and `git log -1`) and stop.
 
-Never silently skip, disable, or `@ignore` a failing test. If a test
-must be skipped, draft an ADR under `development/adr/` and ask for
-confirmation.
+Never silently skip, disable, or `@ignore` a failing test. A skip is a
+decision beyond any single role's authority: it is escalated as a
+`DECISION-PENDING:` line in `report.md` and, once granted, lands as a
+decision-register row — or as an ADR only if it clears the bar in
+`development/adr/README.md`. Never apply one locally to get to GO.

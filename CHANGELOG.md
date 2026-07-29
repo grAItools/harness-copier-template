@@ -275,6 +275,20 @@ major version).
   (`copilot-instructions.md`, `skills/code-review/SKILL.md`) point to it instead
   of restating the criteria or implying every dependency/persistence/auth choice
   needs an ADR.
+- Widened or delegated enforcement surfaces are now acknowledged where they
+  are documented rather than implied away (issues #41, #46):
+  `harness-usage.md` and the architect role file state that the Architect's
+  `Edit` grant exists only for the `scratch.md` append channel and cannot be
+  path-scoped by either tool, so the plan-phase edit ban is enforced by
+  instructions and diff review, not the harness; `.agents/README.md` states
+  that the PreToolUse hook delegates the destructive-command verdict to
+  `block-destructive.sh` — a missing script is denied by the hook itself, a
+  present-but-damaged one returns whatever it exits — and its re-homed
+  subagent-frontmatter schema spells out that OpenCode `mode` **defaults to
+  `all`**, exposing a half-configured role as a Tab-selectable primary agent
+  unless `mode: subagent` is set. `AGENTS.md` and `harness-usage.md` now
+  advertise `.agents/README.md` as covering the subagent/command/skill
+  formats, which the deleted `subagents/README.md` once held.
 
 ### Fixed
 
@@ -588,6 +602,26 @@ SessionStart warning. The same ADR records why
   tests`), including the shapes that stay allowed and the documented blind
   spots. See
   [ADR 0017](docs/decisions/0017-deny-list-tokenizer-in-python3.md).
+
+- `development/harness-usage.md` no longer claims the Stop hook's "non-zero
+  blocks the stop" (issues #43, #45): Claude Code blocks on exit 2 only. The
+  bullet now names the non-blocking exit-1 paths — the package manager missing
+  from PATH skips the gate entirely (the case `ensure-toolchain.sh` exists to
+  prevent), and a broken payload reader runs the gate but can only report a
+  red result — so a session can end unverified, and the doc says so instead of
+  promising otherwise.
+- Three v0.7.0 instruction contradictions resolved (issue #45): the reviewer's
+  register scope check now requires a new decision-register row to trace to
+  its **Source** (a `DECISION-PENDING:` line in the diff, an ADR added by the
+  diff, or a recorded human grant) instead of ruling every row without a
+  same-diff marker MAJOR — which condemned the ADR-plus-row pattern
+  `development/adr/README.md` itself prescribes; the developer and `/verify`
+  test-skip rule ("draft an ADR") now routes through `DECISION-PENDING:`
+  escalation like every other beyond-authority decision, matching the
+  three-criteria ADR bar; and the architect/developer `scratch.md` rule
+  ("append with `Edit`, never `Write`") now permits `Write` to *create* the
+  file — `Edit` cannot create one, so the first hand-back either stalled or
+  broke the rule.
 
 ### Removed (breaking)
 

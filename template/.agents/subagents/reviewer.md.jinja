@@ -104,12 +104,14 @@ fix before the next push.
   Touching another feature's `development/work/` directory, a merged feature's
   `report.md`, or the body of an existing ADR is an automatic MAJOR
   defect unless the plan explicitly called for it. The two registers
-  have their own scope contracts instead: a decision-register row must
-  pair with a `DECISION-PENDING:` line in this diff, and a new
-  `development/glossary.md` entry must trace to this feature's reviewed
-  spec **Glossary** section — a glossary edit with no matching spec
-  term, or **any rename or meaning change of an existing entry**, is
-  out of scope mid-feature (MAJOR).
+  have their own scope contracts instead: a new decision-register row
+  must trace to its **Source** — a `DECISION-PENDING:` line in this
+  diff, an ADR added by this diff, or a human grant the row records
+  (see `development/adr/README.md`); a row with none of the three is
+  out of scope (MAJOR). A new `development/glossary.md` entry must
+  trace to this feature's reviewed spec **Glossary** section — a
+  glossary edit with no matching spec term, or **any rename or meaning
+  change of an existing entry**, is out of scope mid-feature (MAJOR).
 - **Never trust the Developer's narrative.** Re-run the gate yourself;
   re-derive every claim you can check (line numbers, test names,
   measured values) instead of quoting the hand-off summary.

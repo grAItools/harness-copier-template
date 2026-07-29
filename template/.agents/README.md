@@ -71,8 +71,15 @@ One Markdown file per role, with YAML frontmatter. Supported keys:
   `bash` can also be a per-pattern map (e.g. `"rg *": allow`, `"*": deny`).
   OpenCode only — Claude Code ignores this field.
 - `mode` (optional, **strongly recommended for subagents**) — OpenCode-only.
-  Set `mode: subagent` to keep the agent delegation-only; the default
-  (`all`) would also expose it as a top-level primary OpenCode agent.
+  One of `primary` / `subagent` / `all`; it **defaults to `all`**, which
+  exposes the agent as a Tab-selectable top-level primary as well as a
+  delegate — for a half-written role that has no `permission` map yet, that
+  is a full-permission primary agent. Set `mode: subagent` to keep it
+  delegation-only.
+
+`tools` and `permission` sit side by side in the same frontmatter: each
+tool reads the field it understands and ignores the other, so one file
+serves both surfaces.
 
 A subagent runs in its own context window — use them to keep heavy
 exploration or repetitive review out of the main session's context. Claude
@@ -128,7 +135,12 @@ and include synonyms.
   (a search pattern, a fixture, a commit message) is allowed; SQL patterns still
   match anywhere, quoted or not, since they have no unquoted form. OpenCode's
   globs cannot express either distinction and deny every mention. The patterns
-  themselves are kept in sync by hand in both places.
+  themselves are kept in sync by hand in both places. The Claude Code
+  PreToolUse hook *delegates* the verdict to the script: when the script is
+  missing the hook itself denies Bash, but when it is present the verdict is
+  whatever the script exits — the hook cannot tell a truncated or weakened
+  guard from a healthy one — so treat `hooks/` as load-bearing and restore it
+  from the template if a checkout mangles it.
 - **Hook payload parsing** is canonical in
   [`hooks/hook-input.sh`](hooks/hook-input.sh): the Claude Code hooks in
   `.claude/settings.json` read their JSON input through it (`jq`, with a
