@@ -169,6 +169,11 @@ major version).
   entries you commented out preserved verbatim; the summary reports what
   changed. Nothing outside the markers is ever touched
   ([ADR 0018](docs/decisions/0018-update-propagation-and-ownership-split.md), #47).
+- `development/tool-bootstrap.md`'s Required tools and the
+  `include_claude_hooks` question help now state the guard's real dependency:
+  the deny-list matcher runs on `python3` and fails closed without it
+  (ADR 0017), while `jq` is only the preferred payload reader with a
+  `python3` fallback (ADR 0013).
 - Role method playbooks are merged into their subagent files: each of
   `product-owner` / `architect` / `developer` / `reviewer` now carries its
   **Method** inline (deduplicated against its own constraints), so a role

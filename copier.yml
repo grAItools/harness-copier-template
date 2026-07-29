@@ -325,8 +325,10 @@ include_claude_hooks:
     `just verify` for task_runner=make/just, or verify_command directly
     when task_runner=none — so the generated runner wiring is part of
     the agent loop. Hooks read their JSON payloads with `jq`, falling
-    back to `python3`; with neither on PATH, a SessionStart warning
-    fires and the Bash guard fails closed with an explanatory message.
+    back to `python3`. The destructive-command guard's matcher runs on
+    `python3` and requires it: with `python3` missing or unable to run,
+    the guard fails closed and denies every Bash call with an
+    explanatory message until one is installed.
   default: true
 
 # ---------------------------------------------------------------------------
