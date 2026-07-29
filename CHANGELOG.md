@@ -607,9 +607,14 @@ SessionStart warning. The same ADR records why
   blocks the stop" (issues #43, #45): Claude Code blocks on exit 2 only. The
   bullet now names the non-blocking exit-1 paths — the package manager missing
   from PATH skips the gate entirely (the case `ensure-toolchain.sh` exists to
-  prevent), and a broken payload reader runs the gate but can only report a
-  red result — so a session can end unverified, and the doc says so instead of
-  promising otherwise.
+  prevent), and a failed payload read (broken reader, or a payload rejected
+  under the reader's single-JSON-document contract) runs the gate but can only
+  report a red result — so a session can end unverified, and the doc says so
+  instead of promising otherwise. The hooks section also documents the
+  SessionStart health warnings (the payload-reader probe and the
+  `block-destructive.sh` self-test, which requires the deny exit code *and*
+  the deny message): both warn without blocking, and each means a PreToolUse
+  surface is degraded until `.agents/hooks/` is restored.
 - Three v0.7.0 instruction contradictions resolved (issue #45): the reviewer's
   register scope check now requires a new decision-register row to trace to
   its **Source** (a `DECISION-PENDING:` line in the diff, an ADR added by the

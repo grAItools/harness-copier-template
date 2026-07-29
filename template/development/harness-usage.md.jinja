@@ -81,6 +81,16 @@ Claude Code only). You cannot prompt around the hooks:
   the agent's already-running shells, so the `Stop` hook also exports it onto
   PATH for the verify gate.
 {% endif -%}
+- **SessionStart** health-checks the hook wiring and **warns without
+  blocking** (exit 1) when a check fails: it probes the payload reader
+  ([`.agents/hooks/hook-input.sh`](../.agents/hooks/hook-input.sh)), and it
+  feeds [`.agents/hooks/block-destructive.sh`](../.agents/hooks/block-destructive.sh)
+  a command from its own deny-list and expects the deny verdict — the deny
+  exit code **and** the deny message, because the shell exits with that same
+  code for a script it cannot even parse. Read these warnings: they mean the
+  PreToolUse guard is denying every Bash call (broken reader) or waving
+  destructive commands through (damaged guard) until `.agents/hooks/` is
+  restored.
 {% if generate_scripts -%}
 - **PostToolUse (`Write|Edit|MultiEdit`)** runs `scripts/fmt-file.sh` on the
   edited file after every write.
@@ -101,18 +111,22 @@ Claude Code only). You cannot prompt around the hooks:
   gate is green". Two paths exit 1 instead — visible, but **non-blocking**:
   with `{{ package_manager }}` unavailable the gate is skipped entirely (the
   case `ensure-toolchain.sh` exists to prevent — run it, then re-verify), and
-  with a payload reader that cannot run (no working `jq` or `python3`) the
-  gate still runs but can only *report* a red result, because blocking needs
-  the stop-loop guard that same reader provides. Either way the session can
-  end unverified, so read the stop message.
+  with a failed payload read (no working `jq` or `python3`, or a payload the
+  reader rejects — it insists on a single JSON document, so a concatenated
+  payload cannot smuggle in a second stop-loop flag) the gate still runs but
+  can only *report* a red result, because blocking needs the stop-loop guard
+  that same read provides. Either way the session can end unverified, so
+  read the stop message.
 {%- else -%}
 - **Stop** runs `{{ cmd('verify') }}` before the agent is allowed to stop; a
   failing gate exits 2 and blocks the stop. This is why "done" means "the
   gate is green". One path exits 1 instead — visible, but **non-blocking**:
-  with a payload reader that cannot run (no working `jq` or `python3`) the
-  gate still runs but can only *report* a red result, because blocking needs
-  the stop-loop guard that same reader provides. That session can end
-  unverified, so read the stop message.
+  with a failed payload read (no working `jq` or `python3`, or a payload the
+  reader rejects — it insists on a single JSON document, so a concatenated
+  payload cannot smuggle in a second stop-loop flag) the gate still runs but
+  can only *report* a red result, because blocking needs the stop-loop guard
+  that same read provides. That session can end unverified, so read the
+  stop message.
 {%- endif %}
 
 Permissions allowlist the build tool, read-only git (`status/diff/log/show`),
