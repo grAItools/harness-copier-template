@@ -9,7 +9,7 @@
 
 - Language: **{{ primary_language }}**
 - Package / build manager: **{{ package_manager }}**
-- License: _Fill in: SPDX identifier_
+- License: {% if license is defined and license %}{{ license }}{% else %}_Fill in: SPDX identifier_{% endif %}
 - Tool versions, install steps, and new-machine setup:
   see [`development/tool-bootstrap.md`](development/tool-bootstrap.md).
 
@@ -89,9 +89,17 @@ this file.
   [`development/style.md`](development/style.md#comments).
 - Tests are the spec. If you change behaviour, change a test first.
 {%- if commit_convention == 'conventional' %}
-- Commit messages: **Conventional Commits 1.0.0** — where it applies depends
+- Commit messages: **Conventional Commits 1.0.0**
+  {%- if pr_merge_strategy | default('') == 'squash' %} — apply the format to
+  the **PR title** (squash-merge).
+  {%- elif pr_merge_strategy | default('') == 'merge' %} — apply the format to
+  every branch commit *and* the merge commit.
+  {%- elif pr_merge_strategy | default('') == 'rebase' %} — apply the format to
+  every branch commit (rebase-merge).
+  {%- else %} — where it applies depends
   on the repo's merge strategy (squash → PR title; merge or rebase → every
   branch commit).
+  {%- endif %}
   See [`development/style.md`](development/style.md#commit-messages) for the format,
   type list, breaking-change syntax, examples, and full merge-strategy
   guidance.

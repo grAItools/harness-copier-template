@@ -1,2 +1,12 @@
 # Changes here will be overwritten by Copier; NEVER EDIT MANUALLY.
 {{ _copier_answers|to_nice_yaml -}}
+{#- Legacy answers from questions the v0.7.0 wave removed (see copier.yml,
+    "Legacy answers"). _copier_answers only records current questions, so
+    without these lines a recorded policy would render once more during the
+    update that drops it and then regress silently on the next one. -#}
+{% if license is defined and license -%}
+{{ {'license': license} | to_nice_yaml -}}
+{% endif -%}
+{% if pr_merge_strategy is defined and pr_merge_strategy -%}
+{{ {'pr_merge_strategy': pr_merge_strategy} | to_nice_yaml -}}
+{% endif -%}

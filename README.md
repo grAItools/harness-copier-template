@@ -65,8 +65,9 @@ your-repo/
 │  ├─ style.md                        # greenfield: incl. commit-message convention
 │  ├─ glossary.md                     # ubiquitous language; starts empty, grows via specs
 │  ├─ testing.md
-│  ├─ tool-bootstrap.md               # per-package-manager install instructions
-│  ├─ harness-usage.md                # unified Claude Code + OpenCode driving guide
+│  ├─ tool-bootstrap.md               # per-package-manager install instructions (template-owned)
+│  ├─ harness-usage.md                # unified Claude Code + OpenCode driving guide (template-owned)
+│  ├─ harness-notes.md                # project-local harness notes (never updated by copier)
 │  ├─ adr/                            # ADRs + decision register (README.md)
 │  │  └─ 0001-record-architecture-decisions.md    # seed ADR (always)
 │  └─ work/                           # per-feature spec/plan/tasks/report[/scratch]
@@ -150,22 +151,29 @@ into the existing repo and the template:
   `.gitignore`, `scripts/verify.sh`, `scripts/fmt-file.sh`,
   `.github/PULL_REQUEST_TEMPLATE.md`,
   `development/adr/README.md` (it accumulates decision-register rows), or the
-  populated `development/` files (`architecture`, `style`, `testing`,
-  `tool-bootstrap`, `harness-usage`, `glossary`). They're listed in
-  `_skip_if_exists` — copier leaves the existing file in place. (This also
-  means switching `task_runner` later does not delete the previous file;
-  remove it manually if you no longer want it.) Every entry there is
-  **root-anchored** with a leading `/`: copier matches the list with gitignore
-  semantics, so a bare `README.md` would also match `.agents/README.md`,
-  `.claude/rules/README.md`, and `development/README.md` and freeze those
-  template-owned files forever.
-- **Appends** the harness's gitignore entries inside a fenced
+  project-owned `development/` files (`architecture`, `style`, `testing`,
+  `glossary`, `harness-notes`). They're listed in `_skip_if_exists` — copier
+  leaves the existing file in place. (This also means switching `task_runner`
+  later does not delete the previous file; remove it manually if you no
+  longer want it.) Every entry there is **root-anchored** with a leading `/`:
+  copier matches the list with gitignore semantics, so a bare `README.md`
+  would also match `.agents/README.md`, `.claude/rules/README.md`, and
+  `development/README.md` and freeze those template-owned files forever.
+  `development/harness-usage.md` and `development/tool-bootstrap.md` are
+  deliberately **not** on the list: they document how the harness itself
+  behaves, so `copier update` must keep delivering fixes to them
+  ([ADR 0018](docs/decisions/0018-update-propagation-and-ownership-split.md)).
+  Local edits to them are merged on update (or surfaced as conflict
+  markers); free-form local notes belong in `development/harness-notes.md`,
+  which copier never touches.
+- **Reconciles** the harness's gitignore entries inside a fenced
   `# >>> ai-agent-harness >>>` … `# <<< ai-agent-harness <<<` block via the
-  post-generation hook. It merges per entry, not per block: a re-run or a
-  `copier update` adds only the entries the block is missing, so a repo
-  generated from an older version picks up newly added ones. An entry you
-  comment out inside the block stays commented out, and nothing outside the
-  fence is touched.
+  post-generation hook. Inside the fence the current template's entry set is
+  authoritative: a re-run or a `copier update` adds the entries the block is
+  missing and drops entries the template no longer manages, so the block
+  neither goes stale nor accretes. An entry you comment out inside the block
+  stays commented out; anything else you want ignored belongs outside the
+  fence, which is never touched.
 - **Symlinks** `.claude/{skills,agents,commands}` and
   `.opencode/{skills,agents,commands}` to `.agents/{skills,subagents,commands}`
   after generation.
@@ -184,7 +192,11 @@ copier update
 
 Copier replays the answers from `.copier-answers.yml` and prompts for any
 new questions added since you generated. The same `_skip_if_exists` rules
-apply, and the post-gen hook re-runs idempotently.
+apply, and the post-gen hook re-runs idempotently. Answers recorded for
+questions a later template version removed (`license`,
+`pr_merge_strategy`) keep working: the templates still consume them and the
+answers file re-records them, so a policy you answered once never silently
+downgrades to scaffold text (see "Legacy answers" in `copier.yml`).
 
 ## Repository layout
 

@@ -12,11 +12,14 @@
 # Brown-field safety: the root README.md, Makefile, justfile, .gitignore,
 # .github/PULL_REQUEST_TEMPLATE.md, development/adr/README.md (it accumulates
 # decision-register rows downstream), scripts/verify.sh, scripts/fmt-file.sh,
-# and the populated development/ files (architecture, style, testing,
-# tool-bootstrap, harness-usage, glossary) are protected via _skip_if_exists.
-# Copier leaves the existing file in place and you can diff/merge the template
-# version manually if needed. docs/ is never generated: it stays reserved for
-# the project's own user documentation.
+# and the project-owned development/ files (architecture, style, testing,
+# glossary, harness-notes) are protected via _skip_if_exists. Copier leaves
+# the existing file in place and you can diff/merge the template version
+# manually if needed. harness-usage.md and tool-bootstrap.md are deliberately
+# NOT protected: they document how the harness itself behaves, so they are
+# template-owned and must keep receiving fixes on `copier update` (ADR 0018) —
+# project-local notes belong in development/harness-notes.md instead. docs/ is
+# never generated: it stays reserved for the project's own user documentation.
 
 # ---------------------------------------------------------------------------
 # Copier engine settings
@@ -49,14 +52,16 @@ _skip_if_exists:
   - "/development/architecture.md"
   - "/development/style.md"
   - "/development/testing.md"
-  - "/development/tool-bootstrap.md"
-  - "/development/harness-usage.md"
+  - "/development/harness-notes.md"
 
 # Optional post-generation tasks. The brown-field merger hook (see hooks/) runs
-# unconditionally and appends gitignore entries idempotently when an existing
-# .gitignore was preserved.
+# unconditionally: it reconciles the managed .gitignore block and creates the
+# tool-config symlinks. The operation argument lets the hook stay silent during
+# the temporary replay renders `copier update` performs (it runs three times
+# per update otherwise, printing three summaries); `default('copy', true)`
+# keeps the line rendering on copier versions that predate _copier_operation.
 _tasks:
-  - "python {{ _copier_conf.src_path }}/hooks/post_gen.py"
+  - "python {{ _copier_conf.src_path }}/hooks/post_gen.py {{ _copier_operation | default('copy', true) }}"
 
 # Files we never want copied to the destination
 _exclude:
@@ -271,6 +276,18 @@ commit_convention:
   choices:
     - conventional
     - freeform
+
+# Legacy answers (no questions — deliberately). The v0.7.0 simplification wave
+# (ADR 0012) removed the `license` and `pr_merge_strategy` questions, but a
+# repo that recorded an answer before the removal keeps its policy: copier
+# passes answers-file entries that match no question straight into the render
+# context, so templates consume them behind `is defined` guards, and the
+# answers-file template re-records them so they survive later updates
+# (ADR 0018). Do NOT re-add these as `when: false` questions — a declared
+# question ignores the recorded answer and substitutes its default, which is
+# exactly the silent regression this mechanism exists to prevent. Fresh
+# renders (no recorded answer) get the neutral scaffold text; passing
+# `--data license=… --data pr_merge_strategy=…` opts back in explicitly.
 
 # ---------------------------------------------------------------------------
 # Optional modules (gated; everything off-by-default except Claude + OpenCode)

@@ -17,6 +17,20 @@ major version).
 
 ### Added
 
+- `development/harness-notes.md` — a project-owned, `_skip_if_exists`-protected
+  home for free-form local notes about the harness, generated once and never
+  touched by `copier update`. Exists so the two template-owned harness docs
+  (see **Changed**) can stay pristine downstream and merge cleanly on every
+  update ([ADR 0018](docs/decisions/0018-update-propagation-and-ownership-split.md), #42).
+- Legacy answers: a repo that recorded `license` or `pr_merge_strategy` before
+  the simplification wave removed those questions keeps its policy — the
+  `AGENTS.md` license line, the `README.md` License section, and the
+  merge-strategy guidance in `AGENTS.md` / `development/style.md` render the
+  tailored prose again, and `.copier-answers.yml` re-records both keys so they
+  survive every later update. The questions are not re-asked; fresh renders
+  keep the neutral scaffold, and `--data license=…` / `--data
+  pr_merge_strategy=…` opt in explicitly
+  ([ADR 0018](docs/decisions/0018-update-propagation-and-ownership-split.md), #47).
 - Role playbook skills: `.agents/skills/{product-owner,architect,developer,reviewer}-playbook/`
   plus a shared `.agents/skills/design-principles/` (design ground rules and a
   red-flag checklist distilled from *A Philosophy of Software Design*, *The
@@ -88,8 +102,9 @@ major version).
 - `.agents/README.md` — supported-agents matrix (Claude Code, OpenCode,
   Copilot, Codex, Gemini CLI, natively-`AGENTS.md` agents), the add-an-agent
   recipe, and the single-source-of-truth rule.
-- `development/harness-usage.md` — unified Claude Code + OpenCode driving guide; added
-  to `_skip_if_exists`.
+- `development/harness-usage.md` — unified Claude Code + OpenCode driving
+  guide; template-owned (kept out of `_skip_if_exists` by the ownership
+  split, ADR 0018).
 - OpenCode native `formatter` (when `generate_scripts=true`) — routes edits
   through `scripts/fmt-file.sh`, disabling the conflicting built-in per
   `primary_language`, for parity with the Claude Code `PostToolUse` hook.
@@ -138,6 +153,22 @@ major version).
 
 ### Changed
 
+- `development/harness-usage.md` and `development/tool-bootstrap.md` leave
+  `_skip_if_exists`: they document how the harness itself behaves — which
+  hooks run, what each exit code means, how the deny-list matches — so they
+  are template-owned, and `copier update` now delivers every fix to them
+  instead of silently skipping repos where they already exist. Local edits
+  merge, or surface as inline conflict markers; each file carries a
+  blockquote pointing free-form local notes at `development/harness-notes.md`
+  ([ADR 0018](docs/decisions/0018-update-propagation-and-ownership-split.md), #42).
+  See **Upgrade notes**.
+- `hooks/post_gen.py` **reconciles** the managed `.gitignore` block instead of
+  only appending to it: inside the `>>> <<<` markers the current template's
+  entry set is authoritative, so entries the template no longer manages (the
+  stale `specs/*/scratch.md` line) are dropped, missing entries added, and
+  entries you commented out preserved verbatim; the summary reports what
+  changed. Nothing outside the markers is ever touched
+  ([ADR 0018](docs/decisions/0018-update-propagation-and-ownership-split.md), #47).
 - Role method playbooks are merged into their subagent files: each of
   `product-owner` / `architect` / `developer` / `reviewer` now carries its
   **Method** inline (deduplicated against its own constraints), so a role
@@ -278,6 +309,13 @@ major version).
 
 ### Fixed
 
+- The post-generation summary banner prints once per `copier update`, not
+  three times. Update tasks also run in the two temporary replay renders
+  copier uses to compute its diff; the hook now receives
+  `{{ _copier_operation }}` and stays silent in the replays (it still does
+  its work there — replay parity keeps the update diff clean). Updating
+  *from* a pre-split template version still prints one extra banner: the old
+  replay runs the old hook, which this release cannot reach (#47).
 - Every `_skip_if_exists` entry in `copier.yml` is now **root-anchored** with a
   leading `/`. Copier matches that list with gitignore semantics, under which a
   bare `README.md` matches at every depth — so the entry meant to protect a
@@ -307,7 +345,7 @@ major version).
   tries is a MINOR finding against the plan, whose fix belongs to `/plan`. Scope
   the plan explicitly *grants* is unaffected. `/verify`, the `architect` subagent
   (the role that writes the checklist), the example `plan.md`, and
-  `development/harness-usage.md` (`_skip_if_exists` — see **Upgrade notes**)
+  `development/harness-usage.md` (see **Upgrade notes**)
   restate the bound, which extends to `plan.md` the non-override principle that
   [ADR 0011](docs/decisions/0011-knowledge-grounded-role-playbooks.md) §2 states
   for the reviewer playbook.
@@ -643,6 +681,32 @@ SessionStart warning. The same ADR records why
 
 ### Upgrade notes
 
+- **Harness-doc ownership split (ADR 0018, issues #42/#47):** the first
+  `copier update` after this release resumes patching
+  `development/harness-usage.md` and `development/tool-bootstrap.md`. Because
+  earlier updates never touched them, that first patch carries every change
+  your copy missed since it was generated; where you edited the same lines
+  you get inline `<<<<<<< before updating` markers (or `.rej` files under
+  `--conflict rej`) — resolve toward the template and move genuinely local
+  notes into the new `development/harness-notes.md`, which copier never
+  touches. A copy that drifted far (hand-ported or rewritten) is easiest to
+  settle by diffing against a fresh render once, as the stranded-READMEs
+  recipe below does. Three restorations happen on their own: a recorded
+  `license` renders again, a recorded `pr_merge_strategy` restores the
+  tailored merge-strategy prose (in `AGENTS.md` on this update; in
+  `development/style.md` only where that file is rendered anew — an existing
+  copy is `_skip_if_exists`-preserved, so merge its section by hand if you
+  want it), and the stale `specs/*/scratch.md` gitignore line is dropped by
+  the reconciling hook. Caveat for repos that **already updated through
+  v0.7.0**: that update dropped the two keys from `.copier-answers.yml`, so
+  there is nothing left to consume — run the next update once as
+  `copier update --data license=<SPDX> --data pr_merge_strategy=<squash|merge|rebase>`
+  and the answers file re-records both keys from then on. One restoration is
+  manual, because no recorded answer backs it:
+  the v0.5.0 hard rule "Don't add a runtime dependency without an ADR"
+  became a generic pointer at the ADR bar — if your project built its ADR
+  practice on the hard rule, re-add that wording to `AGENTS.md` as a local
+  edit (it survives future updates).
 - **Stranded READMEs (every repo generated before this release):** the
   unanchored `_skip_if_exists` entry (see **Fixed**) means `copier update` never
   delivered any change the template made to `.agents/README.md`,
@@ -694,9 +758,10 @@ SessionStart warning. The same ADR records why
     `.github/skills/code-review/SKILL.md`; if you enabled only the skill,
     re-answer `copilot_code_review=true` and delete the instruction files
     you don't want.
-  - The `license` answer no longer renders: `AGENTS.md` and `README.md`
-    show a `_Fill in: SPDX identifier_` marker (both are, or can be,
-    preserved files — fill the line in by hand).
+  - The `license` question is gone, but a recorded answer still renders
+    (see the legacy-answers entry under **Added**): only repos that never
+    answered it see the `_Fill in: SPDX identifier_` marker in `AGENTS.md`
+    and `README.md`.
   - Previously generated files the template no longer produces (the four
     playbook directories, `.agents/skills/verify/`, the three sub-READMEs
     under `.agents/`, `.cursor/rules/project-context.mdc`, `.mcp.json`,
@@ -705,20 +770,18 @@ SessionStart warning. The same ADR records why
   - In-flight features whose `scratch.md` carries old marker tokens need no
     migration — scratch files are gitignored and die at completion; freshly
     invoked roles emit and look for `HANDBACK(...)`/`RESULT(...)` lines.
-  - `development/harness-usage.md`, `tool-bootstrap.md`, `style.md`, and
-    `glossary.md` are `_skip_if_exists`-preserved, so existing repos keep
-    the pre-wave prose (playbook triggers, old marker names, mise/asdf
-    tutorial, four-branch merge-strategy text) — diff against the template
-    versions and merge by hand; the agents follow the updated `.agents/`
-    files either way.
+  - `development/style.md` and `glossary.md` are `_skip_if_exists`-preserved,
+    so existing repos keep the pre-wave prose (four-branch merge-strategy
+    text, old glossary wording) — diff against the template versions and
+    merge by hand. `harness-usage.md` and `tool-bootstrap.md` are updated
+    in place since the ownership split (ADR 0018; see the note above);
+    the agents follow the updated `.agents/` files either way.
 - **Stop-gate posture (ADR 0014):** `.claude/settings.json` and
   `.agents/hooks/hook-input.sh` are template-owned, so `copier update` delivers
-  the hook fixes; drop any local patches you carried for them. But
-  `development/harness-usage.md` is `_skip_if_exists`-preserved, so its
-  **Stop** bullet will keep saying only that a non-zero gate blocks the stop —
-  add the template's new sentence (the gate reports rather than blocks when the
-  payload reader fails) by hand, or the doc understates what happens on a host
-  with no working `jq`/`python3`.
+  the hook fixes; drop any local patches you carried for them. The matching
+  `development/harness-usage.md` **Stop**-bullet update (the gate reports
+  rather than blocks when the payload reader fails) arrives on the same
+  update since the ownership split (ADR 0018).
 - **`docs/` → `development/` migration (existing generated repos):** before
   running `copier update`, move the harness files so Copier tracks them at
   their new paths instead of re-creating them alongside the old ones:
@@ -736,33 +799,27 @@ SessionStart warning. The same ADR records why
   copier update
   ```
 
-  Then **delete** the stale `specs/*/scratch.md` line from your `.gitignore`'s
-  managed block. The post-gen hook adds `development/work/*/scratch.md` for you
-  (it merges the block per entry, so a missing entry is appended), but it never
-  removes anything — and `.gitignore` is `_skip_if_exists`, so the template
-  render won't clean it up either. Leaving the old line is harmless but
-  misleading. Expect the other `_skip_if_exists`-preserved files to keep old-path
+  The `.gitignore` managed block needs no hand-editing: the post-gen hook
+  reconciles it, adding `development/work/*/scratch.md` and dropping the
+  stale `specs/*/scratch.md` line. Expect the `_skip_if_exists`-preserved files to keep old-path
   prose after migration — `README.md`'s specs mention, and any paths inside a
   PR template you already had (the *generated* `.github/PULL_REQUEST_TEMPLATE.md`
   is new in this release and already points at `development/`) — update those
   by hand, and be ready to resolve `copier update` merge conflicts inside the
   moved `development/` files (the example ADR is a known case).
-- `development/tool-bootstrap.md` is in `_skip_if_exists`, so a brownfield `copier
-  update` keeps its existing copy and won't pick up the `ensure-toolchain.sh`
-  reference — merge it by hand (the bootstrap and hook wiring work without it).
 - The Claude-hooks jq fix (issue #31, [ADR 0013](docs/decisions/0013-hook-payload-parsing-and-failure-postures.md))
   reaches existing repos in full via `copier update` — `.claude/settings.json`
-  and `.agents/hooks/` are not `_skip_if_exists` — **except** the new jq /
-  python3 bullet in `development/tool-bootstrap.md`'s Required tools, which the
-  same `_skip_if_exists` protection above keeps out of existing copies: add
-  that bullet by hand.
+  and `.agents/hooks/` are not `_skip_if_exists`, and since the ownership
+  split (ADR 0018) neither is `development/tool-bootstrap.md`, so the new jq /
+  python3 bullet in its Required tools and the `ensure-toolchain.sh`
+  reference arrive on the same update.
 - The deny-list matching fix (issue #36, [ADR 0015](docs/decisions/0015-deny-list-matching-outside-quotes.md))
   likewise reaches existing repos via `copier update`, since `.agents/hooks/`
-  and `.opencode/opencode.jsonc` are not `_skip_if_exists`. Only
-  `development/harness-usage.md`'s description of the guard stays stale (same
-  protection; see the bullet below) — the hook itself changes behaviour on
-  update, so if you had worked around the old matcher by avoiding the literals
-  in search commands, that workaround is no longer needed.
+  and `.opencode/opencode.jsonc` are not `_skip_if_exists` — and
+  `development/harness-usage.md`'s description of the guard updates with them
+  (ADR 0018). The hook changes behaviour on update, so if you had worked
+  around the old matcher by avoiding the literals in search commands, that
+  workaround is no longer needed.
 - The deny-list tokenizer (issue #40, [ADR 0017](docs/decisions/0017-deny-list-tokenizer-in-python3.md))
   also reaches existing repos via `copier update`, and it makes **`python3` a
   hard dependency of the Bash guard**: a host that ran the hooks on `jq` alone
@@ -776,17 +833,14 @@ SessionStart warning. The same ADR records why
   matches literally), and a command that mentions an operation *and* runs a
   shell on a file in one call (`grep 'rm -rf' notes.txt && sh build.sh`) is now
   denied, where the previous matcher allowed it; split it into two calls.
-- `development/harness-usage.md` is in `_skip_if_exists` too, so an existing
-  repo keeps its copy and will still promise "expect _one_ clarifying question"
-  from `/spec`, still describe skills as conditional on the example skill, say
-  nothing about `/plan` spike round-trips or `/build` explorer round-trips,
-  still call `plan.md`'s **Review checklist** unbounded "extra instructions",
-  and still lack the register rows in the **Document liveness** table. Diff it
-  against the template version and merge the changed sections (Phase-1
-  dialogue, Phase-2 spikes, Phase-3 explorer round-trips, skills prose, Phase-4
-  checklist bound, liveness registers) by hand; the agents themselves follow
-  the (updated, not skip-listed) `.agents/` files either way, so the risk is a
-  confused human, not a confused agent.
+- `development/harness-usage.md` copies that predate this release still promise
+  "expect _one_ clarifying question" from `/spec`, describe skills as
+  conditional on the example skill, say nothing about `/plan` spike round-trips
+  or `/build` explorer round-trips, still call `plan.md`'s **Review checklist**
+  unbounded "extra instructions", and lack the register rows in the **Document
+  liveness** table. The first post-split `copier update` delivers all of it
+  (see the ownership-split note above); expect conflict markers only where you
+  edited those sections locally.
 - The `architect` subagent now declares `Edit` / `permission.edit: allow` so it
   can append to `scratch.md` instead of overwriting it. If you pinned or
   hand-edited `.agents/subagents/architect.md`, re-apply the frontmatter change;
