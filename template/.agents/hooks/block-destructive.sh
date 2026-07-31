@@ -56,7 +56,11 @@
 #
 # Consumers:
 #   - Claude Code: the PreToolUse(Bash) hook in .claude/settings.json pipes the
-#     tool input here.
+#     tool input here. Its SessionStart self-test runs one command per rule
+#     through this script and counts a deny only as exit 2 *plus* stderr
+#     opening with `block-destructive: denied` — dash exits 2 for an unopenable
+#     script too. That prefix is a cross-file contract (ADR 0016): reword the
+#     deny message and the self-test must move with it.
 #   - OpenCode: cannot call a script, so the deny globs in
 #     .opencode/opencode.jsonc restate these patterns by hand — as plain
 #     substrings, since a glob cannot express rule 1, so OpenCode still denies

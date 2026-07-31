@@ -92,8 +92,18 @@ rejection defended no longer exists in that form.
    an end-anchored `*push --force` plus a followed-by-space
    `*push --force *`, so the lease-checked flags are no longer
    prefix-matched there either. The matching `permissions.deny` entry in
-   `.claude/settings.json` has the same defect and is fixed separately
-   (issues #41/#44) with the equivalent exact-plus-trailing-space split.
+   `.claude/settings.json` needs **no change at all**: Claude Code matches a
+   `:*` rule as a whole-word prefix — the command equals the prefix, or
+   begins with the prefix followed by a space — so
+   `Bash(git push --force:*)` already denies `git push --force` and
+   `git push --force <args>` without ever touching `--force-with-lease`.
+   Splitting it the way this script and the globs are split would be an
+   *under*-deny: writing the space into the rule ends the prefix in a space,
+   which then matches nothing — and that list is the only layer when
+   `include_claude_hooks=false`. Only the two mirrors that really are
+   substring matchers had the defect. See
+   [ADR 0016](0016-filter-shape-probe-guard-selftest-anchored-gate.md)
+   Decision 5, which keeps the rule and records the semantics beside it.
 5. **A missing or non-running `python3` fails closed, legibly**: the wrapper
    run-probes `python3 -c ''` (the hook-input.sh probe: a stub can resolve
    and then fail) and denies with the install remedy, mirroring the

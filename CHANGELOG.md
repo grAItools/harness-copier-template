@@ -566,8 +566,9 @@ SessionStart warning. The same ADR records why
   push --force-with-lease` / `--force-if-includes` no longer prefix-match the
   `push --force` deny, un-dead-ending rebased-branch updates — in the guard
   and in `.opencode/opencode.jsonc`, whose force-push glob splits into
-  end-anchored and followed-by-space forms (the parallel `permissions.deny`
-  entry in `.claude/settings.json` is fixed separately, issues #41/#44). A
+  end-anchored and followed-by-space forms. The parallel `permissions.deny`
+  entry needs no change: Claude Code matches `Bash(git push --force:*)` as a
+  whole-word prefix, so it never denied the lease-checked flags. A
   table-driven behaviour lock pins all of it at
   `tests/test_block_destructive.py` (stdlib; `python3 -m unittest discover
   tests`). See
