@@ -69,7 +69,7 @@
              says which: exit 2 without the message means the guard denies
              *everything* (PreToolUse ends on it), any other exit means it
              denies nothing. Warn, don't block: exit 1 surfaces the message
-             without ending the session. #}
+             without ending the session. -#}
           {
             "type": "command",
             "command": "G=\"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/block-destructive.sh\"; [ -r \"$G\" ] || { echo 'warning: block-destructive.sh is missing or unreadable - the PreToolUse guard will deny every Bash call until .agents/hooks is restored.' >&2; exit 1; }; for p in 'rm -rf /' 'sh -c \"rm -rf /\"' 'psql -c \"DROP TABLE t\"'; do err=$(printf '%s' \"$p\" | sh \"$G\" 2>&1 >/dev/null); rc=$?; { [ \"$rc\" -eq 2 ] && printf '%s' \"$err\" | grep -q '^block-destructive: denied'; } || { if [ \"$rc\" -eq 2 ]; then w='it exits 2 without its deny message, so the PreToolUse hook will deny every Bash call'; else w='it did not deny the command, so the PreToolUse hook will let destructive Bash commands through'; fi; echo \"warning: block-destructive.sh failed its self-test on [$p]: $w (exit $rc; guard said: ${err:-nothing}). Restore .agents/hooks/block-destructive.sh (git restore, or re-run copier update).\" >&2; exit 1; }; done"
