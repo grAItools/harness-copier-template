@@ -19,11 +19,17 @@
 #      operation)
 #   2. the string another shell will run is held to the same rules,
 #      recursively: a runner's argument (`sh … -c` wherever the -c
-#      sits, ssh / eval / su); text piped into a shell across any
-#      number of pipe segments and common wrappers (sudo, env,
-#      nohup, timeout 5, …); and a command that both mentions an
-#      operation and runs a shell on a file (`… > s.sh; sh s.sh`),
-#      where being quoted does not make it a mention            -> deny
+#      sits, ssh / eval / su, including inside `…`); anything
+#      produced ahead of a pipe into a shell, whatever the producer
+#      (compound command, earlier statement) and whatever prefixes
+#      the shell (sudo, env, timeout 5, LC_ALL=C, …); and a command
+#      that both mentions an operation and runs a shell on a file
+#      (`… > s.sh; sh s.sh`, `sh < s.sh`), where being quoted does
+#      not make it a mention                                    -> deny
+#      Both rules run twice: once over the whole text, once per
+#      line, so an unpaired quote cannot hide a later line from
+#      either. Recursion is bounded by depth and by a work budget;
+#      past it the remaining text gets a flat, conservative check.
 #   3. a text pattern anywhere, quoted or not — SQL only ever
 #      appears as a quoted argument, so its mention and its use
 #      are indistinguishable                                    -> deny
@@ -39,9 +45,11 @@
 # Blind spots: `eval` of a variable, "$(…)" inside a double-quoted span,
 # aliases and shell functions, encoded payloads, any other language doing the
 # same work (`python -c`), a wrapper taking option arguments before the shell
-# (`… | sudo -u user sh`), and a shell run from a file written in an *earlier*
-# tool call — the same-command write-then-run form is denied by rule 2. This
-# is a backstop against accidents, not a sandbox.
+# (`… | sudo -u user sh`), a word spliced across a quote (`rm -r'f' x` — the
+# shell joins it, this matcher does not, because joining spliced words would
+# re-deny `grep -e'rm -rf' notes.txt`), and a shell run from a file written in
+# an *earlier* tool call — the same-command write-then-run form is denied by
+# rule 2. This is a backstop against accidents, not a sandbox.
 #
 # The verdict is computed by the python3 program below, not by `grep -qE` as
 # before: the single-pass regex grammar did quote tracking, runner detection
@@ -65,8 +73,10 @@
 #     deny message and the self-test must move with it.
 #   - OpenCode: cannot call a script, so the deny globs in
 #     .opencode/opencode.jsonc restate these patterns by hand — as plain
-#     substrings, since a glob cannot express rule 1, so OpenCode still denies
-#     the quoted mentions this script allows. Keep the patterns in sync.
+#     substrings, since a glob can express neither rule 1 nor rule 1's
+#     lease-checked-flag exception, so OpenCode still denies both the quoted
+#     mentions and `push --force-with-lease` that this script allows. Keep the
+#     patterns in sync; the divergence is stricter by design, never looser.
 #
 # See .agents/README.md for the single-source-of-truth rationale.
 
@@ -97,7 +107,13 @@ import sys
 
 
 def env_list(name):
-    return [p for p in os.environ.get(name, "").split("|") if p]
+    raw = os.environ.get(name, "").strip()
+    # Tolerate the pre-tokenizer spelling of `shells`, which was an ERE group:
+    # a downstream repo that customised '(sh|bash|…)' and kept its own line
+    # through a copier update must not end up with a list of '(sh' and 'ash)'.
+    if raw.startswith("(") and raw.endswith(")"):
+        raw = raw[1:-1]
+    return [p.strip() for p in raw.split("|") if p.strip()]
 
 
 OPERATIONS = env_list("BLOCK_OPERATIONS")
@@ -116,7 +132,13 @@ WRAPPERS = ("sudo", "doas", "env", "nohup", "timeout", "time", "command",
             "exec", "setsid", "stdbuf", "nice", "ionice", "xargs")
 C_CLUSTER = re.compile(r"-[A-Za-z0-9]*c")  # -c anywhere in a one-dash cluster
 DURATION = re.compile(r"[0-9]+[smhd]?\Z")  # `timeout 5`'s operand
+ASSIGN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=")  # `LC_ALL=C sh` prefix
 MAX_DEPTH = 6
+# Recursion is bounded by work, not just depth: every runner token re-enters
+# check() on the rest of its command, so a line of them costs exponentially.
+# Past the budget the remaining text gets the flat, conservative check.
+BUDGET = 64
+_calls = [0]
 
 RULE1_MSG = """the command runs a deny-listed destructive operation.
   Deny-list: {ops}.
@@ -147,8 +169,9 @@ def scan(text):
     Returns (view, pipelines): `view` is the text reachable without crossing
     a quote — quoted spans elided, escapes and $'…' resolved, backslash-
     newline joined, newlines preserved; `pipelines` is a list of pipelines,
-    each a list of (tokens, raw_text) simple commands, where tokens are
-    (resolved_value, is_redirect_target) pairs. An unterminated quote runs to
+    each a list of (tokens, raw_text, start, piped_in) simple commands, where
+    tokens are (resolved_value, is_redirect_target) pairs and `piped_in` says
+    the segment reads another command's output. An unterminated quote runs to
     the end of text: the remainder could not have executed as written.
     """
     n = len(text)
@@ -161,6 +184,8 @@ def scan(text):
     in_word = False
     redirect_next = False
     seg_start = 0
+    seg_piped = False
+    after_pipe = False
 
     def flush_word():
         nonlocal word, in_word, redirect_next
@@ -170,13 +195,15 @@ def scan(text):
         word = []
         in_word = False
 
-    def end_segment(pos):
-        nonlocal tokens, seg_start
+    def end_segment(pos, piped_next=False):
+        nonlocal tokens, seg_start, seg_piped, redirect_next
         flush_word()
+        redirect_next = False  # a redirect with no operand cannot leak a flag
         if tokens:
-            segments.append((tokens, text[seg_start:pos]))
+            segments.append((tokens, text[seg_start:pos], seg_start, seg_piped))
         tokens = []
         seg_start = pos + 1
+        seg_piped = piped_next
 
     def end_statement(pos):
         nonlocal segments
@@ -187,6 +214,8 @@ def scan(text):
 
     while i < n:
         ch = text[i]
+        was_pipe = after_pipe
+        after_pipe = False
         if ch == "$" and i + 1 < n and text[i + 1] == "'":
             i += 2  # bash $'…': backslash escapes anything, including \'
             in_word = True
@@ -242,10 +271,19 @@ def scan(text):
             else:
                 i = n
         elif ch in " \t":
+            after_pipe = was_pipe  # blanks do not end a pipeline continuation
             flush_word()
             view.append(ch)
             i += 1
-        elif ch == "\n" or ch in ";()":
+        elif ch == "\n" and was_pipe:
+            # POSIX: a newline after `|` continues the pipeline on the next
+            # line, so the reading shell is still this pipeline's consumer.
+            after_pipe = True
+            view.append(ch)
+            i += 1
+        elif ch == "\n" or ch in ";()`":
+            # A backtick opens or closes a command substitution: what is inside
+            # is a command of its own, so `echo `sh -c '…'`` must expose `sh`.
             end_statement(i)
             view.append(ch)
             i += 1
@@ -269,7 +307,8 @@ def scan(text):
                 view.append("||")
                 i += 2
             else:  # | or |&: next segment of the same pipeline
-                end_segment(i)
+                end_segment(i, True)
+                after_pipe = True
                 view.append("|")
                 i += 2 if nxt == "&" else 1
         elif ch in "<>":
@@ -282,6 +321,10 @@ def scan(text):
             view.append(ch)
             i += 1
             while i < n and text[i] in "<>&-":
+                if text[i] == "-":
+                    # `2>&-` closes a descriptor: it takes no operand, so the
+                    # flag must not swallow the next word (typically the shell).
+                    redirect_next = False
                 i += 1
         else:
             word.append(ch)
@@ -324,7 +367,12 @@ def basename(tok):
 
 def strip_wrappers(args):
     k = 0
-    while k < len(args) and basename(args[k]) in WRAPPERS:
+    while k < len(args) and (
+        basename(args[k]) in WRAPPERS or ASSIGN.match(args[k])
+    ):
+        if ASSIGN.match(args[k]):
+            k += 1  # `LC_ALL=C sh` — an assignment prefix, not the command
+            continue
         k += 1
         while k < len(args) and (
             args[k].startswith("-") or "=" in args[k] or DURATION.match(args[k])
@@ -333,8 +381,12 @@ def strip_wrappers(args):
     return args[k:]
 
 
-def runs_file(args):
-    """True for a shell invoked on a script file (sh s.sh), not on -c."""
+def runs_file(args, has_redirect_operand=False):
+    """True for a shell invoked on a script file, not on -c.
+
+    `sh s.sh` and `sh < s.sh` both run the file; the second reaches the shell
+    as a redirect operand, which is not part of args.
+    """
     stripped = strip_wrappers(args)
     if not stripped or basename(stripped[0]) not in SHELLS:
         return False
@@ -343,30 +395,16 @@ def runs_file(args):
             return False  # a -c runner: rule 2a's territory
         if not t.startswith("-"):
             return True
-    return False
+    return has_redirect_operand
 
 
-def check(text, depth):
-    """Apply rules 1 and 2 to text, recursing into nested-shell strings."""
-    msg1 = RULE1_MSG if depth == 0 else RULE2_MSG
-    if depth > MAX_DEPTH:
-        if op_reachable(text):
-            deny(RULE2_MSG.format(ops=OPS_RAW))
-        return
-    view, pipelines = scan(text)
-    if op_reachable(view):
-        deny(msg1.format(ops=OPS_RAW))
-    # Per-line pass, quote state restarting on each line: an unpaired quote in
-    # an earlier line (a comment's apostrophe, a heredoc body) must not hide a
-    # bare operation on a later one. The cost is the multi-line-string false
-    # positive documented in the header.
-    if "\n" in text:
-        for line in text.split("\n"):
-            if op_reachable(scan(line)[0]):
-                deny(msg1.format(ops=OPS_RAW))
+def rule2(pipelines, text, depth):
+    """Nested shells: a runner's argument, a pipe into a shell, a shell on a
+    file. Being inside quotes is not a mention where a shell will run it."""
     for segments in pipelines:
-        for si, (tokens, _raw) in enumerate(segments):
+        for tokens, _raw, start, piped_in in segments:
             args = [t for (t, is_redir) in tokens if not is_redir]
+            redirected = any(is_redir for (_t, is_redir) in tokens)
             for ti, tok in enumerate(args):
                 base = basename(tok)
                 tail = args[ti + 1:]
@@ -379,34 +417,75 @@ def check(text, depth):
                     base in SHELLS and any(C_CLUSTER.match(t) for t in tail)
                 ):
                     check(" ".join(tail), depth + 1)
-            if si > 0:
+            if piped_in:
                 stripped = strip_wrappers(args)
                 if stripped and basename(stripped[0]) in SHELLS:
-                    ahead = " ".join(raw for (_toks, raw) in segments[:si])
-                    if op_reachable(ahead):
+                    # Everything ahead of this shell in the command produced
+                    # what it will run — including across `;`, `&&` and a
+                    # compound producer, which is where the text was written.
+                    if op_reachable(text[:start]):
                         deny(RULE2_MSG.format(ops=OPS_RAW))
-            if runs_file(args) and op_reachable(text):
+            if runs_file(args, redirected) and op_reachable(text):
                 deny(RULE2_MSG.format(ops=OPS_RAW))
 
 
-# surrogateescape keeps the verdict byte-deterministic: unlike the previous
-# grep bracket-expressions, a high byte cannot flip deny/allow with the locale.
-data = sys.stdin.buffer.read().decode("utf-8", "surrogateescape")
+def check(text, depth):
+    """Apply rules 1 and 2 to text, recursing into nested-shell strings."""
+    msg1 = RULE1_MSG if depth == 0 else RULE2_MSG
+    _calls[0] += 1
+    if depth > MAX_DEPTH or _calls[0] > BUDGET:
+        if op_reachable(text):
+            deny(RULE2_MSG.format(ops=OPS_RAW))
+        return
+    view, pipelines = scan(text)
+    if op_reachable(view):
+        deny(msg1.format(ops=OPS_RAW))
+    rule2(pipelines, text, depth)
+    # Per-line pass, quote state restarting on each line: an unpaired quote in
+    # an earlier line (a comment's apostrophe, a heredoc body) must not hide a
+    # later line — from either rule, since an open quote swallows the rest of
+    # the text for the pipeline structure too. The cost is the multi-line-
+    # string false positive documented in the header.
+    if "\n" in text:
+        for line in text.split("\n"):
+            line_view, line_pipelines = scan(line)
+            if op_reachable(line_view):
+                deny(msg1.format(ops=OPS_RAW))
+            rule2(line_pipelines, line, depth)
 
-if not OPERATIONS or not SHELLS:
-    deny("cannot check this command: the deny-list did not reach the matcher, "
-         "so the variables at the top of block-destructive.sh were changed or "
-         "damaged. Restore the operations/shells deny-list variables.")
 
-check(data, 0)
+def main():
+    # surrogateescape keeps the verdict byte-deterministic: unlike the previous
+    # grep bracket-expressions, a high byte cannot flip deny/allow with locale.
+    data = sys.stdin.buffer.read().decode("utf-8", "surrogateescape")
 
-for pat in TEXT_PATTERNS:
-    if pat in data:
-        deny(RULE3_MSG.format(pats=PATS_RAW))
+    if not OPERATIONS or not SHELLS or not TEXT_PATTERNS:
+        deny("cannot check this command: a deny-list did not reach the "
+             "matcher, so the variables at the top of block-destructive.sh "
+             "were changed or damaged. Restore the operations/text_patterns/"
+             "shells deny-list variables.")
 
-# The wrapper accepts an allow only with this token on stdout, so an
-# interpreter that starts and then fails to reach a verdict cannot read as one.
-sys.stdout.write("block-destructive: allow\n")
+    check(data, 0)
+
+    for pat in TEXT_PATTERNS:
+        if pat in data:
+            deny(RULE3_MSG.format(pats=PATS_RAW))
+
+    # The wrapper accepts an allow only with this token on stdout, so an
+    # interpreter that starts and then fails to reach a verdict cannot read
+    # as one.
+    sys.stdout.write("block-destructive: allow\n")
+
+
+try:
+    main()
+except SystemExit:
+    raise  # a rule's verdict
+except BaseException as exc:  # a failed check is a deny, never a pass
+    deny("cannot check this command: the matcher itself failed (%s: %s). "
+         "This is a bug in block-destructive.sh or an unreadable payload, "
+         "not a verdict on the command." % (type(exc).__name__, exc))
+
 sys.exit(0)
 PYEOF
 )

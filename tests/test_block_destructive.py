@@ -22,6 +22,7 @@ accidental improvement.
 import shutil
 import subprocess
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -74,7 +75,8 @@ TRUE_POSITIVES = [
     "echo 'rm -rf /data' | sudo sh",
     # Multi-line command: the second line runs bare.
     "git fetch\nrm -rf build",
-    # Quote-splicing joins to the operation the shell actually runs.
+    # An empty quoted span inside a word does not break the operation up.
+    # (A *non-empty* span does, and is not caught — see DOCUMENTED_BLIND_SPOTS.)
     "r''m -rf /tmp/x",
     # Whitespace variants the shell reads as the same command.
     "rm  -rf /tmp/x",
@@ -104,6 +106,52 @@ ISSUE_40_REGRESSIONS = [
     "printf 'rm -rf /tmp/x' > s.sh; sh s.sh",
 ]
 
+# Fail-opens found reviewing the tokenizer itself: every one of these was
+# denied by the pre-tokenizer matcher (or by v0.7.0) and must stay denied.
+REVIEW_FOUND_FAIL_OPENS = [
+    # The producer ahead of a pipe into a shell can be any compound command,
+    # and the pipeline may continue on the next line.
+    "(echo 'rm -rf /data') | sh",
+    "{ echo 'rm -rf /data'; } | sh",
+    "for f in a; do echo 'rm -rf /data'; done | sh",
+    "if true; then echo 'rm -rf /data'; fi | sh",
+    "echo 'rm -rf /data' |\n  sh",
+    # A descriptor-closing redirect takes no operand: it must not swallow the
+    # shell that follows it.
+    "cat notes.txt 2>&- ; sh -c 'rm -rf /tmp/y'",
+    "echo 'rm -rf /data' >&- | sh",
+    "exec 3>&- ; ssh host 'rm -rf /srv/data'",
+    # Write-then-run also spells the run as a pipe or a redirect.
+    "printf 'rm -rf /tmp/x' > s.sh && cat s.sh | sh",
+    "printf 'rm -rf /tmp/x' > s.sh; cat s.sh | sh",
+    "printf 'rm -rf /x' > s.sh; sh < s.sh",
+    # An unpaired quote on an earlier line must not disable rule 2 below it.
+    'echo "unclosed\nsh -c \'rm -rf /data\'',
+    'cat <<EOF\nhe said "hi\nEOF\nsh -c \'rm -rf /x\'',
+    # Backtick substitution runs a command too.
+    "echo `sh -c 'rm -rf /tmp/x'`",
+    "x=`bash -c 'rm -rf /tmp/x'`",
+    # An assignment prefix is not the command name.
+    "echo 'rm -rf /data' | LC_ALL=C sh",
+    "echo 'rm -rf /data' | PATH=/bin sh -s",
+    # The recursion budget must bound cost without losing the verdict.
+    "ssh h " * 60 + "rm -rf /tmp/x",
+]
+
+# Evasion shapes the guard does not catch, kept explicit so the suite does not
+# certify coverage it lacks. The guard is a backstop against accidents, not a
+# sandbox (see the script header); the pre-tokenizer matcher missed these too.
+DOCUMENTED_BLIND_SPOTS = [
+    # A word spliced from quoted and unquoted parts. Joining spliced words
+    # into rule 1 would re-deny `grep -e'rm -rf' notes.txt`, a read-only
+    # mention of exactly the class ADR 0015 exists to allow.
+    "rm -r'f' /tmp/x",
+    'git reset --"hard" origin/main',
+    "git push --f'o'rce origin main",
+    # A wrapper taking an option argument before the shell.
+    "echo 'rm -rf /data' | sudo -u deploy sh",
+]
+
 DOCUMENTED_SURVIVING_FALSE_POSITIVES = [
     # A multi-line quoted string whose lines read as commands: the per-line
     # pass sees them bare. The price of not letting an unpaired quote on one
@@ -128,6 +176,7 @@ FALSE_POSITIVES_FIXED_BY_ADR_0015 = [
     "grep -rn 'rm -rf' . | git push",  # `push` must not read as a shell
     "git push -c k=v && grep 'rm -rf' .",
     "grep -c 'rm -rf' file",  # -c on a non-shell is not a runner
+    "grep -e'rm -rf' notes.txt",  # a mention spliced onto a flag is a mention
 ]
 
 FALSE_POSITIVES_FIXED_BY_ADR_0017 = [
@@ -172,6 +221,11 @@ class TestDenied(unittest.TestCase):
             with self.subTest(command=command):
                 self.assert_denied(command)
 
+    def test_review_found_fail_opens(self):
+        for command in REVIEW_FOUND_FAIL_OPENS:
+            with self.subTest(command=command):
+                self.assert_denied(command)
+
     def test_documented_surviving_false_positives(self):
         for command in DOCUMENTED_SURVIVING_FALSE_POSITIVES:
             with self.subTest(command=command):
@@ -204,6 +258,13 @@ class TestAllowed(unittest.TestCase):
 
     def test_adr_0017_fixed_false_positives(self):
         for command in FALSE_POSITIVES_FIXED_BY_ADR_0017:
+            with self.subTest(command=command):
+                self.assert_allowed(command)
+
+    def test_documented_blind_spots(self):
+        # Pinned as allowed so that closing one is a deliberate change with a
+        # documentation update, not a silent behaviour flip in either direction.
+        for command in DOCUMENTED_BLIND_SPOTS:
             with self.subTest(command=command):
                 self.assert_allowed(command)
 
@@ -251,6 +312,52 @@ class TestFailurePosture(unittest.TestCase):
         result = self._with_stub_python3('#!/bin/sh\nexit 0\n')
         self.assertEqual(result.returncode, DENY)
         self.assertIn(b"block-destructive: denied", result.stderr)
+
+    def _guard_with_line(self, prefix, replacement):
+        """Verdict helper for a guard copy with one deny-list line rewritten."""
+        source = GUARD.read_text()
+        patched = "\n".join(
+            replacement if line.startswith(prefix) else line
+            for line in source.split("\n")
+        )
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp)
+        copy = Path(tmp) / "block-destructive.sh"
+        copy.write_text(patched)
+        return lambda command: subprocess.run(
+            [SH, str(copy)], input=command.encode(), capture_output=True
+        )
+
+    def test_emptied_deny_list_fails_closed(self):
+        # Any of the three lists failing to reach the matcher is damage, not a
+        # licence to allow: the rule it feeds would silently stop existing.
+        for prefix in ("operations=", "text_patterns=", "shells="):
+            with self.subTest(variable=prefix):
+                run = self._guard_with_line(prefix, prefix + "''")
+                result = run("git status")
+                self.assertEqual(result.returncode, DENY)
+                self.assertIn(b"deny-list", result.stderr)
+
+    def test_pre_tokenizer_shell_list_still_works(self):
+        # A downstream repo that customised `shells` when it was an ERE group
+        # keeps its parenthesised line through a copier update; the list must
+        # not silently degrade to '(sh' and 'ash)'.
+        run = self._guard_with_line("shells=", "shells='(sh|bash|dash|ash)'")
+        for command in ("echo 'rm -rf /data' | sh", "sh -c 'rm -rf /tmp/x'"):
+            with self.subTest(command=command):
+                result = run(command)
+                self.assertEqual(result.returncode, DENY)
+                # An unopenable script also exits 2, so the verdict is the
+                # exit code *plus* the guard's own message (ADR 0016).
+                self.assertIn(b"block-destructive: denied", result.stderr)
+
+    def test_runner_recursion_is_bounded(self):
+        # Every runner token re-enters the matcher on the rest of the command,
+        # so an unbounded walk costs exponentially and the hook times out —
+        # which PreToolUse treats as a non-blocking error, i.e. as an allow.
+        started = time.monotonic()
+        self.assertEqual(verdict("ssh h " * 120 + "true").returncode, ALLOW)
+        self.assertLess(time.monotonic() - started, 10)
 
     def test_exit_codes_are_binary(self):
         for command in TRUE_POSITIVES + FALSE_POSITIVES_FIXED_BY_ADR_0015:
