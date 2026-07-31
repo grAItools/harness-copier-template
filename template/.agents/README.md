@@ -71,8 +71,15 @@ One Markdown file per role, with YAML frontmatter. Supported keys:
   `bash` can also be a per-pattern map (e.g. `"rg *": allow`, `"*": deny`).
   OpenCode only — Claude Code ignores this field.
 - `mode` (optional, **strongly recommended for subagents**) — OpenCode-only.
-  Set `mode: subagent` to keep the agent delegation-only; the default
-  (`all`) would also expose it as a top-level primary OpenCode agent.
+  One of `primary` / `subagent` / `all`; it **defaults to `all`**, which
+  exposes the agent as a Tab-selectable top-level primary as well as a
+  delegate — for a half-written role that has no `permission` map yet, that
+  is a full-permission primary agent. Set `mode: subagent` to keep it
+  delegation-only.
+
+`tools` and `permission` sit side by side in the same frontmatter: each
+tool reads the field it understands and ignores the other, so one file
+serves both surfaces.
 
 A subagent runs in its own context window — use them to keep heavy
 exploration or repetitive review out of the main session's context. Claude
@@ -124,11 +131,28 @@ and include synonyms.
 - **Destructive-command deny-list** is canonical in
   [`hooks/block-destructive.sh`](hooks/block-destructive.sh); OpenCode's deny globs
   are a hand-kept mirror (it cannot call a script). The script denies an
-  *operation* only where it is not inside quotes, so a read-only mention of one
-  (a search pattern, a fixture, a commit message) is allowed; SQL patterns still
-  match anywhere, quoted or not, since they have no unquoted form. OpenCode's
-  globs cannot express either distinction and deny every mention. The patterns
-  themselves are kept in sync by hand in both places.
+  *operation* only where it is reachable without crossing a quote, so a
+  read-only mention of one (a search pattern, a fixture, a commit message) is
+  allowed; SQL patterns still match anywhere, quoted or not, since they have
+  no unquoted form. OpenCode's globs cannot express those distinctions and
+  deny every mention. The verdict is computed by an embedded `python3`
+  program (run-probed, like the payload reader), which makes `python3` a hard
+  dependency of the guard: missing or non-running, every Bash call is denied,
+  fail-closed, with the remedy in the message.
+  The patterns are kept in sync by hand in both places, but the *exceptions*
+  do not carry across: the script exempts a `push --force` followed by a dash
+  (the lease-checked `--force-with-lease` / `--force-if-includes`), and no
+  glob can express "not followed by", so the OpenCode side denies those too.
+  Narrower globs that would let them through stop catching
+  `git push --force;` and `(git push --force)`, and an allow rule would
+  un-deny compound commands, since OpenCode resolves overlaps by last
+  matching rule — so the mirror deliberately keeps the plain `*…*` glob and
+  accepts denying a safe force push. Keep it that way when adding patterns.
+  Where Claude Code hooks are generated, the PreToolUse hook *delegates* the
+  verdict to this script: a missing script the hook denies on itself, but a
+  script that is present returns whatever it exits — the hook cannot tell a
+  truncated or weakened guard from a healthy one — so treat `hooks/` as
+  load-bearing and restore it from the template if a checkout mangles it.
 - **Hook payload parsing** is canonical in
   [`hooks/hook-input.sh`](hooks/hook-input.sh): the Claude Code hooks in
   `.claude/settings.json` read their JSON input through it (`jq`, with a

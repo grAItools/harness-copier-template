@@ -1,4 +1,4 @@
-{%- from '_macros.jinja' import cmd with context %}
+{%- from '_macros.jinja' import cmd, runner_file_name with context %}
 # Using the agentic harness (Claude Code & OpenCode)
 
 `{{ project_name }}` ships a single agentic coding harness that both **Claude
@@ -8,7 +8,7 @@ capability to reach for, and where the two tools differ.
 See also: [`AGENTS.md`](../AGENTS.md) (agent instructions),
 [`CLAUDE.md`](../CLAUDE.md) (Claude Code specifics), [`development/style.md`](style.md),
 [`development/testing.md`](testing.md), [`.agents/README.md`](../.agents/README.md)
-(supported agents & how to add one).
+(supported agents, how to add one, and the subagent/command/skill formats).
 
 ## The shared model
 
@@ -49,6 +49,15 @@ The five subagents and their access:
 | `reviewer`      | no      | read-only + verify/test/lint   | GO / NEEDS-WORK verdict, file:line defects      |
 | `explorer`      | no      | read-only search/git           | "where is X / how does Y work" summaries        |
 
+The Architect's "write" includes an `Edit` grant it needs for one thing:
+appending to the feature's shared `scratch.md` (below). A subagent's own
+frontmatter grants tools by name, not by path — neither Claude Code's
+`tools` list nor OpenCode's `permission.edit` narrows a grant to one file —
+so as shipped, "the Architect never edits code" rests on its role
+instructions and on your review of a plan-phase diff. If you want that
+enforced rather than instructed, a path-scoped `Edit` deny rule in
+`.claude/settings.json` is the place to add it.
+
 Subagents cannot spawn subagents, so a role that needs something run
 outside itself stops mid-phase and **hands back**: the Product Owner
 replies with one clarifying question at a time (you answer, the caller
@@ -74,25 +83,82 @@ Claude Code only). You cannot prompt around the hooks:
   the agent's already-running shells, so the `Stop` hook also exports it onto
   PATH for the verify gate.
 {% endif -%}
+- **SessionStart** health-checks the hook wiring and **warns without
+  blocking** (exit 1) when a check fails: it probes the payload reader
+  ([`.agents/hooks/hook-input.sh`](../.agents/hooks/hook-input.sh)), and it
+  feeds [`.agents/hooks/block-destructive.sh`](../.agents/hooks/block-destructive.sh)
+  one command per deny-list rule — an operation outside quotes, one handed to
+  a nested shell, the SQL text pattern — expecting each to be denied by exit
+  code **and** deny message (the shell exits with that same code for a script
+  it cannot even parse, and a guard truncated below its first rule would pass
+  a single probe). Read these warnings: they say which way the damage points
+  — a guard that exits 2 without its message denies **every** Bash call, and
+  one that does not deny at all lets destructive commands through — until
+  `.agents/hooks/` is restored. One state the self-test cannot see is the
+  guard's own missing `python3`: that path denies *with* the expected message,
+  so it reads as a healthy guard. If every Bash call is being denied and
+  session start was quiet, check `python3` first.
 {% if generate_scripts -%}
 - **PostToolUse (`Write|Edit|MultiEdit`)** runs `scripts/fmt-file.sh` on the
   edited file after every write.
 {% endif -%}
 - **PreToolUse (`Bash`)** hard-blocks `rm -rf`, `push --force`, `reset --hard`,
-  `DROP TABLE` (exit 2) via [`.agents/hooks/block-destructive.sh`](../.agents/hooks/block-destructive.sh).
-  The first three are denied only outside quotes — `grep -rn 'rm -rf' .` is a
-  mention and passes, `cd x && rm -rf y` is not and does not — plus a fallback
-  for the string a nested shell *runs*: past the quote a runner opens
-  (`sh -c`, `ssh`, `eval`, `su`) or ahead of a pipe into a shell. A runner
-  elsewhere on the line does not count, so `ssh host uptime && grep -rn 'rm -rf' .`
-  still passes. `DROP TABLE` matches anywhere, quoted or not: SQL has no
-  unquoted form, so a mention of it is denied too. Each deny says which rule
-  fired; it is a text matcher and a backstop against accidents, not a sandbox.
-- **Stop** runs `{{ cmd('verify') }}` before the agent is allowed to stop;
-  non-zero blocks the stop. This is why "done" means "the gate is green".
-  On a host where the payload reader fails (no working `jq` or `python3`), the
-  gate still runs but can only *report* a red result — blocking needs the
-  stop-loop guard that same reader provides — so read the stop message.
+  `DROP TABLE` (exit 2) via [`.agents/hooks/block-destructive.sh`](../.agents/hooks/block-destructive.sh),
+  whose verdict is computed by an embedded `python3` tokenizer — `python3` is
+  a hard dependency of the guard: missing or non-running, every Bash call is
+  denied, fail-closed, with the install remedy in the message. The first
+  three are denied where they are reachable without crossing a quote —
+  `grep -rn 'rm -rf' .` is a mention and passes, `cd x && rm -rf y` is not
+  and does not. The string a runner is *handed* (`sh … -c`, `ssh`, `eval`,
+  `su`) is re-checked by the same rules one level down, so a mention quoted
+  again inside it still passes. Four edges are worth knowing, because in each
+  the guard denies something that looks like a mention:
+  - **A multi-line command** is scanned both as a whole and line by line, so
+    a quoted operation on its own line — a commit-message body, a heredoc —
+    is denied even though the span it sits in is quoted. Deliberate: an
+    unpaired quote on an earlier line must not hide a real operation on a
+    later one.
+  - **Text piped into a shell** is matched as written, quotes and all (it is
+    what the shell will read), so `grep -rn 'reset --hard' . | sh` is denied
+    where the same `grep` alone passes.
+  - **A command that both mentions an operation and runs a shell on a file**
+    is denied even when the mention is quoted. Split the write and the run
+    into two calls.
+  - **`DROP TABLE`** matches anywhere, quoted or not: SQL has no unquoted
+    form, so a mention of it is denied too.
+
+  Going the other way, a `push --force` immediately followed by a dash is a
+  longer, lease-checked flag (`--force-with-lease`, `--force-if-includes`)
+  and passes. Each deny names the rule that fired and the verdict is the same
+  in every locale; recovery is a rephrase — usually splitting one call into
+  two — and it is a backstop against accidents, not a sandbox.
+- **Stop** runs `{{ cmd('verify') }}` before the agent is allowed to stop; a
+  failing gate exits 2 and blocks the stop. This is why "done" means "the
+  gate is green". Every other non-zero exit is 1 — surfaced, but
+  **non-blocking**, and each one can leave the session unverified, so read
+  the stop message:
+{%- if package_manager in ['uv', 'pixi'] %}
+  - **`{{ package_manager }}` unavailable** — the gate is skipped entirely.
+    This is the case [`ensure-toolchain.sh`](../.agents/hooks/ensure-toolchain.sh)
+    exists to prevent: run it, then verify again.
+{%- endif %}
+  - **The project directory cannot be entered** — the gate is skipped rather
+    than run from the wrong place. A hook's working directory is the
+    session's, not necessarily the repo root, and the gate looks for its
+    {{ runner_file_name() }} in the working directory, so the hook `cd`s to
+    the repo root first; if that `cd` fails there is nowhere valid to run.
+  - **The payload read failed** — no working `jq` or `python3`, or a payload
+    the reader rejects: it insists on a single JSON document, so a
+    concatenated payload cannot smuggle in a second stop-loop flag. Here the
+    gate still *runs*, but a red result can only be reported, never blocked,
+    because blocking needs the stop-loop guard that same read provides.
+
+  One more path ends the session unverified without any non-zero exit at all:
+  once a blocked stop has already fired, Claude Code re-runs the hook with
+  `stop_hook_active` set, and the hook exits 0 immediately **without running
+  the gate** — otherwise a red gate would block every stop forever. So the
+  stop right after a blocked one is not re-verified: fix what the gate
+  reported and run `{{ cmd('verify') }}` yourself before trusting it.
 
 Permissions allowlist the build tool, read-only git (`status/diff/log/show`),
 and `rg/ls/cat/head/tail`; destructive operations are denied.
@@ -132,26 +198,35 @@ OpenCode reads `.opencode/opencode.jsonc`, which sets:
 {% if include_claude_hooks -%}
 - **No session-end verification gate.** OpenCode has no config-level "run on
   stop" hook, so there is nothing equivalent to Claude Code's `Stop` hook — run
-  `/verify` **during** the session and rely on CI.
+  `/verify` **during** the session and rely on CI. ("Is this ready?" /
+  "ready to commit" prompts still reach the reviewer by description match;
+  what is missing is the deterministic gate at session end.)
 {%- else -%}
 - **No session-end verification gate** on either tool here (Claude Code hooks
   were not generated) — run `/verify` during the session and rely on CI.
 {%- endif %}
-- **Destructive-bash blocking** uses `permission.bash` deny globs in `*…*`
-  (substring) form that mirror `block-destructive.sh`'s patterns (`rm -rf`,
-  `push --force`, `reset --hard`, `DROP TABLE`), so `cd x && rm -rf y` is caught.
-  It's glob-not-regex and can't run a custom script, so the two **diverge on
-  mentions**: a glob cannot tell a quoted pattern from a command, so OpenCode
-  also denies `grep -rn 'rm -rf' .`, which the script allows. It is the stricter
-  surface; for richer logic a `.opencode/plugin` with a `tool.execute.before`
-  hook is the optional hardening.
+- **Destructive-bash blocking** uses `permission.bash` deny globs that mirror
+  `block-destructive.sh`'s patterns (`rm -rf`, `push --force`, `reset --hard`,
+  `DROP TABLE`) in `*…*` substring form, so `cd x && rm -rf y` is caught. A
+  glob cannot run the script's tokenizer, so **OpenCode is the stricter
+  surface**, in two ways. It cannot tell a quoted pattern from a command, so
+  it denies `grep -rn 'rm -rf' .`, which the script allows. And it cannot
+  express the script's "not followed by a dash" exception — there is no
+  negative glob — so `*push --force*` also denies the lease-checked
+  `git push --force-with-lease` and `--force-if-includes`, which the script
+  allows. That is deliberate: denying a safe force push is the cheaper error
+  than the narrower globs it would take to allow one, which would stop
+  catching `git push --force;` and `(git push --force)`. If you need the
+  lease-checked flags under OpenCode, run them outside the agent. For richer
+  logic a `.opencode/plugin` with a `tool.execute.before` hook is the optional
+  hardening.
 
 | Capability             | Claude Code                              | OpenCode                                   |
 | ---------------------- | ---------------------------------------- | ------------------------------------------ |
 | Instructions           | `CLAUDE.md` (`@AGENTS.md`)               | `instructions` → `AGENTS.md` + docs        |
 | Subagent invocation    | "use the X subagent"                     | `@mention` / auto-delegation (Task tool)   |
 | Auto-format            | {% if include_claude_hooks and generate_scripts %}`PostToolUse` hook{% else %}manual (`{{ cmd('fmt') }}`){% endif %}                       | {% if generate_scripts %}native `formatter`{% else %}manual (`{{ cmd('fmt') }}`){% endif %}                          |
-| Verify gate            | {% if include_claude_hooks %}`Stop` hook (blocking){% else %}`/verify` + CI only{% endif %}                   | `/verify` + CI only (no session-end hook)  |
+| Verify gate            | {% if include_claude_hooks %}`Stop` hook (blocks on red gate){% else %}`/verify` + CI only{% endif %}                   | `/verify` + CI only (no session-end hook)  |
 | Block destructive bash | {% if include_claude_hooks %}`PreToolUse` hook (script; quoted mentions pass){% else %}_(no hook generated)_{% endif %}                 | `permission.bash` deny (`*…*` globs; mentions denied too) |
 | Path-scoped rules      | `.claude/rules/`                         | _(no equivalent)_                          |
 

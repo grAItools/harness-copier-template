@@ -275,6 +275,20 @@ major version).
   (`copilot-instructions.md`, `skills/code-review/SKILL.md`) point to it instead
   of restating the criteria or implying every dependency/persistence/auth choice
   needs an ADR.
+- Widened or delegated enforcement surfaces are now acknowledged where they
+  are documented rather than implied away (issues #41, #46):
+  `harness-usage.md` and the architect role file state that the Architect's
+  `Edit` grant exists only for the `scratch.md` append channel and cannot be
+  path-scoped by either tool, so the plan-phase edit ban is enforced by
+  instructions and diff review, not the harness; `.agents/README.md` states
+  that the PreToolUse hook delegates the destructive-command verdict to
+  `block-destructive.sh` — a missing script is denied by the hook itself, a
+  present-but-damaged one returns whatever it exits — and its re-homed
+  subagent-frontmatter schema spells out that OpenCode `mode` **defaults to
+  `all`**, exposing a half-configured role as a Tab-selectable primary agent
+  unless `mode: subagent` is set. `AGENTS.md` and `harness-usage.md` now
+  advertise `.agents/README.md` as covering the subagent/command/skill
+  formats, which the deleted `subagents/README.md` once held.
 
 ### Fixed
 
@@ -589,6 +603,52 @@ SessionStart warning. The same ADR records why
   spots. See
   [ADR 0017](docs/decisions/0017-deny-list-tokenizer-in-python3.md).
 
+- `development/harness-usage.md` no longer claims the Stop hook's "non-zero
+  blocks the stop" (issues #43, #45): Claude Code blocks on exit 2 only. The
+  bullet becomes a list of the non-blocking exit-1 paths — the package manager
+  missing from PATH and an unenterable project directory both skip the gate
+  entirely (the first is the case `ensure-toolchain.sh` exists to prevent), and
+  a failed payload read (broken reader, or a payload rejected under the
+  reader's single-JSON-document contract) runs the gate but can only report a
+  red result — so a session can end unverified, and the doc says so instead of
+  promising otherwise. A list rather than a sentence because the set has grown
+  twice already. The hooks section also documents the
+  SessionStart health warnings (the payload-reader probe and the
+  `block-destructive.sh` self-test — one probe per deny-list rule, each
+  requiring the deny exit code *and* the deny message): both warn without
+  blocking, and the guard warning says which way the damage points, since a
+  guard that exits 2 without its message denies every Bash call while one
+  that does not deny at all lets destructive commands through.
+- The guard prose in `development/harness-usage.md`, `.agents/README.md`, and
+  `development/tool-bootstrap.md` is resynced to the tokenizer rebuild of
+  `block-destructive.sh` ([ADR 0017](docs/decisions/0017-deny-list-tokenizer-in-python3.md)):
+  `python3` is named a hard, fail-closed dependency of the Bash guard (a host
+  running the hooks on `jq` alone now needs it); the string a *runner* is
+  handed is documented as re-checked one level down (a mention quoted again
+  inside it passes), while the four cases where the guard denies something
+  that looks like a mention — a multi-line command's per-line rescan, text
+  piped into a shell, same-command write-then-run, and SQL anywhere — are
+  listed with their recovery. OpenCode is documented as the stricter surface
+  on two counts, not one: it denies quoted mentions, and it cannot express
+  the script's "not followed by a dash" exception, so `*push --force*` denies
+  the lease-checked `--force-with-lease` / `--force-if-includes` that the
+  script allows — deliberate, since the narrower globs that would permit them
+  stop catching `git push --force;`. `tool-bootstrap.md`'s required-tools
+  list promotes `python3` from reader fallback to requirement, demoting `jq`
+  to optional.
+- Three v0.7.0 instruction contradictions resolved (issue #45): the reviewer's
+  register scope check now requires a new decision-register row to trace to
+  its **Source** (a `DECISION-PENDING:` line in the diff, an ADR added by the
+  diff, or a recorded human grant) instead of ruling every row without a
+  same-diff marker MAJOR — which condemned the ADR-plus-row pattern
+  `development/adr/README.md` itself prescribes; the developer and `/verify`
+  test-skip rule ("draft an ADR") now routes through `DECISION-PENDING:`
+  escalation like every other beyond-authority decision, matching the
+  three-criteria ADR bar; and the architect/developer `scratch.md` rule
+  ("append with `Edit`, never `Write`") now permits `Write` to *create* the
+  file — `Edit` cannot create one, so the first hand-back either stalled or
+  broke the rule.
+
 ### Removed (breaking)
 
 - **Eleven questions deleted, leaving 13** (ADR 0012): `mode` (consumed by
@@ -715,10 +775,13 @@ SessionStart warning. The same ADR records why
   `.agents/hooks/hook-input.sh` are template-owned, so `copier update` delivers
   the hook fixes; drop any local patches you carried for them. But
   `development/harness-usage.md` is `_skip_if_exists`-preserved, so its
-  **Stop** bullet will keep saying only that a non-zero gate blocks the stop —
-  add the template's new sentence (the gate reports rather than blocks when the
-  payload reader fails) by hand, or the doc understates what happens on a host
-  with no working `jq`/`python3`.
+  **Stop** bullet will keep saying only that a non-zero gate blocks the stop.
+  Replace that bullet wholesale with the template's current one: it is now a
+  list of the non-blocking exit-1 paths (package manager unavailable,
+  unenterable project directory, failed payload read) plus the
+  `stop_hook_active` re-entry that skips the gate outright, and it says that
+  only exit 2 blocks. Left alone, the doc tells your agents "done means the
+  gate is green" in four situations where nothing was verified.
 - **`docs/` → `development/` migration (existing generated repos):** before
   running `copier update`, move the harness files so Copier tracks them at
   their new paths instead of re-creating them alongside the old ones:
@@ -752,10 +815,13 @@ SessionStart warning. The same ADR records why
   reference — merge it by hand (the bootstrap and hook wiring work without it).
 - The Claude-hooks jq fix (issue #31, [ADR 0013](docs/decisions/0013-hook-payload-parsing-and-failure-postures.md))
   reaches existing repos in full via `copier update` — `.claude/settings.json`
-  and `.agents/hooks/` are not `_skip_if_exists` — **except** the new jq /
-  python3 bullet in `development/tool-bootstrap.md`'s Required tools, which the
-  same `_skip_if_exists` protection above keeps out of existing copies: add
-  that bullet by hand.
+  and `.agents/hooks/` are not `_skip_if_exists` — **except** the parser
+  bullets in `development/tool-bootstrap.md`'s Required tools, which the same
+  `_skip_if_exists` protection above keeps out of existing copies. Take the
+  template's current pair by hand: `python3` is now a **required** tool (the
+  deny-list guard computes its verdict with it and denies every Bash call
+  without it) and `jq` an optional preferred reader — the reverse of what an
+  existing copy says.
 - The deny-list matching fix (issue #36, [ADR 0015](docs/decisions/0015-deny-list-matching-outside-quotes.md))
   likewise reaches existing repos via `copier update`, since `.agents/hooks/`
   and `.opencode/opencode.jsonc` are not `_skip_if_exists`. Only
