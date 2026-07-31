@@ -4,7 +4,8 @@
 
 Accepted (2026-07-30). Amends [ADR 0014](0014-reader-scalar-contract-and-stop-gate-posture.md)
 Decisions 1 and 2 and extends [ADR 0013](0013-hook-payload-parsing-and-failure-postures.md)
-Decision 4; prompted by issues #40, #41 and #44.
+Decision 4; prompted by issues #40, #41 and #44. Decision 3 amended by
+[ADR 0019](0019-guard-selftest-negative-control.md) (negative control, issue #52).
 
 ## Context
 
