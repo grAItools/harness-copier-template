@@ -45,7 +45,15 @@
   // script does. Same patterns, stricter matching: the script denies them only
   // outside quotes, so it allows a benign command that merely *mentions* one
   // (`grep -rn 'rm -rf' .`) while these globs still deny it — a glob cannot
-  // express the distinction. Keep the patterns in sync. The allow-list matches
+  // express the distinction. The script's other rule-1 exception is not
+  // expressible here either: `*push --force*` also denies the lease-checked
+  // `--force-with-lease` / `--force-if-includes`, and there is no "not
+  // followed by `-`" glob. Splitting it into end-anchored + followed-by-space
+  // forms under-covers `git push --force;` and `(git push --force)`, and an
+  // allow rule for the lease flags would un-deny compound commands, since
+  // OpenCode resolves overlaps by last matching rule. Denying a safe force
+  // push is the cheaper error here; the script keeps the exception (ADR 0017).
+  // Keep the patterns in sync. The allow-list matches
   // .claude/settings.json: the build tool, read-only git, plus read-only
   // inspection helpers (note: `find` is intentionally not allowed —
   // `find -delete`/`-exec rm` would bypass the deny-list).

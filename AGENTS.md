@@ -38,9 +38,16 @@ for the full design and provenance.
 - [`docs/harness-engineering-2026-05.md`](docs/harness-engineering-2026-05.md)
   — the source report this template implements.
 
-## Validating changes (there are no unit tests)
+## Validating changes
 
-Render the template into a throwaway dir and inspect it:
+Run the test suite (stdlib-only; it pins the deny/allow behaviour of
+`template/.agents/hooks/block-destructive.sh`, which ships verbatim):
+
+```sh
+python3 -m unittest discover tests
+```
+
+Then render the template into a throwaway dir and inspect it:
 
 ```sh
 # project_name and project_description are required (no defaults).

@@ -19,10 +19,11 @@ first and graduate to ADRs here on acceptance.
 | [0010](0010-development-tree-and-work-folder.md) | Generated `development/` tree, `work/` folder, no `policies/` | accepted |
 | [0011](0011-knowledge-grounded-role-playbooks.md) | Knowledge-grounded role playbooks, design-principles skill, and glossary | accepted; partially superseded by 0012 |
 | [0012](0012-template-simplification-wave.md) | Template simplification wave (fewer questions, merged role files, one hand-back convention) | accepted |
-| [0013](0013-hook-payload-parsing-and-failure-postures.md) | Hook payload parsing via a fallback reader, explicit per-hook failure postures | accepted; Decisions 1–2 amended by 0014, Decision 3 refined by 0015 |
+| [0013](0013-hook-payload-parsing-and-failure-postures.md) | Hook payload parsing via a fallback reader, explicit per-hook failure postures | accepted; Decisions 1–2 amended by 0014, Decision 3 refined by 0015 and its `grep -qE` constraint retired by 0017 |
 | [0014](0014-reader-scalar-contract-and-stop-gate-posture.md) | Scalar-only reader contract, run-probed backends, Stop gate reports instead of skipping | accepted; Decisions 1–2 amended by 0016 |
-| [0015](0015-deny-list-matching-outside-quotes.md) | Deny-list matching outside quoted spans, with a nested-shell fallback | accepted |
+| [0015](0015-deny-list-matching-outside-quotes.md) | Deny-list matching outside quoted spans, with a nested-shell fallback | accepted; matching engine superseded by 0017 |
 | [0016](0016-filter-shape-probe-guard-selftest-anchored-gate.md) | Filter-shape jq probe, single-document payloads, guard self-test, anchored Stop gate | accepted |
+| [0017](0017-deny-list-tokenizer-in-python3.md) | The deny-list verdict moves to a python3 tokenizer | accepted |
 
 **ADR or register row?** If the decision shapes structure — of the template,
 its questions, or the generated layout — and someone will later ask *why*,
