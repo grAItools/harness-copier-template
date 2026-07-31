@@ -206,8 +206,7 @@ conflict marker. That happened once, to the two harness docs ADR 0018
 unfroze; the CHANGELOG's upgrade notes carry the one-time resync. Keep it in
 mind before moving any other path off `_skip_if_exists`.
 
-Answers recorded for
-questions a later template version removed (`license`,
+Answers recorded for questions a later template version removed (`license`,
 `pr_merge_strategy`) keep working: the templates still consume them and the
 answers file re-records them, so a policy you answered once never silently
 downgrades to scaffold text (see "Legacy answers" in `copier.yml`).
