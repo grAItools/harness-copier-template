@@ -324,6 +324,10 @@ pr_template:
     remotes. Independent of copilot_code_review.
   default: true
 
+# The `python3` requirement this help states is ADR 0017's (the deny-list
+# tokenizer). If that decision changes, this text and the matching
+# include_claude_hooks row in README.md change with it — and note that the
+# sentence before it, the jq/python3 reader, is ADR 0013's and is unaffected.
 include_claude_hooks:
   type: bool
   help: |
