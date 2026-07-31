@@ -85,11 +85,13 @@ Claude Code only). You cannot prompt around the hooks:
   blocking** (exit 1) when a check fails: it probes the payload reader
   ([`.agents/hooks/hook-input.sh`](../.agents/hooks/hook-input.sh)), and it
   feeds [`.agents/hooks/block-destructive.sh`](../.agents/hooks/block-destructive.sh)
-  a command from its own deny-list and expects the deny verdict — the deny
-  exit code **and** the deny message, because the shell exits with that same
-  code for a script it cannot even parse. Read these warnings: they mean the
-  PreToolUse guard is denying every Bash call (broken reader) or no longer
-  giving a trustworthy verdict on destructive commands (damaged guard) until
+  one command per deny-list rule — an operation outside quotes, one handed to
+  a nested shell, the SQL text pattern — expecting each to be denied by exit
+  code **and** deny message (the shell exits with that same code for a script
+  it cannot even parse, and a guard truncated below its first rule would pass
+  a single probe). Read these warnings: they say which way the damage points
+  — a guard that exits 2 without its message denies **every** Bash call, and
+  one that does not deny at all lets destructive commands through — until
   `.agents/hooks/` is restored.
 {% if generate_scripts -%}
 - **PostToolUse (`Write|Edit|MultiEdit`)** runs `scripts/fmt-file.sh` on the

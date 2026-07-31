@@ -612,9 +612,11 @@ SessionStart warning. The same ADR records why
   report a red result — so a session can end unverified, and the doc says so
   instead of promising otherwise. The hooks section also documents the
   SessionStart health warnings (the payload-reader probe and the
-  `block-destructive.sh` self-test, which requires the deny exit code *and*
-  the deny message): both warn without blocking, and each means a PreToolUse
-  surface is degraded until `.agents/hooks/` is restored.
+  `block-destructive.sh` self-test — one probe per deny-list rule, each
+  requiring the deny exit code *and* the deny message): both warn without
+  blocking, and the guard warning says which way the damage points, since a
+  guard that exits 2 without its message denies every Bash call while one
+  that does not deny at all lets destructive commands through.
 - The guard prose in `development/harness-usage.md`, `.agents/README.md`, and
   `development/tool-bootstrap.md` is resynced to the tokenizer rebuild of
   `block-destructive.sh` ([ADR 0017](docs/decisions/0017-deny-list-tokenizer-in-python3.md)):
