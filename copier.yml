@@ -18,13 +18,19 @@
 # manually if needed. harness-usage.md and tool-bootstrap.md are deliberately
 # NOT protected: they document how the harness itself behaves, so they are
 # template-owned and must keep receiving fixes on `copier update` (ADR 0018) —
-# project-local notes belong in development/harness-notes.md instead. docs/ is
-# never generated: it stays reserved for the project's own user documentation.
+# project-local notes belong in development/harness-notes.md instead. That cuts
+# both ways: a brown-field `copier copy` into a repo that already has either
+# file replaces it, after a prompt or silently under --overwrite, where
+# _skip_if_exists used to keep it unconditionally. docs/ is never generated:
+# it stays reserved for the project's own user documentation.
 
 # ---------------------------------------------------------------------------
 # Copier engine settings
 # ---------------------------------------------------------------------------
-_min_copier_version: "9.4.0"
+# 9.6.0 is where `_copier_operation` lands; the post-generation task reads it
+# to stay quiet during `copier update`'s replay renders. On 9.4/9.5 the task
+# still runs, but every update prints three greenfield summaries.
+_min_copier_version: "9.6.0"
 _templates_suffix: ".jinja"
 _subdirectory: "template"
 _answers_file: ".copier-answers.yml"
@@ -60,8 +66,10 @@ _skip_if_exists:
 # the temporary replay renders `copier update` performs (it runs three times
 # per update otherwise, printing three summaries); `default('copy', true)`
 # keeps the line rendering on copier versions that predate _copier_operation.
+# `_copier_python` is copier's own interpreter — a bare `python` is missing on
+# every distro that ships only `python3`, and the task failing aborts the run.
 _tasks:
-  - "python {{ _copier_conf.src_path }}/hooks/post_gen.py {{ _copier_operation | default('copy', true) }}"
+  - "{{ _copier_python }} {{ _copier_conf.src_path }}/hooks/post_gen.py {{ _copier_operation | default('copy', true) }}"
 
 # Files we never want copied to the destination
 _exclude:

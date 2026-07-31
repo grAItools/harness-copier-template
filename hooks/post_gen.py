@@ -7,10 +7,11 @@ Runs in the *destination* directory after all template files are rendered.
 Responsibilities
 ----------------
 1. Reconcile the fenced agent-harness block of the destination .gitignore
-   against GITIGNORE_BLOCK: append the block when absent, otherwise rewrite
-   the fence's contents to the current entry set — adding what's missing,
-   dropping entries the template no longer manages, and preserving entries
-   the user commented out. Nothing outside the fence is ever touched.
+   against GITIGNORE_BLOCK: append the block when absent, otherwise add the
+   entries it is missing and drop the ones earlier template versions added
+   and this one retired (GITIGNORE_RETIRED). Every other line — entries a
+   team added inside the fence, opt-outs they commented out, their notes —
+   is left byte for byte, as is everything outside the fence.
 2. Create the .claude/{skills,agents,commands} and .opencode/{skills,agents,commands}
    symlinks that point at the canonical .agents/{skills,subagents,commands} sources.
    We create them as relative symlinks when the platform supports them, and emit
@@ -18,8 +19,9 @@ Responsibilities
    `_make_relative_symlink`. Symlinks make a single source of truth for
    cross-tool agent assets.
 
-This script is deliberately stdlib-only and side-effect-light: it does
-nothing destructive, prints a short summary, and exits 0 on success.
+This script is deliberately stdlib-only and side-effect-light: the only
+lines it ever removes are the retired harness entries it put there itself,
+it prints a short summary, and it exits 0 on success.
 """
 from __future__ import annotations
 
@@ -48,6 +50,18 @@ GITIGNORE_BLOCK = [
     "# Agent scratch space (team decision; comment out to commit)",
     "development/work/*/scratch.md",
     ".agents/.cache/",
+]
+
+# Entries earlier template versions managed and this one does not. Reconciling
+# removes exactly these from the fence — never "every line I don't recognise",
+# which would delete the entries and notes a downstream team put inside the
+# markers (that is how a hook meant to tidy a block ends up un-ignoring
+# somebody's secrets file). Dropping an entry from GITIGNORE_BLOCK therefore
+# means adding it here, and to template/.gitignore.jinja, which renders the
+# same list on a greenfield run — the two copies are kept in sync by hand.
+GITIGNORE_RETIRED = [
+    # Scratch space moved to development/work/ when process memory did.
+    "specs/*/scratch.md",
 ]
 
 
@@ -106,6 +120,25 @@ def _block_bounds(lines: list[str]) -> "tuple[int, int | None] | None":
     return None if begin is None else (begin, None)
 
 
+def _declared_entry(line: str, entries: Iterable[str]) -> "str | None":
+    """The block entry a fence line names, active or commented out.
+
+    Matches `entry`, `# entry`, and `# entry   (why we opted out)`: a
+    commented-out entry the user annotated is still that entry, and treating
+    it as unrecognised would re-add it as an active line and undo the opt-out
+    the annotation explains.
+    """
+    text = line.strip()
+    if text.startswith("#"):
+        text = text.lstrip("#").strip()
+    for entry in entries:
+        if text == entry or (
+            text.startswith(entry) and text[len(entry) :][:1].isspace()
+        ):
+            return entry
+    return None
+
+
 def merge_gitignore(path: Path) -> str:
     """
     Return a message describing what we did to .gitignore.
@@ -118,19 +151,18 @@ def merge_gitignore(path: Path) -> str:
       write nothing. Only a hand-edit produces that state, and either
       repair — appending an end marker, or appending a whole second block —
       would guess at which of the following lines the user meant to manage.
-    - If the fenced block is present, reconcile its contents against
-      GITIGNORE_BLOCK: entries the current template manages are (re)written
-      in canonical order, entries it no longer manages are dropped. Merely
-      appending what's missing let the block accrete forever — a repo
-      generated when the scratch space lived at `specs/*/scratch.md` kept
-      that stale line through every update. The markers say "managed by
-      copier", so inside them the template's set is authoritative; anything
-      a user wants ignored on top belongs outside the fence.
+    - If the fenced block is present, reconcile its contents: append the
+      entries it is missing, and delete the ones in GITIGNORE_RETIRED.
+      Appending alone let the block accrete forever — a repo generated when
+      the scratch space lived at `specs/*/scratch.md` kept that stale line
+      through every update. Deleting by "not in GITIGNORE_BLOCK" would go
+      too far the other way and take the entries and notes a team added
+      inside the markers with it, so retirement is an explicit list.
 
     An entry the user has commented out inside the block stays commented
-    out, byte for byte: the scratch-space line ships documented as opt-out
-    ("comment out to commit"), and rewriting it active on every update would
-    silently undo that choice.
+    out, byte for byte, annotation and all: the scratch-space line ships
+    documented as opt-out ("comment out to commit"), and re-adding it as an
+    active line would silently undo that choice.
 
     Lines outside the fence are never touched, byte for byte: we read and
     write with newline translation off and keep each line's own terminator,
@@ -168,48 +200,37 @@ def merge_gitignore(path: Path) -> str:
         return "appended managed block to .gitignore"
 
     begin, end = bounds
-    active = set()
-    commented = {}
+    present = set()
+    kept = []
+    removed = []
     for line in lines[begin + 1 : end]:
-        stripped = line.strip()
-        if not stripped:
+        retired = _declared_entry(line, GITIGNORE_RETIRED)
+        if retired is not None:
+            if retired not in removed:
+                removed.append(retired)
             continue
-        if stripped.startswith("#"):
-            entry = stripped.lstrip("#").strip()
-            if entry in GITIGNORE_BLOCK:
-                commented.setdefault(entry, line)
-        else:
-            active.add(stripped)
+        kept.append(line)
+        entry = _declared_entry(line, GITIGNORE_BLOCK)
+        if entry is not None:
+            present.add(entry)
 
-    nl = _newline_of(lines[end], _prevailing_newline(lines))
-    new_block = []
-    for entry in GITIGNORE_BLOCK:
-        opted_out = entry in commented and entry not in active
-        if entry.strip() and not entry.startswith("#") and opted_out:
-            kept = commented[entry]
-            new_block.append(kept if _newline_of(kept, "") else kept + nl)
-        else:
-            new_block.append(entry + nl)
-
-    if new_block == lines[begin + 1 : end]:
+    added = [
+        entry
+        for entry in GITIGNORE_BLOCK
+        if entry.strip() and not entry.startswith("#") and entry not in present
+    ]
+    if not added and not removed:
         return "skip: .gitignore managed block already in sync"
 
-    managed = {e for e in GITIGNORE_BLOCK if e.strip() and not e.startswith("#")}
-    added = [
-        e for e in GITIGNORE_BLOCK
-        if e in managed and e not in active and e not in commented
-    ]
-    removed = sorted(active - managed)
-    lines[begin + 1 : end] = new_block
+    nl = _newline_of(lines[end], _prevailing_newline(lines))
+    lines[begin + 1 : end] = kept + [entry + nl for entry in added]
     _write_untranslated(path, "".join(lines))
     details = "; ".join(
         f"{verb}: {', '.join(entries)}"
         for verb, entries in (("added", added), ("removed", removed))
         if entries
     )
-    return "reconciled .gitignore managed block" + (
-        f" ({details})" if details else " (formatting only)"
-    )
+    return f"reconciled .gitignore managed block ({details})"
 
 
 def _make_relative_symlink(link: Path, target_relative: str) -> str:
@@ -274,15 +295,21 @@ def _is_update_replay(operation: str) -> bool:
 
     An update renders the old and new template versions into throwaway
     directories to compute the diff it applies, and tasks run in each — three
-    runs, three summaries, for one update. The replays are distinguishable
-    because copier git-initializes them only *after* tasks have run, while the
-    real destination of an update is required to be git-tracked already. Plain
-    `copier copy` never reports the "update" operation, so a greenfield render
-    into a not-yet-git directory stays verbose.
+    runs, three summaries, for one update. Two signals tell them apart, and
+    either is enough: copier names those directories after itself, and it
+    git-initializes them only *after* tasks have run, while the real
+    destination of an update is required to be git-tracked already. The name
+    check carries the case where TMPDIR itself sits inside a git work tree (a
+    git-tracked $HOME, a CI image pointing TMPDIR into the checkout), where
+    the parent walk finds a .git and would call a replay the real thing.
+    Plain `copier copy` never reports the "update" operation, so a greenfield
+    render into a not-yet-git directory stays verbose.
     """
     if operation != "update":
         return False
     path = CWD.resolve()
+    if any(marker in path.name for marker in (".old_copy.", ".new_copy.")):
+        return True
     return not any((p / ".git").exists() for p in (path, *path.parents))
 
 

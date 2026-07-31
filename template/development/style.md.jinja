@@ -120,7 +120,10 @@ maintainer.
 {% if pr_merge_strategy | default('') == 'squash' -%}
 - PRs are squash-merged, so the PR title is what lands in history —
   make it a good summary line.
-{%- elif not (pr_merge_strategy is defined and pr_merge_strategy) -%}
+{%- elif pr_merge_strategy | default('') in ['merge', 'rebase'] -%}
+- Every branch commit lands in history verbatim, so each one has to
+  read well — rebase or amend WIP commits before pushing.
+{%- else -%}
 - If PRs are squash-merged, the PR title is what lands in history —
   make it a good summary line.
 {%- endif %}

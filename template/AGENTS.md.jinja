@@ -9,7 +9,9 @@
 
 - Language: **{{ primary_language }}**
 - Package / build manager: **{{ package_manager }}**
-- License: {% if license is defined and license %}{{ license }}{% else %}_Fill in: SPDX identifier_{% endif %}
+{#- `Other` was the removed question's "not in this list" choice: it names no
+    identifier, so it has to keep the fill-in marker rather than render as one. -#}
+- License: {% if license | default('') not in ['', 'Other'] %}{{ license }}{% else %}_Fill in: SPDX identifier_{% endif %}
 - Tool versions, install steps, and new-machine setup:
   see [`development/tool-bootstrap.md`](development/tool-bootstrap.md).
 

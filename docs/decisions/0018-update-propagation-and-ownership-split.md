@@ -39,6 +39,21 @@ Empirical findings the decision rests on (copier 9.17):
 - A file removed from `_skip_if_exists` is patched on update via copier's
   three-way merge: template changes arrive, local edits survive or surface
   as `<<<<<<< before updating` conflict markers. Nothing is silent.
+- …*provided the destination and the recorded `_commit` agree.* Copier
+  diffs the destination against a render of the template version
+  `.copier-answers.yml` records, and excludes only skip-matched paths from
+  that patch. A file frozen by `_skip_if_exists` while `_commit` advanced
+  therefore has a real gap between the two, which copier reads as a local
+  edit and re-applies over the fresh render — silently, no markers.
+  Reproduced: render v0.6.0 → update to v0.7.0 (file untouched, `_commit`
+  advances) → update to this version, and the file comes back pre-v0.7.0.
+  A single-hop update, where the file was frozen at the recorded version,
+  is unaffected. So unfreezing a path delivers everything from that point
+  on, but the *backlog* needs one resync.
+- `_skip_if_exists` gates `_solve_render_conflict`, not just the update
+  patch: an unfrozen path is also overwritten by a brown-field `copier
+  copy` into a repo that already has it (prompted, or silent under
+  `--overwrite`).
 - An answers-file entry that matches **no** question is passed into the
   render context, but is dropped from the regenerated answers file — so a
   template that merely consumes it regresses one update *later*, silently.
@@ -61,7 +76,11 @@ Empirical findings the decision rests on (copier 9.17):
    orphan the downstream copy and turn the migration into a second trap;
    with the in-place split, the first update after upgrading merges the
    accumulated template changes into the existing file, loudly where local
-   edits overlap.
+   edits overlap. The backlog is the exception, and it is transitional: a
+   repo that updated at least once while the files were frozen gets its
+   stale copy re-applied on that first unfrozen update (finding above), so
+   the upgrade notes carry a one-time `copier recopy` resync for the two
+   paths. Every update after it behaves as described.
 2. **Consume legacy answers instead of re-asking or freezing them.**
    Templates render `license` and `pr_merge_strategy` behind
    `is defined`-guards, and the answers-file template re-records both keys
@@ -72,40 +91,57 @@ Empirical findings the decision rests on (copier 9.17):
    regression the issue reported — the softened dependency-ADR rule — is
    backed by no answer, so it gets an upgrade-notes entry instead of a
    mechanism.
-3. **Reconcile the managed gitignore block.** Inside its `>>> <<<` markers
-   the hook now rewrites the block to the current template's entry set:
-   missing entries are added, no-longer-managed entries dropped,
-   commented-out entries preserved verbatim (the documented opt-out), and
-   the summary reports what changed. Outside the markers the hook remains
-   non-destructive, byte for byte.
-4. **One summary per update.** The task line passes `_copier_operation`
-   (with a `default('copy')` guard for older copier) and the hook stays
-   silent when the operation is `update` and the working directory is not
-   inside a git work tree — exactly the replay renders, which copier
-   git-initializes only after tasks run, while an update's real destination
-   is git-tracked by definition. The replays still do the work (parity
-   keeps the update diff clean); they just don't report. Updates *from*
-   pre-split versions still print one extra banner from the old replay's
-   old hook; that run is beyond this template's reach.
+3. **Reconcile the managed gitignore block against an explicit retirement
+   list.** Inside its `>>> <<<` markers the hook adds the entries the block
+   is missing and deletes the ones named in `GITIGNORE_RETIRED` — entries
+   an earlier template version shipped and this one withdrew. It does *not*
+   delete by "absent from `GITIGNORE_BLOCK`": teams do put their own lines
+   inside the fence, and a hook that treats the constant as authoritative
+   un-ignores them (a `secrets/*.env` line silently dropped is the failure
+   mode). Commented-out entries are preserved verbatim, annotation and all
+   — that is the documented opt-out — and the summary reports both lists.
+   The cost is a maintenance rule: retiring an entry means listing it.
+4. **One summary per update.** The task line passes `_copier_operation`,
+   which is why `_min_copier_version` rises to 9.6.0 — on 9.4/9.5 the
+   variable does not exist, the `default('copy')` guard fires, and the
+   feature is silently inert. The hook stays quiet when the operation is
+   `update` and the working directory is one of copier's replay renders,
+   recognised either by copier's own `*.old_copy.*` / `*.new_copy.*`
+   temporary-directory naming or by not being inside a git work tree (an
+   update's real destination is git-tracked by definition, but `TMPDIR`
+   is not guaranteed to sit outside a repo, so the name check leads). The
+   replays still do the work (parity keeps the update diff clean); they
+   just don't report. Updates *from* pre-split versions still print one
+   extra banner from the old replay's old hook; that run is beyond this
+   template's reach.
 
 ## Consequences
 
-- Fixes to the two harness-reference docs now reach every repo on its next
-  update. Downstream repos that hand-edited them see one-time conflict
-  markers on the first update after upgrading; the upgrade notes tell them
-  to move local notes to `harness-notes.md` and take the template side.
+- Fixes to the two harness-reference docs reach every repo from this
+  release on. The transition costs one manual step for repos that updated
+  while the files were frozen (the `copier recopy` resync in the upgrade
+  notes); repos that hand-edited them also see one-time conflict markers,
+  and the notes tell them to move local notes to `harness-notes.md` and
+  take the template side.
+- Brown-field `copier copy` into a repo that already has either file now
+  replaces it instead of preserving it. Accepted: these files describe this
+  harness, so a pre-existing copy of one is either this harness's (use
+  `copier update`) or a name collision worth resolving. Documented in
+  `README.md` and the `copier.yml` header.
 - A recorded `license` / `pr_merge_strategy` renders tailored prose again
   and survives arbitrarily many updates. The cost is a small permanent
   ledger: `copier.yml` documents the legacy keys, and the answers-file
   template carries one guarded line per key. New legacy keys must be added
   there if a future wave removes more consumed questions.
-- The managed gitignore block is now exactly what the current template
-  says, plus the user's commented-out opt-outs. A user line *inside* the
-  fence is dropped on the next run (reported in the summary); the fence has
-  always said "managed by copier", and the README now states the contract
-  explicitly.
+- The managed gitignore block stops accreting without becoming a place
+  where user lines disappear. The cost lands on this repo instead: dropping
+  an entry from `GITIGNORE_BLOCK` (and from `template/.gitignore.jinja`,
+  which renders the same list) without adding it to `GITIGNORE_RETIRED`
+  leaves it in every existing repo forever. All three sites say so.
 - `copier update` prints one summary (two when coming from a pre-split
   version), and its "Next steps" onboarding block is reserved for copies.
+  The floor for copier rises to 9.6.0; 9.4/9.5 users must upgrade copier
+  (the template is normally run via `uvx copier`, which tracks latest).
 - `development/` gains one file. The ownership boundary is now legible in
   the tree itself: template-owned docs say so in a blockquote, and the
   project-owned notes file exists precisely so the distinction costs
@@ -130,5 +166,13 @@ Empirical findings the decision rests on (copier 9.17):
   overriding the recorded answer — the exact regression being fixed.
 - **Keeping append-only gitignore merging and deleting stale entries via a
   one-off migration.** Rejected: the next removed entry recreates the
-  problem; reconciliation is the steady-state rule the markers already
-  imply.
+  problem. The retirement list is the same idea made permanent — the
+  migration is written once, in the hook, and runs on every repo whenever
+  it next updates.
+- **Treating `GITIGNORE_BLOCK` as authoritative inside the fence** (the
+  first implementation of this ADR). Rejected on review: it deleted any
+  line a downstream team had added between the markers, reported only the
+  non-comment ones, and re-enabled an opt-out whose comment carried a
+  trailing note — a tidying hook with a data-loss failure mode. The markers
+  do say "managed by copier", but the hook can honour that by managing its
+  own entries rather than by owning the region.

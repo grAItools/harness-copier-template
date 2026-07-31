@@ -165,15 +165,17 @@ into the existing repo and the template:
   ([ADR 0018](docs/decisions/0018-update-propagation-and-ownership-split.md)).
   Local edits to them are merged on update (or surfaced as conflict
   markers); free-form local notes belong in `development/harness-notes.md`,
-  which copier never touches.
+  which copier never touches. The same choice makes a brown-field `copier
+  copy` into a repo that already has either file replace it — after a
+  prompt, or silently under `--overwrite`.
 - **Reconciles** the harness's gitignore entries inside a fenced
   `# >>> ai-agent-harness >>>` … `# <<< ai-agent-harness <<<` block via the
-  post-generation hook. Inside the fence the current template's entry set is
-  authoritative: a re-run or a `copier update` adds the entries the block is
-  missing and drops entries the template no longer manages, so the block
-  neither goes stale nor accretes. An entry you comment out inside the block
-  stays commented out; anything else you want ignored belongs outside the
-  fence, which is never touched.
+  post-generation hook. A re-run or a `copier update` adds the entries the
+  block is missing and deletes the ones the template has **retired** (an
+  explicit list in the hook, so retiring an entry is a deliberate act), and
+  the block therefore neither goes stale nor accretes. Everything else inside
+  the fence survives byte for byte — entries you added, opt-outs you
+  commented out, your notes — as does everything outside it.
 - **Symlinks** `.claude/{skills,agents,commands}` and
   `.opencode/{skills,agents,commands}` to `.agents/{skills,subagents,commands}`
   after generation.
@@ -192,7 +194,19 @@ copier update
 
 Copier replays the answers from `.copier-answers.yml` and prompts for any
 new questions added since you generated. The same `_skip_if_exists` rules
-apply, and the post-gen hook re-runs idempotently. Answers recorded for
+apply, and the post-gen hook re-runs idempotently.
+
+What copier patches is the diff between your files and a render of the
+template version `.copier-answers.yml` records — not of the version you
+generated at. A file that some earlier template version froze (via
+`_skip_if_exists`) and a later one unfroze therefore looks, on that first
+unfrozen update, as if the whole intervening template delta were a local
+edit of yours, and copier re-applies it over the fresh render without a
+conflict marker. That happened once, to the two harness docs ADR 0018
+unfroze; the CHANGELOG's upgrade notes carry the one-time resync. Keep it in
+mind before moving any other path off `_skip_if_exists`.
+
+Answers recorded for
 questions a later template version removed (`license`,
 `pr_merge_strategy`) keep working: the templates still consume them and the
 answers file re-records them, so a policy you answered once never silently

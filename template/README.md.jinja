@@ -30,4 +30,4 @@ See `AGENTS.md` for the full conventions.
 
 ## License
 
-{% if license is defined and license %}{{ license }}{% else %}_Fill in: SPDX identifier (the template does not generate a LICENSE file)_{% endif %}
+{% if license | default('') not in ['', 'Other'] %}{{ license }}{% else %}_Fill in: SPDX identifier (the template does not generate a LICENSE file)_{% endif %}

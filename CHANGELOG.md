@@ -155,12 +155,22 @@ major version).
 ### Changed
 
 - `hooks/post_gen.py` **reconciles** the managed `.gitignore` block instead of
-  only appending to it: inside the `>>> <<<` markers the current template's
-  entry set is authoritative, so entries the template no longer manages (the
-  stale `specs/*/scratch.md` line) are dropped, missing entries added, and
-  entries you commented out preserved verbatim; the summary reports what
-  changed. Nothing outside the markers is ever touched
+  only appending to it: missing entries are added, and entries the template
+  has retired (the stale `specs/*/scratch.md` line) are dropped, so the block
+  stops accreting. Retirement is an explicit list in the hook, not "anything I
+  don't recognise" — entries you added inside the markers, opt-outs you
+  commented out, and your notes are all left byte for byte, as is everything
+  outside the markers; the summary reports what changed
   ([ADR 0018](docs/decisions/0018-update-propagation-and-ownership-split.md), #47).
+- `_min_copier_version` is **9.6.0** (was 9.4.0), the release that added
+  `_copier_operation` — the post-generation task needs it to tell an update's
+  replay renders from the real destination (see **Fixed**). Older copier
+  versions ran, but printed the greenfield summary three times per update.
+- The post-generation task invokes `{{ _copier_python }}` (copier's own
+  interpreter) rather than a bare `python`, which does not exist on
+  distributions that ship only `python3` — generation aborted there, leaving
+  the `.gitignore` block unreconciled and the `.claude`/`.opencode` symlinks
+  uncreated.
 - The `include_claude_hooks` question help states the guard's real
   dependency: the deny-list matcher runs on `python3` and fails closed
   without it (ADR 0017), while `jq` remains the preferred payload reader
@@ -688,17 +698,31 @@ SessionStart warning. The same ADR records why
 
 ### Upgrade notes
 
-- **Harness-doc ownership split (ADR 0018, issues #42/#47):** the first
-  `copier update` after this release resumes patching
-  `development/harness-usage.md` and `development/tool-bootstrap.md`. Because
-  earlier updates never touched them, that first patch carries every change
-  your copy missed since it was generated; where you edited the same lines
-  you get inline `<<<<<<< before updating` markers (or `.rej` files under
-  `--conflict rej`) — resolve toward the template and move genuinely local
-  notes into the new `development/harness-notes.md`, which copier never
-  touches. A copy that drifted far (hand-ported or rewritten) is easiest to
-  settle by diffing against a fresh render once, as the stranded-READMEs
-  recipe below does. Three restorations happen on their own: a recorded
+- **Harness-doc ownership split (ADR 0018, issues #42/#47):** `copier update`
+  resumes patching `development/harness-usage.md` and
+  `development/tool-bootstrap.md` from this release on. **Check both files
+  after the first one, and expect to run the resync below.** Copier decides
+  what to patch by diffing your copy against a render of the template version
+  your `.copier-answers.yml` records — and while these two files were frozen,
+  that recorded version moved on and your copy did not. Copier reads the whole
+  gap as a local edit of yours and re-applies it over the refreshed file,
+  silently and without conflict markers. So any repo that ran `copier update`
+  at least once since it was generated gets its stale copy back on this
+  update. One resync settles it, from a clean tree once the update is
+  committed:
+
+  ```sh
+  copier recopy --trust --overwrite   # re-render at your recorded answers
+  git add development/harness-usage.md development/tool-bootstrap.md
+  git checkout -- .                   # drop recopy's changes to every other file
+  ```
+
+  After that your copy and the template agree, and updates patch the two files
+  the ordinary way: where you edited the same lines you get inline
+  `<<<<<<< before updating` markers (or `.rej` files under `--conflict rej`) —
+  resolve toward the template and move genuinely local notes into the new
+  `development/harness-notes.md`, which copier never touches. Three
+  restorations happen on their own: a recorded
   `license` renders again, a recorded `pr_merge_strategy` restores the
   tailored merge-strategy prose (in `AGENTS.md` on this update; in
   `development/style.md` only where that file is rendered anew — an existing
@@ -766,9 +790,12 @@ SessionStart warning. The same ADR records why
     re-answer `copilot_code_review=true` and delete the instruction files
     you don't want.
   - The `license` question is gone, but a recorded answer still renders
-    (see the legacy-answers entry under **Added**): only repos that never
-    answered it see the `_Fill in: SPDX identifier_` marker in `AGENTS.md`
-    and `README.md`.
+    (see the legacy-answers entry under **Added**): repos that never
+    answered it — and repos that answered `Other`, which names no
+    identifier — see the `_Fill in: SPDX identifier_` marker instead. Note
+    that only `AGENTS.md` is refreshed on update: the root `README.md` is
+    `_skip_if_exists`-preserved, so an existing repo keeps whatever its
+    License section already said and you fill that line in by hand.
   - Previously generated files the template no longer produces (the four
     playbook directories, `.agents/skills/verify/`, the three sub-READMEs
     under `.agents/`, `.cursor/rules/project-context.mdc`, `.mcp.json`,
