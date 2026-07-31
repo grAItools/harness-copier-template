@@ -708,14 +708,20 @@ SessionStart warning. The same ADR records why
   gap as a local edit of yours and re-applies it over the refreshed file,
   silently and without conflict markers. So any repo that ran `copier update`
   at least once since it was generated gets its stale copy back on this
-  update. One resync settles it, from a clean tree once the update is
-  committed:
+  update. One resync settles it. Move anything you want to keep out of the
+  two files first — the resync discards local edits *inside* them — then,
+  from a clean tree with the update committed:
 
   ```sh
-  copier recopy --trust --overwrite   # re-render at your recorded answers
+  copier recopy --trust --defaults --overwrite
   git add development/harness-usage.md development/tool-bootstrap.md
-  git checkout -- .                   # drop recopy's changes to every other file
+  git checkout -- .
   ```
+
+  `recopy` re-renders every file `_skip_if_exists` does not protect, so that
+  last line is what puts your `AGENTS.md` and everything else back —
+  committing first is not optional. Like `copier update`, it renders the
+  latest *tagged* template version; add `--vcs-ref` if you track a branch.
 
   After that your copy and the template agree, and updates patch the two files
   the ordinary way: where you edited the same lines you get inline
