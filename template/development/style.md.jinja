@@ -85,6 +85,25 @@ Examples:
 
 ### Where the convention applies
 
+{% if pr_merge_strategy | default('') == 'squash' -%}
+PRs are **squash-merged**, so only the squash commit lands in history.
+Put the Conventional Commits header in the **PR title**. Individual
+branch commits during work can be freeform working notes.
+{%- elif pr_merge_strategy | default('') == 'merge' -%}
+PRs land as a **merge commit plus every branch commit verbatim**, so
+each branch commit you push must follow the convention. Rebase or
+amend locally to clean up WIP commits before pushing.
+
+The merge commit message must also follow the convention. GitHub's
+default (`Merge pull request #N from <branch>`) is not Conventional,
+so configure the repo to use the PR title for merge commits
+(_Settings → Pull Requests → "Default commit message" → "Pull request
+title"_), or write the merge message by hand at merge time.
+{%- elif pr_merge_strategy | default('') == 'rebase' -%}
+PRs are **rebase-merged**, so every branch commit lands verbatim and
+each one must follow the convention. Rebase or amend locally to clean
+up WIP commits before pushing.
+{%- else -%}
 Where the format applies depends on the repo's merge strategy:
 squash-merge → PR title only (branch commits during work can be
 freeform working notes); merge-commit or rebase-merge → every branch
@@ -93,12 +112,21 @@ pushing, and for merge commits configure the repo to use the PR title
 — GitHub's default `Merge pull request #N from <branch>` is not
 Conventional). Check the repo's GitHub merge settings or ask a
 maintainer.
+{%- endif %}
 {%- else -%}
 - Imperative mood ("add X", not "added X" or "adds X").
 - First line ≤72 chars; no trailing period.
 - Body (optional) wraps at 72 chars; explains *why*, not *what*.
+{% if pr_merge_strategy | default('') == 'squash' -%}
+- PRs are squash-merged, so the PR title is what lands in history —
+  make it a good summary line.
+{%- elif pr_merge_strategy | default('') in ['merge', 'rebase'] -%}
+- Every branch commit lands in history verbatim, so each one has to
+  read well — rebase or amend WIP commits before pushing.
+{%- else -%}
 - If PRs are squash-merged, the PR title is what lands in history —
   make it a good summary line.
+{%- endif %}
 {%- endif %}
 
 ## Changelog

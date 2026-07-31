@@ -1,3 +1,8 @@
+{#- Maintainers: the fenced block below is duplicated as GITIGNORE_BLOCK in
+    hooks/post_gen.py, which is what reaches repos that already had a
+    .gitignore (this file is _skip_if_exists-protected). Change one, change
+    the other — and to retire an entry, add it to GITIGNORE_RETIRED too, or
+    existing repos keep it forever. This comment does not render. -#}
 # Common OS / editor noise
 .DS_Store
 Thumbs.db

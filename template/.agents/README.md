@@ -116,8 +116,12 @@ and include synonyms.
   `README.md`, the task-runner file, `scripts/*.sh`,
   `.github/PULL_REQUEST_TEMPLATE.md`, and the `development/` documents
   (`architecture.md`, `style.md`, `testing.md`, `glossary.md`,
-  `tool-bootstrap.md`, `harness-usage.md`, `adr/README.md`). Note that
-  `development/README.md` is *not* in that set — it is template-owned.
+  `harness-notes.md`, `adr/README.md`). Three `development/` files are *not*
+  in that set — `README.md`, `harness-usage.md` and `tool-bootstrap.md` are
+  template-owned and `copier update` refreshes them, so an edit of yours
+  either merges or comes back as a conflict. Fill in the `_Fill in:_` slots
+  of `tool-bootstrap.md` (they are yours, and they merge); put anything
+  free-form in `development/harness-notes.md`.
 - **Symlinks need `core.symlinks=true`.** On Windows checkouts without it, Git
   materializes a symlink as a text file containing the target path; prefer a stub
   there. The repo already relies on symlinks for `.claude/` / `.opencode/`.

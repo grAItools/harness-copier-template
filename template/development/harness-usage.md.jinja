@@ -1,13 +1,18 @@
 {%- from '_macros.jinja' import cmd with context %}
 # Using the agentic harness (Claude Code & OpenCode)
 
+> Template-owned: this file documents how the harness itself behaves and is
+> refreshed by `copier update`. Put project-local notes in
+> [`harness-notes.md`](harness-notes.md) so updates merge cleanly.
+
 `{{ project_name }}` ships a single agentic coding harness that both **Claude
 Code** and **OpenCode** can drive. This guide explains how it is wired, which
 capability to reach for, and where the two tools differ.
 
 See also: [`AGENTS.md`](../AGENTS.md) (agent instructions),
 [`CLAUDE.md`](../CLAUDE.md) (Claude Code specifics), [`development/style.md`](style.md),
-[`development/testing.md`](testing.md), [`.agents/README.md`](../.agents/README.md)
+[`development/testing.md`](testing.md), [`development/harness-notes.md`](harness-notes.md)
+(project-local notes), [`.agents/README.md`](../.agents/README.md)
 (supported agents & how to add one).
 
 ## The shared model
@@ -179,7 +184,9 @@ liveness statement — other files link here.
 
 | File | Liveness |
 | --- | --- |
-| `AGENTS.md`, `CLAUDE.md`, `development/*.md` | living, **trunk-gated**: changed via a dedicated PR (or an explicit maintainer request), never silently mid-feature. The two **registers** (last rows) accrete by their own contracts instead |
+| `AGENTS.md`, `CLAUDE.md`, the project-owned `development/*.md` | living, **trunk-gated**: changed via a dedicated PR (or an explicit maintainer request), never silently mid-feature. The two **registers** (last rows) accrete by their own contracts instead, and the template-owned files (next row) by `copier update` |
+| `development/README.md`, `development/harness-usage.md`, `development/tool-bootstrap.md` | **template-owned**: `copier update` refreshes them, so a local edit either merges or comes back as a conflict. `tool-bootstrap.md`'s `_Fill in:_` slots are yours and do merge |
+| `development/harness-notes.md` | living, yours alone — `copier update` never touches it. Project-local harness notes go here, not in the template-owned files above |
 | `development/work/*/spec.md` | frozen once reviewed — scope changes get a new spec revision, noted in `report.md` |
 | `development/work/*/plan.md` | frozen once `/build` starts — if the plan is wrong, hand back to `/plan`; don't edit it mid-build |
 | `development/work/*/tasks.md` | living during build |
