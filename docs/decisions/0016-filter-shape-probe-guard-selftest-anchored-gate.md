@@ -97,8 +97,11 @@ both outside this ADR's scope.
    message**, not the exit code alone: dash also exits 2 when it cannot open
    or parse a script, and the deny message exists precisely to make a deny
    distinguishable from an infrastructure failure (ADR 0013 Decision 3).
-   That pins the guard's message prefix as a cross-file contract, recorded
-   in both files. The warning distinguishes the two failure directions,
+   That pins the guard's message prefix as a cross-file contract; it is
+   recorded beside the self-test, and the matching note in
+   `block-destructive.sh`'s own header rides with the issue-#43/#45/#46 doc
+   pass that owns that file. The warning distinguishes the two failure
+   directions,
    which point opposite ways: PreToolUse *ends* on the guard, so a guard
    exiting 2 without a deny message denies **every** Bash call, while any
    other exit denies **none**. A missing guard keeps its own message
@@ -150,6 +153,9 @@ both outside this ADR's scope.
   That is settings content, not a Bash command line, so the PreToolUse guard
   never evaluates it; tooling that greps rendered output for destructive
   strings will see them.
+- Until that note lands, the prefix contract is recorded on one side only:
+  rewording `block-destructive.sh`'s `deny()` would start every session with
+  a "guard damaged" warning and nothing on the guard side to explain why.
 - `.agents/README.md`'s claim that the guard "fails closed" when damaged
   remains false in the window before the self-test's warning is acted on;
   the README correction is tracked with the issue-#43/#45/#46 doc rewrite,

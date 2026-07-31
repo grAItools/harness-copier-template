@@ -69,12 +69,23 @@ filter='
 
 if command -v jq >/dev/null 2>&1 \
 	&& printf '{}' | jq -n -c -r --arg p '.probe' "$filter" >/dev/null 2>&1; then
-	out=$(printf '%s' "$payload" | jq -n -c -r --arg p "$1" "$filter" 2>/dev/null) || {
+	out=$(printf '%s' "$payload" | jq -n -c -r --arg p "$1" "$filter" 2>/dev/null)
+	rc=$?
+	if [ "$rc" -eq 0 ]; then
+		printf '%s\n' "$out"
+		exit 0
+	fi
+	# jq raises 5 for an uncaught error — an unparseable payload read through
+	# `inputs`, and the filter's own single-document check — and 2 for a system
+	# error reading it; both are the payload's doing. Anything else is jq dying
+	# after it passed the probe, which is the reader's problem to name, not the
+	# payload's (the python3 branch below splits the same way).
+	if [ "$rc" -eq 5 ] || [ "$rc" -eq 2 ]; then
 		echo 'hook-input.sh: cannot parse the hook payload as a single JSON document.' >&2
 		exit 4
-	}
-	printf '%s\n' "$out"
-	exit 0
+	fi
+	echo "hook-input.sh: jq passed its probe and then failed (exit $rc); cannot read the hook input. Repair jq (apt-get install jq / brew install jq), or install python3." >&2
+	exit 3
 fi
 
 script='
