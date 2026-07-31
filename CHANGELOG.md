@@ -605,12 +605,14 @@ SessionStart warning. The same ADR records why
 
 - `development/harness-usage.md` no longer claims the Stop hook's "non-zero
   blocks the stop" (issues #43, #45): Claude Code blocks on exit 2 only. The
-  bullet now names the non-blocking exit-1 paths — the package manager missing
-  from PATH skips the gate entirely (the case `ensure-toolchain.sh` exists to
-  prevent), and a failed payload read (broken reader, or a payload rejected
-  under the reader's single-JSON-document contract) runs the gate but can only
-  report a red result — so a session can end unverified, and the doc says so
-  instead of promising otherwise. The hooks section also documents the
+  bullet becomes a list of the non-blocking exit-1 paths — the package manager
+  missing from PATH and an unenterable project directory both skip the gate
+  entirely (the first is the case `ensure-toolchain.sh` exists to prevent), and
+  a failed payload read (broken reader, or a payload rejected under the
+  reader's single-JSON-document contract) runs the gate but can only report a
+  red result — so a session can end unverified, and the doc says so instead of
+  promising otherwise. A list rather than a sentence because the set has grown
+  twice already. The hooks section also documents the
   SessionStart health warnings (the payload-reader probe and the
   `block-destructive.sh` self-test — one probe per deny-list rule, each
   requiring the deny exit code *and* the deny message): both warn without
