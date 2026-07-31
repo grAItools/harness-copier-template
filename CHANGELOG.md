@@ -628,11 +628,14 @@ SessionStart warning. The same ADR records why
   inside it passes), while the four cases where the guard denies something
   that looks like a mention — a multi-line command's per-line rescan, text
   piped into a shell, same-command write-then-run, and SQL anywhere — are
-  listed with their recovery. The two surfaces are documented as diverging in
-  **both** directions: OpenCode is stricter on mentions, but its two anchored
-  `push --force` globs let `git push --force; echo done` past, which the
-  script denies. `tool-bootstrap.md`'s required-tools list promotes `python3`
-  from reader fallback to requirement, demoting `jq` to optional.
+  listed with their recovery. OpenCode is documented as the stricter surface
+  on two counts, not one: it denies quoted mentions, and it cannot express
+  the script's "not followed by a dash" exception, so `*push --force*` denies
+  the lease-checked `--force-with-lease` / `--force-if-includes` that the
+  script allows — deliberate, since the narrower globs that would permit them
+  stop catching `git push --force;`. `tool-bootstrap.md`'s required-tools
+  list promotes `python3` from reader fallback to requirement, demoting `jq`
+  to optional.
 - Three v0.7.0 instruction contradictions resolved (issue #45): the reviewer's
   register scope check now requires a new decision-register row to trace to
   its **Source** (a `DECISION-PENDING:` line in the diff, an ADR added by the

@@ -207,18 +207,19 @@ OpenCode reads `.opencode/opencode.jsonc`, which sets:
 {%- endif %}
 - **Destructive-bash blocking** uses `permission.bash` deny globs that mirror
   `block-destructive.sh`'s patterns (`rm -rf`, `push --force`, `reset --hard`,
-  `DROP TABLE`) in `*…*` substring form, so `cd x && rm -rf y` is caught —
-  except `push --force`, which is an end-anchored glob plus a
-  followed-by-space glob so the lease-checked `--force-with-lease` /
-  `--force-if-includes` pass here too. A glob cannot run the script's
-  tokenizer, so the two **diverge in both directions**. OpenCode is stricter
-  on mentions: it cannot tell a quoted pattern from a command, so it denies
-  `grep -rn 'rm -rf' .`, which the script allows. But the two anchored
-  `push --force` globs match only at end-of-string or before a space, so a
-  force push followed by anything else — `git push --force; echo done` — gets
-  past OpenCode while the script denies it. Neither surface is uniformly
-  tighter; for richer logic a `.opencode/plugin` with a `tool.execute.before`
-  hook is the optional hardening.
+  `DROP TABLE`) in `*…*` substring form, so `cd x && rm -rf y` is caught. A
+  glob cannot run the script's tokenizer, so **OpenCode is the stricter
+  surface**, in two ways. It cannot tell a quoted pattern from a command, so
+  it denies `grep -rn 'rm -rf' .`, which the script allows. And it cannot
+  express the script's "not followed by a dash" exception — there is no
+  negative glob — so `*push --force*` also denies the lease-checked
+  `git push --force-with-lease` and `--force-if-includes`, which the script
+  allows. That is deliberate: denying a safe force push is the cheaper error
+  than the narrower globs it would take to allow one, which would stop
+  catching `git push --force;` and `(git push --force)`. If you need the
+  lease-checked flags under OpenCode, run them outside the agent. For richer
+  logic a `.opencode/plugin` with a `tool.execute.before` hook is the optional
+  hardening.
 
 | Capability             | Claude Code                              | OpenCode                                   |
 | ---------------------- | ---------------------------------------- | ------------------------------------------ |

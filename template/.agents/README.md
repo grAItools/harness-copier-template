@@ -139,11 +139,15 @@ and include synonyms.
   program (run-probed, like the payload reader), which makes `python3` a hard
   dependency of the guard: missing or non-running, every Bash call is denied,
   fail-closed, with the remedy in the message.
-  The patterns are kept in sync by hand in both places, but the mirror is not
-  glob-for-pattern: `push --force` is **two** globs on the OpenCode side
-  (`*push --force` and `*push --force *`) so the longer lease-checked flags
-  are not prefix-matched. Collapsing them back into one `*…*` glob would
-  re-deny `git push --force-with-lease`; keep the split when adding patterns.
+  The patterns are kept in sync by hand in both places, but the *exceptions*
+  do not carry across: the script exempts a `push --force` followed by a dash
+  (the lease-checked `--force-with-lease` / `--force-if-includes`), and no
+  glob can express "not followed by", so the OpenCode side denies those too.
+  Narrower globs that would let them through stop catching
+  `git push --force;` and `(git push --force)`, and an allow rule would
+  un-deny compound commands, since OpenCode resolves overlaps by last
+  matching rule — so the mirror deliberately keeps the plain `*…*` glob and
+  accepts denying a safe force push. Keep it that way when adding patterns.
   Where Claude Code hooks are generated, the PreToolUse hook *delegates* the
   verdict to this script: a missing script the hook denies on itself, but a
   script that is present returns whatever it exits — the hook cannot tell a
