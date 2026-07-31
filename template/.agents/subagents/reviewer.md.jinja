@@ -104,11 +104,18 @@ fix before the next push.
   Touching another feature's `development/work/` directory, a merged feature's
   `report.md`, or the body of an existing ADR is an automatic MAJOR
   defect unless the plan explicitly called for it. The two registers
-  have their own scope contracts instead: a new decision-register row
-  must trace to its **Source** — a `DECISION-PENDING:` line in this
-  diff, an ADR added by this diff, or a human grant the row records
-  (see `development/adr/README.md`); a row with none of the three is
-  out of scope (MAJOR). A new `development/glossary.md` entry must
+  have their own scope contracts instead. Every decision-register row
+  the diff **adds** must trace to its **Source** — a `DECISION-PENDING:`
+  line in this diff, or an ADR added by this diff; a row with neither is
+  out of scope (MAJOR). The one Source you cannot check against the
+  diff is a human grant: it is legitimate (see
+  `development/adr/README.md`), so report it INFO with the row quoted
+  and let the human confirm it — never pass it silently, and never
+  accept the row's own Source cell as the proof. A row the diff
+  **edits** may only have its Status flipped, and the flip must cite
+  the PR or commit that settled it in the row's Evidence column; any
+  other edit to an existing row, or a flip with no evidence, is MAJOR.
+  A new `development/glossary.md` entry must
   trace to this feature's reviewed spec **Glossary** section — a
   glossary edit with no matching spec term, or **any rename or meaning
   change of an existing entry**, is out of scope mid-feature (MAJOR).

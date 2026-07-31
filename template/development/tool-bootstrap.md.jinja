@@ -23,8 +23,9 @@
   it when `jq` is missing *or cannot run*. Usually preinstalled; stock macOS
   needs the Xcode Command Line Tools (`xcode-select --install`).
 - **`jq`** (optional) — the preferred hook-payload reader; without it the
-  reader runs on `python3` alone. With *neither* working, the hooks warn at
-  session start and deny every Bash call until one is installed. Install:
+  reader runs on `python3` alone, and the hooks only warn at session start
+  when *neither* works. Installing `jq` silences that warning but does not
+  restore Bash: the guard's verdict needs `python3` either way. Install:
   `apt-get install jq` / `brew install jq`.
 {% endif %}
 _Fill in: any additional system-level tools the project needs

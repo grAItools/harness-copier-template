@@ -49,12 +49,14 @@ The five subagents and their access:
 | `reviewer`      | no      | read-only + verify/test/lint   | GO / NEEDS-WORK verdict, file:line defects      |
 | `explorer`      | no      | read-only search/git           | "where is X / how does Y work" summaries        |
 
-The Architect's "write" includes an `Edit` grant it needs for exactly one
-file: appending to the feature's shared `scratch.md` (below). Neither
-Claude Code subagent `tools` nor OpenCode `permission.edit` can scope a
-grant to a path, so "the Architect never edits code" is enforced by its
-role instructions and by your review of a plan-phase diff — not by the
-harness.
+The Architect's "write" includes an `Edit` grant it needs for one thing:
+appending to the feature's shared `scratch.md` (below). A subagent's own
+frontmatter grants tools by name, not by path — neither Claude Code's
+`tools` list nor OpenCode's `permission.edit` narrows a grant to one file —
+so as shipped, "the Architect never edits code" rests on its role
+instructions and on your review of a plan-phase diff. If you want that
+enforced rather than instructed, a path-scoped `Edit` deny rule in
+`.claude/settings.json` is the place to add it.
 
 Subagents cannot spawn subagents, so a role that needs something run
 outside itself stops mid-phase and **hands back**: the Product Owner
@@ -92,7 +94,10 @@ Claude Code only). You cannot prompt around the hooks:
   a single probe). Read these warnings: they say which way the damage points
   — a guard that exits 2 without its message denies **every** Bash call, and
   one that does not deny at all lets destructive commands through — until
-  `.agents/hooks/` is restored.
+  `.agents/hooks/` is restored. One state the self-test cannot see is the
+  guard's own missing `python3`: that path denies *with* the expected message,
+  so it reads as a healthy guard. If every Bash call is being denied and
+  session start was quiet, check `python3` first.
 {% if generate_scripts -%}
 - **PostToolUse (`Write|Edit|MultiEdit`)** runs `scripts/fmt-file.sh` on the
   edited file after every write.
@@ -102,20 +107,31 @@ Claude Code only). You cannot prompt around the hooks:
   whose verdict is computed by an embedded `python3` tokenizer — `python3` is
   a hard dependency of the guard: missing or non-running, every Bash call is
   denied, fail-closed, with the install remedy in the message. The first
-  three are denied where they are reachable without crossing a quote (quote
-  state carried across lines) — `grep -rn 'rm -rf' .` is a mention and
-  passes, `cd x && rm -rf y` is not and does not — and the string a nested
-  shell *runs* (`sh … -c`, `ssh`, `eval`, `su`, or piped into a shell) is
-  held to the same rules one level down: a quoted mention inside it passes,
-  a reachable operation is denied. Two edges to know: a command that both
-  mentions an operation and runs a shell on a file is denied even when the
-  mention is quoted (split the write and the run into two calls), and a
-  `push --force` immediately followed by a dash is a longer, lease-checked
-  flag (`--force-with-lease`, `--force-if-includes`) and passes. `DROP TABLE`
-  matches anywhere, quoted or not: SQL has no unquoted form, so a mention of
-  it is denied too. Each deny names the rule that fired, the verdict is the
-  same in every locale, and it is a backstop against accidents, not a
-  sandbox.
+  three are denied where they are reachable without crossing a quote —
+  `grep -rn 'rm -rf' .` is a mention and passes, `cd x && rm -rf y` is not
+  and does not. The string a runner is *handed* (`sh … -c`, `ssh`, `eval`,
+  `su`) is re-checked by the same rules one level down, so a mention quoted
+  again inside it still passes. Four edges are worth knowing, because in each
+  the guard denies something that looks like a mention:
+  - **A multi-line command** is scanned both as a whole and line by line, so
+    a quoted operation on its own line — a commit-message body, a heredoc —
+    is denied even though the span it sits in is quoted. Deliberate: an
+    unpaired quote on an earlier line must not hide a real operation on a
+    later one.
+  - **Text piped into a shell** is matched as written, quotes and all (it is
+    what the shell will read), so `grep -rn 'reset --hard' . | sh` is denied
+    where the same `grep` alone passes.
+  - **A command that both mentions an operation and runs a shell on a file**
+    is denied even when the mention is quoted. Split the write and the run
+    into two calls.
+  - **`DROP TABLE`** matches anywhere, quoted or not: SQL has no unquoted
+    form, so a mention of it is denied too.
+
+  Going the other way, a `push --force` immediately followed by a dash is a
+  longer, lease-checked flag (`--force-with-lease`, `--force-if-includes`)
+  and passes. Each deny names the rule that fired and the verdict is the same
+  in every locale; recovery is a rephrase — usually splitting one call into
+  two — and it is a backstop against accidents, not a sandbox.
 - **Stop** runs `{{ cmd('verify') }}` before the agent is allowed to stop; a
   failing gate exits 2 and blocks the stop. This is why "done" means "the
   gate is green". Every other non-zero exit is 1 — surfaced, but
@@ -127,13 +143,22 @@ Claude Code only). You cannot prompt around the hooks:
     exists to prevent: run it, then verify again.
 {%- endif %}
   - **The project directory cannot be entered** — the gate is skipped rather
-    than run from somewhere else, since it resolves its
-    {{ runner_file_name() }} against the repo root.
+    than run from the wrong place. A hook's working directory is the
+    session's, not necessarily the repo root, and the gate looks for its
+    {{ runner_file_name() }} in the working directory, so the hook `cd`s to
+    the repo root first; if that `cd` fails there is nowhere valid to run.
   - **The payload read failed** — no working `jq` or `python3`, or a payload
     the reader rejects: it insists on a single JSON document, so a
     concatenated payload cannot smuggle in a second stop-loop flag. Here the
     gate still *runs*, but a red result can only be reported, never blocked,
     because blocking needs the stop-loop guard that same read provides.
+
+  One more path ends the session unverified without any non-zero exit at all:
+  once a blocked stop has already fired, Claude Code re-runs the hook with
+  `stop_hook_active` set, and the hook exits 0 immediately **without running
+  the gate** — otherwise a red gate would block every stop forever. So the
+  stop right after a blocked one is not re-verified: fix what the gate
+  reported and run `{{ cmd('verify') }}` yourself before trusting it.
 
 Permissions allowlist the build tool, read-only git (`status/diff/log/show`),
 and `rg/ls/cat/head/tail`; destructive operations are denied.
@@ -186,11 +211,14 @@ OpenCode reads `.opencode/opencode.jsonc`, which sets:
   except `push --force`, which is an end-anchored glob plus a
   followed-by-space glob so the lease-checked `--force-with-lease` /
   `--force-if-includes` pass here too. A glob cannot run the script's
-  tokenizer, so the two **diverge on mentions**: OpenCode cannot tell a
-  quoted pattern from a command and also denies `grep -rn 'rm -rf' .`, which
-  the script allows. It is the stricter surface; for richer logic a
-  `.opencode/plugin` with a `tool.execute.before` hook is the optional
-  hardening.
+  tokenizer, so the two **diverge in both directions**. OpenCode is stricter
+  on mentions: it cannot tell a quoted pattern from a command, so it denies
+  `grep -rn 'rm -rf' .`, which the script allows. But the two anchored
+  `push --force` globs match only at end-of-string or before a space, so a
+  force push followed by anything else — `git push --force; echo done` — gets
+  past OpenCode while the script denies it. Neither surface is uniformly
+  tighter; for richer logic a `.opencode/plugin` with a `tool.execute.before`
+  hook is the optional hardening.
 
 | Capability             | Claude Code                              | OpenCode                                   |
 | ---------------------- | ---------------------------------------- | ------------------------------------------ |

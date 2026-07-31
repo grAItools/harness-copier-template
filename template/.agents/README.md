@@ -134,17 +134,21 @@ and include synonyms.
   *operation* only where it is reachable without crossing a quote, so a
   read-only mention of one (a search pattern, a fixture, a commit message) is
   allowed; SQL patterns still match anywhere, quoted or not, since they have
-  no unquoted form. OpenCode's globs cannot express either distinction and
-  deny every mention. The patterns themselves are kept in sync by hand in
-  both places. The verdict is computed by an embedded `python3` program
-  (run-probed, like the payload reader), which makes `python3` a hard
+  no unquoted form. OpenCode's globs cannot express those distinctions and
+  deny every mention. The verdict is computed by an embedded `python3`
+  program (run-probed, like the payload reader), which makes `python3` a hard
   dependency of the guard: missing or non-running, every Bash call is denied,
-  fail-closed, with the remedy in the message. The Claude Code
-  PreToolUse hook *delegates* the verdict to the script: when the script is
-  missing the hook itself denies Bash, but when it is present the verdict is
-  whatever the script exits — the hook cannot tell a truncated or weakened
-  guard from a healthy one — so treat `hooks/` as load-bearing and restore it
-  from the template if a checkout mangles it.
+  fail-closed, with the remedy in the message.
+  The patterns are kept in sync by hand in both places, but the mirror is not
+  glob-for-pattern: `push --force` is **two** globs on the OpenCode side
+  (`*push --force` and `*push --force *`) so the longer lease-checked flags
+  are not prefix-matched. Collapsing them back into one `*…*` glob would
+  re-deny `git push --force-with-lease`; keep the split when adding patterns.
+  Where Claude Code hooks are generated, the PreToolUse hook *delegates* the
+  verdict to this script: a missing script the hook denies on itself, but a
+  script that is present returns whatever it exits — the hook cannot tell a
+  truncated or weakened guard from a healthy one — so treat `hooks/` as
+  load-bearing and restore it from the template if a checkout mangles it.
 - **Hook payload parsing** is canonical in
   [`hooks/hook-input.sh`](hooks/hook-input.sh): the Claude Code hooks in
   `.claude/settings.json` read their JSON input through it (`jq`, with a

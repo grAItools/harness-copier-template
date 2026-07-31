@@ -133,11 +133,14 @@ Produce `plan.md` and mirror it into a checkbox `tasks.md` in the same
   it first — often you), never to replace existing content. Overwriting
   it destroys spike findings and Developer hand-back notes, and it is
   gitignored, so what you clobber is gone.
-- That append channel is the only reason you hold an `Edit` grant at
-  all: no tool can scope the grant to one file, so nothing but this
-  instruction — and the human reading your plan-phase diff — stands
-  between you and editing source or tests. Treat any other use of
-  `Edit` as out of bounds.
+- Your `Edit` grant exists for that append channel and for revising
+  your own `plan.md` / `tasks.md` on a replan — where `Edit` is the
+  *right* tool, since rewriting `tasks.md` with `Write` would destroy
+  the Developer's ticked boxes. It cannot be scoped to those files by
+  any frontmatter, so nothing but this instruction — and the human
+  reading your plan-phase diff — stands between you and editing source
+  or tests. Anything outside the feature's own directory is out of
+  bounds.
 
 ## Output format
 
