@@ -116,29 +116,24 @@ Claude Code only). You cannot prompt around the hooks:
   it is denied too. Each deny names the rule that fired, the verdict is the
   same in every locale, and it is a backstop against accidents, not a
   sandbox.
-{% if package_manager in ['uv', 'pixi'] -%}
 - **Stop** runs `{{ cmd('verify') }}` before the agent is allowed to stop; a
   failing gate exits 2 and blocks the stop. This is why "done" means "the
-  gate is green". Two paths exit 1 instead — visible, but **non-blocking**:
-  with `{{ package_manager }}` unavailable the gate is skipped entirely (the
-  case `ensure-toolchain.sh` exists to prevent — run it, then re-verify), and
-  with a failed payload read (no working `jq` or `python3`, or a payload the
-  reader rejects — it insists on a single JSON document, so a concatenated
-  payload cannot smuggle in a second stop-loop flag) the gate still runs but
-  can only *report* a red result, because blocking needs the stop-loop guard
-  that same read provides. Either way the session can end unverified, so
-  read the stop message.
-{%- else -%}
-- **Stop** runs `{{ cmd('verify') }}` before the agent is allowed to stop; a
-  failing gate exits 2 and blocks the stop. This is why "done" means "the
-  gate is green". One path exits 1 instead — visible, but **non-blocking**:
-  with a failed payload read (no working `jq` or `python3`, or a payload the
-  reader rejects — it insists on a single JSON document, so a concatenated
-  payload cannot smuggle in a second stop-loop flag) the gate still runs but
-  can only *report* a red result, because blocking needs the stop-loop guard
-  that same read provides. That session can end unverified, so read the
-  stop message.
-{%- endif %}
+  gate is green". Every other non-zero exit is 1 — surfaced, but
+  **non-blocking**, and each one can leave the session unverified, so read
+  the stop message:
+{% if package_manager in ['uv', 'pixi'] %}
+  - **`{{ package_manager }}` unavailable** — the gate is skipped entirely.
+    This is the case [`ensure-toolchain.sh`](../.agents/hooks/ensure-toolchain.sh)
+    exists to prevent: run it, then verify again.
+{% endif %}
+  - **The project directory cannot be entered** — the gate is skipped rather
+    than run from somewhere else, since it resolves its task file
+    ({% if task_runner == 'none' %}the verify command's own paths{% else %}the {{ task_runner }} file{% endif %}) against the repo root.
+  - **The payload read failed** — no working `jq` or `python3`, or a payload
+    the reader rejects: it insists on a single JSON document, so a
+    concatenated payload cannot smuggle in a second stop-loop flag. Here the
+    gate still *runs*, but a red result can only be reported, never blocked,
+    because blocking needs the stop-loop guard that same read provides.
 
 Permissions allowlist the build tool, read-only git (`status/diff/log/show`),
 and `rg/ls/cat/head/tail`; destructive operations are denied.
