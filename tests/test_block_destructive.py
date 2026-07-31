@@ -21,6 +21,7 @@ accidental improvement.
 
 import shutil
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -221,6 +222,35 @@ class TestFailurePosture(unittest.TestCase):
         )
         self.assertEqual(result.returncode, DENY)
         self.assertIn(b"python3", result.stderr)
+
+    def _with_stub_python3(self, stub_body):
+        """Verdict for a harmless command with a python3 stub first on PATH."""
+        with tempfile.TemporaryDirectory() as tmp:
+            stub = Path(tmp) / "python3"
+            stub.write_text(stub_body)
+            stub.chmod(0o755)
+            return verdict("git status", env={"PATH": f"{tmp}:/usr/bin:/bin"})
+
+    def test_interpreter_that_cannot_run_the_matcher_fails_closed(self):
+        # `python3 -c ''` only proves an interpreter starts. One that then
+        # fails on the matcher itself (a python2 shim, a stripped standard
+        # library) exits 1 — which PreToolUse reads as a non-blocking error
+        # and runs the command. The wrapper must turn it into a deny.
+        result = self._with_stub_python3(
+            '#!/bin/sh\n'
+            '[ "$1" = "-c" ] && [ -z "$2" ] && exit 0\n'
+            'echo "SyntaxError: invalid syntax" >&2\n'
+            'exit 1\n'
+        )
+        self.assertEqual(result.returncode, DENY)
+        self.assertIn(b"block-destructive: denied", result.stderr)
+
+    def test_interpreter_exiting_zero_without_a_verdict_fails_closed(self):
+        # Exit 0 alone is not an allow: the program prints a token on the
+        # allow path, and an interpreter that never ran it cannot produce one.
+        result = self._with_stub_python3('#!/bin/sh\nexit 0\n')
+        self.assertEqual(result.returncode, DENY)
+        self.assertIn(b"block-destructive: denied", result.stderr)
 
     def test_exit_codes_are_binary(self):
         for command in TRUE_POSITIVES + FALSE_POSITIVES_FIXED_BY_ADR_0015:

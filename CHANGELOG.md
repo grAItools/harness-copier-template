@@ -559,7 +559,10 @@ SessionStart warning. The same ADR records why
   high-byte input. The single-pass `grep -qE` grammar is replaced by a small
   quoting-aware tokenizer embedded in the same script and run with `python3`
   (already the hooks' fallback JSON parser, run-probed the same way; missing
-  python3 now denies fail-closed with the install remedy). Rule 2 is
+  python3 now denies fail-closed with the install remedy, and so does an
+  interpreter that starts but cannot reach a verdict — an allow counts only
+  as exit 0 carrying the matcher's token, since a crash exits 1 and
+  PreToolUse runs the command on a non-blocking error). Rule 2 is
   recursive — the string a nested shell runs is held to the same rules — so
   two ADR-0015 false positives (`bash -c "grep 'rm -rf' ."`, the `'…'\''…'`
   idiom) are fixed too, and every mention #39 un-denied stays allowed. `git

@@ -52,7 +52,9 @@
 # already the hooks' fallback JSON parser (ADR 0013) and is probed here the
 # same way — by running it, since a stub can resolve and then fail. A missing
 # python3 fails CLOSED with the remedy: a guard that silently stops guarding
-# is worse than a loud dependency. See ADR 0017.
+# is worse than a loud dependency. So does an interpreter that starts and then
+# cannot reach a verdict: an allow counts only as exit 0 carrying the program's
+# token on stdout, and every other status denies. See ADR 0017.
 #
 # Consumers:
 #   - Claude Code: the PreToolUse(Bash) hook in .claude/settings.json pipes the
@@ -402,9 +404,24 @@ for pat in TEXT_PATTERNS:
     if pat in data:
         deny(RULE3_MSG.format(pats=PATS_RAW))
 
+# The wrapper accepts an allow only with this token on stdout, so an
+# interpreter that starts and then fails to reach a verdict cannot read as one.
+sys.stdout.write("block-destructive: allow\n")
 sys.exit(0)
 PYEOF
 )
 
-BLOCK_OPERATIONS="$operations" BLOCK_TEXT_PATTERNS="$text_patterns" \
-	BLOCK_SHELLS="$shells" exec python3 -c "$program"
+# Anything but a token-backed allow or a rule's deny is a failed check, and a
+# failed check denies: `python3 -c ''` above proves an interpreter starts, not
+# that it can run *this* program (a python2 shim, a stripped standard library),
+# and a crash exits 1 - which PreToolUse treats as a non-blocking error, i.e.
+# allows the command.
+verdict=$(BLOCK_OPERATIONS="$operations" BLOCK_TEXT_PATTERNS="$text_patterns" \
+	BLOCK_SHELLS="$shells" python3 -c "$program")
+rc=$?
+
+[ "$rc" -eq 0 ] && [ "$verdict" = 'block-destructive: allow' ] && exit 0
+[ "$rc" -eq 2 ] && exit 2
+
+printf '%s\n' "block-destructive: denied - cannot check this command: the deny-list matcher did not reach a verdict (python3 exited $rc). python3 runs but cannot run the matcher; any message above is its own. Repair or replace python3, from a shell outside the agent if needed." >&2
+exit 2

@@ -109,7 +109,15 @@ rejection defended no longer exists in that form.
    and then fail) and denies with the install remedy, mirroring the
    PreToolUse fail-closed posture of ADR 0013. An empty deny-list reaching
    the program (a damaged wrapper) also denies rather than silently
-   allowing everything.
+   allowing everything. The probe proves only that *an* interpreter starts,
+   so the verdict is contract-checked as well: an allow counts only as exit 0
+   carrying the program's `block-destructive: allow` token on stdout, a deny
+   as exit 2, and any other status denies with a diagnostic naming it. This
+   closes the gap raised in review of #49 — an interpreter that starts but
+   cannot run *this* program (a python2 shim, a stripped standard library)
+   exits 1, and PreToolUse reads exit 1 as a non-blocking error, which runs
+   the command. The token also makes the contract cheap: no second process,
+   and the guard's stdout stays empty either way.
 6. **A table-driven behaviour lock ships in this repo** at
    `tests/test_block_destructive.py` (stdlib `unittest`; `python3 -m
    unittest discover tests`): the guard has no Jinja, so the template source
