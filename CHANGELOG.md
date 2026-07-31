@@ -588,6 +588,18 @@ SessionStart warning. The same ADR records why
   tests`), including the shapes that stay allowed and the documented blind
   spots. See
   [ADR 0017](docs/decisions/0017-deny-list-tokenizer-in-python3.md).
+- The SessionStart guard self-test ends with a **negative control**: one
+  benign read-only command (`git status`) is piped through
+  `block-destructive.sh` and must come back allowed (exit 0), warning
+  non-blocking otherwise and quoting the guard's own stderr. The three
+  deny-expected probes cannot see a guard that denies *everything with its
+  genuine message* — a lost deny-list value, or a missing `python3` now that
+  the tokenizer requires one — so a wedged session used to start silent while
+  the self-test reported health; it also could not see an over-broad deny-list
+  customisation denying commands it must not. All four states verified: healthy
+  allowed, deny-list-lost / `python3`-less / over-broad each warn at session
+  start (issue #52,
+  [ADR 0019](docs/decisions/0019-guard-selftest-negative-control.md)).
 
 ### Removed (breaking)
 

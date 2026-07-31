@@ -68,11 +68,20 @@
              with it. The two failures point opposite ways, so the warning
              says which: exit 2 without the message means the guard denies
              *everything* (PreToolUse ends on it), any other exit means it
-             denies nothing. Warn, don't block: exit 1 surfaces the message
-             without ending the session. -#}
+             denies nothing. Deny-expected probes alone cannot see a guard
+             that denies everything *with* its genuine message - a lost
+             deny-list value, or a missing python3 since the tokenizer move
+             - so all probes pass while every Bash call is denied and the
+             session starts wedged and silent (issue #52). A negative
+             control closes that: one benign read-only command [git status]
+             must come back exit 0; its warning quotes the guard's own
+             stderr, which names the cause. The same control catches an
+             over-broad deny-list customisation, which deny-expected probes
+             cannot see either. Warn, don't block: exit 1 surfaces the
+             message without ending the session. -#}
           {
             "type": "command",
-            "command": "G=\"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/block-destructive.sh\"; [ -r \"$G\" ] || { echo 'warning: block-destructive.sh is missing or unreadable - the PreToolUse guard will deny every Bash call until .agents/hooks is restored.' >&2; exit 1; }; for p in 'rm -rf /' 'sh -c \"rm -rf /\"' 'psql -c \"DROP TABLE t\"'; do err=$(printf '%s' \"$p\" | sh \"$G\" 2>&1 >/dev/null); rc=$?; { [ \"$rc\" -eq 2 ] && printf '%s' \"$err\" | grep -q '^block-destructive: denied'; } || { if [ \"$rc\" -eq 2 ]; then w='it exits 2 without its deny message, so the PreToolUse hook will deny every Bash call'; else w='it did not deny the command, so the PreToolUse hook will let destructive Bash commands through'; fi; echo \"warning: block-destructive.sh failed its self-test on [$p]: $w (exit $rc; guard said: ${err:-nothing}). Restore .agents/hooks/block-destructive.sh (git restore, or re-run copier update).\" >&2; exit 1; }; done"
+            "command": "G=\"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/block-destructive.sh\"; [ -r \"$G\" ] || { echo 'warning: block-destructive.sh is missing or unreadable - the PreToolUse guard will deny every Bash call until .agents/hooks is restored.' >&2; exit 1; }; for p in 'rm -rf /' 'sh -c \"rm -rf /\"' 'psql -c \"DROP TABLE t\"'; do err=$(printf '%s' \"$p\" | sh \"$G\" 2>&1 >/dev/null); rc=$?; { [ \"$rc\" -eq 2 ] && printf '%s' \"$err\" | grep -q '^block-destructive: denied'; } || { if [ \"$rc\" -eq 2 ]; then w='it exits 2 without its deny message, so the PreToolUse hook will deny every Bash call'; else w='it did not deny the command, so the PreToolUse hook will let destructive Bash commands through'; fi; echo \"warning: block-destructive.sh failed its self-test on [$p]: $w (exit $rc; guard said: ${err:-nothing}). Restore .agents/hooks/block-destructive.sh (git restore, or re-run copier update).\" >&2; exit 1; }; done; err=$(printf '%s' 'git status' | sh \"$G\" 2>&1 >/dev/null); rc=$?; [ \"$rc\" -eq 0 ] || { echo \"warning: block-destructive.sh failed its self-test on the benign control [git status]: it denied a read-only command that must be allowed, so the PreToolUse hook is denying Bash calls it should pass (exit $rc; guard said: ${err:-nothing}). Follow the guard's remedy if its message names one, or restore .agents/hooks/block-destructive.sh (git restore, or re-run copier update).\" >&2; exit 1; }"
           }
         ]
       }
