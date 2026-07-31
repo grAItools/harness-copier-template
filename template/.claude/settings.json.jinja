@@ -24,14 +24,16 @@
       "Bash(head:*)",
       "Bash(tail:*)"
     ],
-    {#- Two entries, not `git push --force:*`: `:*` is a plain string-prefix
-        match, so that single pattern also denied the safe, lease-checked
-        `git push --force-with-lease` (issue #40). The exact form catches the
-        bare command, the trailing-space prefix catches it with arguments,
-        and neither is a prefix of `--force-with-lease`. -#}
+    {# `:*` is a whole-word prefix rule, not a bare string prefix: Claude Code
+       normalises the command's whitespace and matches it when it equals the
+       prefix or starts with the prefix plus a space. So `git push --force:*`
+       denies `git push --force` and `git push --force <args>` while leaving
+       `git push --force-with-lease` alone (issue #40 — the layer that denies
+       that one is block-destructive.sh's `push --force` substring, not this
+       list). Don't "fix" it by writing the space into the rule: the prefix
+       then ends in a space, needs a second one to match, and denies nothing. -#}
     "deny": [
-      "Bash(git push --force)",
-      "Bash(git push --force :*)",
+      "Bash(git push --force:*)",
       "Bash(git reset --hard:*)",
       "Bash(rm -rf:*)"
     ]
@@ -48,21 +50,29 @@
           {% endif -%}
           {
             "type": "command",
-            "command": "printf '{}' | sh \"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/hook-input.sh\" .probe >/dev/null 2>&1 || { echo 'warning: the hook payload reader is not working - jq and python3 are both missing or unable to run, or .agents/hooks/hook-input.sh is damaged. The PreToolUse guard will deny every Bash call until this is fixed (apt-get install jq / brew install jq)' >&2; exit 1; }"
+            "command": "err=$(printf '{}' | sh \"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/hook-input.sh\" .probe 2>&1 >/dev/null) || { echo \"warning: the hook payload reader is not working: ${err:-no output}. The PreToolUse guard will deny every Bash call until this is fixed (install or upgrade jq: apt-get install jq / brew install jq).\" >&2; exit 1; }"
           },
-          {# Guard self-test: run block-destructive.sh against a command on its
-             own deny-list and expect the deny verdict. The PreToolUse [ -r ]
-             check only proves the file is present - a guard truncated by an
-             interrupted copier update or a symlink-less checkout runs and
-             exits 0, silently allowing every destructive command (issue #41).
-             A weakened guard fails the same probe. The verdict is exit 2 AND
-             the guard's own deny message: dash also exits 2 when it cannot
-             open or parse a script, and the message exists exactly to make a
-             deny distinguishable from an infrastructure failure. Warn, don't
-             block: exit 1 surfaces the message without ending the session. #}
+          {# Guard self-test: run block-destructive.sh against one command per
+             deny-list rule (operation outside quotes, operation handed to a
+             nested shell, text pattern) and expect the deny verdict for each.
+             The PreToolUse [ -r ] check only proves the file is present - a
+             guard truncated by an interrupted copier update or a partial
+             checkout runs and exits 0, silently allowing every destructive
+             command (issue #41), and a truncation deep enough to drop only
+             the last rule passes a probe of the first. The verdict is exit 2
+             AND the guard's own deny message: dash also exits 2 when it
+             cannot open or parse a script, and the message exists exactly to
+             make a deny distinguishable from an infrastructure failure. That
+             pins block-destructive.sh's `block-destructive: denied` prefix as
+             a cross-file contract - reword deny() and this probe must move
+             with it. The two failures point opposite ways, so the warning
+             says which: exit 2 without the message means the guard denies
+             *everything* (PreToolUse ends on it), any other exit means it
+             denies nothing. Warn, don't block: exit 1 surfaces the message
+             without ending the session. #}
           {
             "type": "command",
-            "command": "G=\"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/block-destructive.sh\"; if [ -r \"$G\" ]; then err=$(printf '%s' 'rm -rf /' | sh \"$G\" 2>&1 >/dev/null); rc=$?; { [ \"$rc\" -eq 2 ] && printf '%s' \"$err\" | grep -q '^block-destructive: denied'; } || { echo \"warning: block-destructive.sh is present but failed its self-test - a deny-listed command was not denied (exit $rc, expected 2 with a deny message). The guard is damaged or weakened, so the PreToolUse hook will let destructive Bash commands through until .agents/hooks/block-destructive.sh is restored (git restore, or re-run copier update).\" >&2; exit 1; }; else echo 'warning: block-destructive.sh is missing or unreadable - the PreToolUse guard will deny every Bash call until .agents/hooks is restored.' >&2; exit 1; fi"
+            "command": "G=\"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/block-destructive.sh\"; [ -r \"$G\" ] || { echo 'warning: block-destructive.sh is missing or unreadable - the PreToolUse guard will deny every Bash call until .agents/hooks is restored.' >&2; exit 1; }; for p in 'rm -rf /' 'sh -c \"rm -rf /\"' 'psql -c \"DROP TABLE t\"'; do err=$(printf '%s' \"$p\" | sh \"$G\" 2>&1 >/dev/null); rc=$?; { [ \"$rc\" -eq 2 ] && printf '%s' \"$err\" | grep -q '^block-destructive: denied'; } || { if [ \"$rc\" -eq 2 ]; then w='it exits 2 without its deny message, so the PreToolUse hook will deny every Bash call'; else w='it did not deny the command, so the PreToolUse hook will let destructive Bash commands through'; fi; echo \"warning: block-destructive.sh failed its self-test on [$p]: $w (exit $rc; guard said: ${err:-nothing}). Restore .agents/hooks/block-destructive.sh (git restore, or re-run copier update).\" >&2; exit 1; }; done"
           }
         ]
       }
@@ -73,7 +83,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=$(sh \"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/hook-input.sh\" .tool_input.file_path); rc=$?; [ \"$rc\" -eq 3 ] && { echo 'fmt skipped: no JSON parser on PATH (install jq: apt-get install jq / brew install jq)' >&2; exit 1; }; [ \"$rc\" -ne 0 ] && { echo \"fmt skipped: could not read the hook input (hook-input.sh exit $rc)\" >&2; exit 1; }; S=\"${CLAUDE_PROJECT_DIR:-.}/scripts/fmt-file.sh\"; [ -n \"$f\" ] && [ -x \"$S\" ] && \"$S\" \"$f\" || true"
+            "command": "f=$(sh \"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/hook-input.sh\" .tool_input.file_path); rc=$?; [ \"$rc\" -eq 3 ] && { echo 'fmt skipped: no usable JSON parser on PATH (install or upgrade jq: apt-get install jq / brew install jq)' >&2; exit 1; }; [ \"$rc\" -ne 0 ] && { echo \"fmt skipped: could not read the hook input (hook-input.sh exit $rc)\" >&2; exit 1; }; S=\"${CLAUDE_PROJECT_DIR:-.}/scripts/fmt-file.sh\"; [ -n \"$f\" ] && [ -x \"$S\" ] && \"$S\" \"$f\" || true"
           }
         ]
       }
@@ -84,17 +94,22 @@
         "hooks": [
           {
             "type": "command",
-            "command": "H=\"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks\"; [ -r \"$H/block-destructive.sh\" ] || { echo 'PreToolUse: block-destructive.sh is missing - denying Bash. Restore .agents/hooks, then retry.' >&2; exit 2; }; c=$(sh \"$H/hook-input.sh\" .tool_input.command); rc=$?; [ \"$rc\" -eq 3 ] && { echo 'PreToolUse: no working JSON parser on PATH, so the destructive-command guard cannot read the tool input - denying Bash. Install jq (apt-get install jq / brew install jq) from a shell outside the agent, then retry.' >&2; exit 2; }; [ \"$rc\" -ne 0 ] && { echo \"PreToolUse: could not read the tool input (hook-input.sh exit $rc; payload unreadable or .agents/hooks/hook-input.sh damaged) - denying Bash.\" >&2; exit 2; }; [ -n \"$c\" ] || { echo 'PreToolUse: no command found in the tool input - denying Bash.' >&2; exit 2; }; printf '%s' \"$c\" | sh \"$H/block-destructive.sh\""
+            "command": "H=\"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks\"; [ -r \"$H/block-destructive.sh\" ] || { echo 'PreToolUse: block-destructive.sh is missing - denying Bash. Restore .agents/hooks, then retry.' >&2; exit 2; }; c=$(sh \"$H/hook-input.sh\" .tool_input.command); rc=$?; [ \"$rc\" -eq 3 ] && { echo 'PreToolUse: no usable JSON parser on PATH, so the destructive-command guard cannot read the tool input - denying Bash. Install or upgrade jq (apt-get install jq / brew install jq) from a shell outside the agent, then retry.' >&2; exit 2; }; [ \"$rc\" -ne 0 ] && { echo \"PreToolUse: could not read the tool input (hook-input.sh exit $rc; payload unreadable or .agents/hooks/hook-input.sh damaged) - denying Bash.\" >&2; exit 2; }; [ -n \"$c\" ] || { echo 'PreToolUse: no command found in the tool input - denying Bash.' >&2; exit 2; }; printf '%s' \"$c\" | sh \"$H/block-destructive.sh\""
           }
         ]
       }
     ],
-    {% set stop_guard = "fail=2; flag=$(sh \"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/hook-input.sh\" .stop_hook_active); rc=$?; if [ \"$rc\" -ne 0 ]; then if [ \"$rc\" -eq 3 ]; then why='no JSON parser on PATH; install jq (apt-get install jq / brew install jq)'; else why=\"hook-input.sh exit $rc\"; fi; echo \"verify: cannot read the stop-loop guard ($why) - running the gate anyway, but a red gate can only be reported, not blocked, until this is fixed.\" >&2; fail=1; fi; [ \"$flag\" = 'true' ] && exit 0; " -%}
+    {% set stop_guard = "fail=2; flag=$(sh \"${CLAUDE_PROJECT_DIR:-.}/.agents/hooks/hook-input.sh\" .stop_hook_active); rc=$?; if [ \"$rc\" -ne 0 ]; then if [ \"$rc\" -eq 3 ]; then why='no usable JSON parser on PATH; install or upgrade jq (apt-get install jq / brew install jq)'; else why=\"hook-input.sh exit $rc\"; fi; echo \"verify: cannot read the stop-loop guard ($why) - running the gate anyway, but a red gate can only be reported, not blocked, until this is fixed.\" >&2; fail=1; fi; [ \"$flag\" = 'true' ] && exit 0; " -%}
     {# A hook's cwd is the session's, not necessarily the repo root, and the
        gate resolves its task file (Makefile / justfile / a raw command)
        against the cwd - so anchor it where the payload read already is, or
-       the stop is blocked by "no makefile" instead of the code (issue #44). #}
-    {% set gate_cd = "cd \"${CLAUDE_PROJECT_DIR:-.}\" && " -%}
+       the stop is blocked by "no makefile" instead of the code (issue #44).
+       Its own statement, not `cd … && <verify>`: a failed cd would otherwise
+       land in the gate's || tail and be reported as a red gate that never
+       ran, and everything after a `;` in a compound verify_command would run
+       unanchored anyway. A vanished project directory is a host condition,
+       so it reports (exit 1) rather than blocking, like the reader failures. -#}
+    {% set gate_cd = "cd \"${CLAUDE_PROJECT_DIR:-.}\" || { echo \"verify skipped: cannot enter the project directory (${CLAUDE_PROJECT_DIR:-.}) - the gate did not run, so this session is unverified.\" >&2; exit 1; }; " -%}
     {# The gate's own failure output usually goes to stdout, which Claude Code
        does not surface on a non-blocking exit - so say it on stderr too when
        the stop is not being blocked, or the red result is invisible. #}

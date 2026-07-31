@@ -486,15 +486,25 @@ major version).
   the script header, `.opencode/opencode.jsonc`, `.agents/README.md` and
   `development/harness-usage.md`. See
   [ADR 0015](docs/decisions/0015-deny-list-matching-outside-quotes.md).
-- `hook-input.sh` probes `jq` with the exact filter it will run, held in one
-  shell variable, instead of a trivial `jq -e .` (issue #41). The filter needs
-  jq ≥ 1.5 (`try`/`catch`, `inputs`), so on a jq 1.4 host the old probe passed,
-  the filter then died on a syntax error that `2>/dev/null` swallowed, and
-  every read exited 4 — which PreToolUse maps to denying **every** Bash call,
-  blaming the payload while a working `python3` sat unused on the same PATH. A
-  jq too old for the filter now falls through to `python3` exactly as a broken
-  jq does; with no usable backend at all the reader exits 3, whose message
-  names the actual remedy.
+- `hook-input.sh` probes each backend with the exact program it will run —
+  the jq filter, the `python3` script — each held in one shell variable,
+  instead of a trivial `jq -e .` / `python3 -c ''` (issue #41). The filter
+  needs jq ≥ 1.5 (`try`/`catch`, `inputs`), so on a jq 1.4 host the old probe
+  passed, the filter then died on a syntax error that `2>/dev/null` swallowed,
+  and every read exited 4 — which PreToolUse maps to denying **every** Bash
+  call, blaming the payload while a working `python3` sat unused on the same
+  PATH. A jq too old for the filter now falls through to `python3` exactly as
+  a broken jq does, and a `python3` that starts but cannot run the script (no
+  `json` module, a python2 shim) is caught before it half-runs and returns an
+  exit code no caller branches on. Exits stay 0/3/4; the exit-3 message now
+  says a parser may be missing, unable to run, **or too old**, and asks for an
+  install *or upgrade* — on a jq 1.4 host it used to ask for an install the
+  user had already done. The SessionStart warning quotes the reader's own
+  message instead of restating a guess at the cause.
+- `hook-input.sh` emits both backends' output through command substitution, so
+  a value carrying trailing newlines reads identically under `jq` and
+  `python3`. The header's byte-for-byte contract previously diverged by one
+  newline there.
 - `hook-input.sh` rejects concatenated JSON documents (`'{"a":"x"} {"a":"y"}'`)
   with exit 4 under **both** backends (issue #44). jq runs its filter once per
   document and exits 0 emitting one value per line, so the Stop hook could read
@@ -504,34 +514,37 @@ major version).
   is exactly one document; a whitespace-only payload (jq: zero documents,
   exit 0) is likewise a uniform exit 4.
 - `.claude/settings.json`'s SessionStart now **self-tests
-  `block-destructive.sh`**: it pipes a deny-listed command through the guard
-  and warns (non-blocking exit 1, like the reader probe) unless the verdict is
-  exit 2 *plus* the guard's own deny message — dash also exits 2 when it
-  cannot open or parse a script, and the message exists to make a deny
-  distinguishable from an infrastructure failure. Previously a
-  present-but-damaged guard (interrupted `copier update`, partial checkout, a
-  Windows checkout without `core.symlinks=true`) passed PreToolUse's `[ -r ]`
-  check, ran, and exited 0, silently allowing every destructive command
-  (issue #41); a silently weakened guard fails the same probe. A *missing*
-  guard still fails closed at PreToolUse and now also warns at session start.
+  `block-destructive.sh`**: it pipes one command per deny-list rule (an
+  unquoted operation, one handed to a nested shell, the SQL text pattern)
+  through the guard and warns (non-blocking exit 1, like the reader probe)
+  unless each verdict is exit 2 *plus* the guard's own deny message — dash
+  also exits 2 when it cannot open or parse a script, and the message exists
+  to make a deny distinguishable from an infrastructure failure. Previously a
+  present-but-damaged guard (interrupted `copier update`, partial checkout)
+  passed PreToolUse's `[ -r ]` check, ran, and exited 0, silently allowing
+  every destructive command (issue #41); one probe would have missed a guard
+  truncated below its first rule. The warning names the failing probe, quotes
+  the guard's stderr, and says which way the damage points: exit 2 without a
+  deny message means the guard denies **every** Bash call (PreToolUse ends on
+  it), any other exit means it denies none. A *missing* guard still fails
+  closed at PreToolUse and now also warns at session start.
 - The Stop hook runs the verify gate from the repo root
-  (`cd "${CLAUDE_PROJECT_DIR:-.}" && …`), matching how it already anchored its
+  (`cd "${CLAUDE_PROJECT_DIR:-.}"`), matching how it already anchored its
   payload read (issue #44). `make`, `just`, and a raw `verify_command` all
   resolve against the cwd, so a hook cwd outside the repo root blocked the
-  stop with "no makefile" — an error unrelated to the code. The exit-code
+  stop with "no makefile" — an error unrelated to the code. The `cd` is its
+  own statement: chained with `&&`, a project directory that vanished
+  mid-session would have been reported as a failing gate that never ran, and
+  a compound `verify_command` would still have run its later commands
+  unanchored. That case now reports and skips (exit 1). The exit-code
   contract is unchanged: 2 blocks, 1 reports without blocking.
-- `permissions.deny` no longer denies `git push --force-with-lease`
-  (issue #40): `Bash(git push --force:*)` is a plain string-prefix rule, so it
-  hard-denied the safe, lease-checked variant the guard was already letting
-  through — with no rephrase available, dead-ending an agent updating a
-  rebased branch. Split into an exact `Bash(git push --force)` plus a
-  trailing-space prefix `Bash(git push --force :*)`, neither a prefix of
-  `--force-with-lease`. This deny list is the only layer when
-  `include_claude_hooks=false`, so it must not over-match either.
 
-  The five fixes above amend Decisions 1–2 of ADR 0014 and extend ADR 0013's
-  SessionStart warning; see
-  [ADR 0016](docs/decisions/0016-filter-shape-probe-guard-selftest-anchored-gate.md).
+The hook fixes above amend Decisions 1–2 of ADR 0014 and extend ADR 0013's
+SessionStart warning. The same ADR records why
+`permissions.deny`'s `Bash(git push --force:*)` is left alone (issue #40:
+`:*` is a whole-word prefix, so it never denied `git push --force-with-lease`
+— `block-destructive.sh` and the OpenCode globs do). See
+[ADR 0016](docs/decisions/0016-filter-shape-probe-guard-selftest-anchored-gate.md).
 
 ### Removed (breaking)
 
