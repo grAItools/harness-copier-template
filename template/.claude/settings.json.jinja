@@ -112,7 +112,7 @@
     {% set gate_cd = "cd \"${CLAUDE_PROJECT_DIR:-.}\" || { echo \"verify skipped: cannot enter the project directory (${CLAUDE_PROJECT_DIR:-.}) - the gate did not run, so this session is unverified.\" >&2; exit 1; }; " -%}
     {# The gate's own failure output usually goes to stdout, which Claude Code
        does not surface on a non-blocking exit - so say it on stderr too when
-       the stop is not being blocked, or the red result is invisible. #}
+       the stop is not being blocked, or the red result is invisible. -#}
     {% set gate_tail = " || { [ \"$fail\" -eq 1 ] && echo 'verify: the gate FAILED and the stop was not blocked (unreadable stop-loop guard) - this session is unverified; re-run the gate yourself.' >&2; exit \"$fail\"; }" -%}
     "Stop": [
       {
